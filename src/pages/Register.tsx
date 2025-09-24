@@ -120,7 +120,7 @@ function Register() {
           </div>
 
           {/* Apartment */}
-          {/* <div className="relative">
+           <div className="relative">
             <HiOutlineHome className="absolute top-3 left-3 text-gray-500" size={20} />
             <select
               value={apartmentId || ''}
@@ -136,7 +136,7 @@ function Register() {
               ))}
             </select>
             {errors.apartment && <p className="text-red-500 text-sm mt-1">{errors.apartment}</p>}
-          </div> */}
+          </div> 
 
           {/* Password */}
           <div className="relative">

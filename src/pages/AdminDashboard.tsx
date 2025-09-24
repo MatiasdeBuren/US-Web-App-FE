@@ -201,7 +201,7 @@ function AdminDashboard() {
                                     </div>
                                 </div>
                                 
-                                {/* <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                                 <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
                                     <div className="flex items-center gap-3 mb-3">
                                         <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
                                             <Building className="w-5 h-5 text-white" />
@@ -211,7 +211,7 @@ function AdminDashboard() {
                                             <p className="text-2xl font-bold text-white">{adminStats?.totalApartments || 0}</p>
                                         </div>
                                     </div>
-                                </div> */}
+                                </div> 
                                 
                                 <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
                                     <div className="flex items-center gap-3 mb-3">
@@ -245,7 +245,7 @@ function AdminDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 
                     {/* Users Management */}
-                    {/*
+                    
                     <motion.div 
                         className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
                         whileHover={{ scale: 1.02 }}
@@ -267,10 +267,10 @@ function AdminDashboard() {
                             • Activar/desactivar cuentas
                         </div>
                     </motion.div>
-                    */}
+                    
 
                     {/* Apartments Management */}
-                    {/*
+                    
                     <motion.div 
                         className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
                         whileHover={{ scale: 1.02 }}
@@ -292,10 +292,10 @@ function AdminDashboard() {
                             • Ver ocupación
                         </div>
                     </motion.div>
-                    */}
+                    
 
                     {/* Amenities Management */}
-                    {/*
+                    
                     <motion.div 
                         className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
                         whileHover={{ scale: 1.02 }}
@@ -317,7 +317,7 @@ function AdminDashboard() {
                             • Establecer horarios
                         </div>
                     </motion.div>
-                    */}
+                    
 
                     {/* Reservations Management */}
                     <motion.div 
@@ -343,7 +343,7 @@ function AdminDashboard() {
                     </motion.div>
 
                     {/* Analytics */}
-                    {/*
+                    
                     <motion.div 
                         className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
                         whileHover={{ scale: 1.02 }}
@@ -364,10 +364,10 @@ function AdminDashboard() {
                             • Análisis de tendencias
                         </div>
                     </motion.div>
-                    */}
+                    
 
                     {/* System Settings */}
-                    {/*
+                    
                     <motion.div 
                         className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
                         whileHover={{ scale: 1.02 }}
@@ -388,7 +388,7 @@ function AdminDashboard() {
                             • Mantenimiento del sistema
                         </div>
                     </motion.div>
-                    */}
+                    
                 </div>
             </div>
 
