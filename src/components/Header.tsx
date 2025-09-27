@@ -9,9 +9,10 @@ interface HeaderProps {
     onProfileClick: () => void;
     showProfileMenu?: boolean;
     onLogout?: () => void;
+    onClaimsClick?: () => void;
 }
 
-function Header({ userName, onProfileClick, showProfileMenu = true, onLogout }: HeaderProps) {
+function Header({ userName, onProfileClick, showProfileMenu = true, onLogout, onClaimsClick }: HeaderProps) {
     const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -78,8 +79,11 @@ function Header({ userName, onProfileClick, showProfileMenu = true, onLogout }: 
                         <button className="text-gray-700 hover:text-gray-900 font-medium transition-colors cursor-pointer">
                             Dashboard
                         </button>
-                        <button className="text-gray-500 hover:text-gray-700 font-medium transition-colors cursor-not-allowed">
-                            Reservas
+                        <button 
+                            onClick={onClaimsClick}
+                            className="text-gray-500 hover:text-gray-700 font-medium transition-colors cursor-pointer"
+                        >
+                            Reclamos
                         </button>
                         <button className="text-gray-500 hover:text-gray-700 font-medium transition-colors cursor-not-allowed">
                             Amenities
@@ -89,20 +93,20 @@ function Header({ userName, onProfileClick, showProfileMenu = true, onLogout }: 
                     {/* Right side - User menu */}
                     {showProfileMenu && (
                         <div className="relative" ref={menuRef}>
-                            <button
-                                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                                className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors group cursor-pointer"
-                            >
-                                <div className="text-right hidden sm:block">
-                                    <p className="text-sm font-medium text-gray-900">
-                                        {userName}
-                                    </p>
+                                <button
+                                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                    className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors group cursor-pointer"
+                                >
+                                    <div className="text-right hidden sm:block">
+                                        <p className="text-sm font-medium text-gray-900">
+                                            {userName}
+                                        </p>
 
-                                </div>
-                                <div className="w-10 h-10 bg-gradient-to-r from-gray-400 via-gray-500 to-gray-700 rounded-full flex items-center justify-center group-hover:from-gray-500 group-hover:via-gray-600 group-hover:to-gray-800 transition-all">
-                                    <User className="w-5 h-5 text-white" />
-                                </div>
-                            </button>
+                                    </div>
+                                    <div className="w-10 h-10 bg-gradient-to-r from-gray-400 via-gray-500 to-gray-700 rounded-full flex items-center justify-center group-hover:from-gray-500 group-hover:via-gray-600 group-hover:to-gray-800 transition-all">
+                                        <User className="w-5 h-5 text-white" />
+                                    </div>
+                                </button>
 
                             {/* Dropdown Menu */}
                             {isMenuOpen && (

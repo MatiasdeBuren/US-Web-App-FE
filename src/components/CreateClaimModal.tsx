@@ -1,0 +1,328 @@
+import { useState, useEffect } from 'react';
+import { X, AlertTriangle, Wrench, Droplets, Zap, Wind, Users, Building } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+
+interface CreateClaimModalProps {
+  isVisible: boolean;
+  onClose: () => void;
+  onSave: (claimData: ClaimFormData) => void;
+  editingClaim?: Claim | null;
+  isSaving?: boolean;
+}
+
+interface ClaimFormData {
+  subject: string;
+  category: string;
+  description: string;
+  location: string;
+  priority: string;
+}
+
+interface Claim {
+  id: number;
+  subject: string;
+  category: string;
+  description: string;
+  location: string;
+  priority: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const categoryOptions = [
+  { value: 'elevator', label: 'Ascensor', icon: Wrench, color: 'purple' },
+  { value: 'plumbing', label: 'Plomería', icon: Droplets, color: 'blue' },
+  { value: 'electrical', label: 'Eléctrico', icon: Zap, color: 'yellow' },
+  { value: 'hvac', label: 'Aire Acondicionado', icon: Wind, color: 'green' },
+  { value: 'common_areas', label: 'Áreas Comunes', icon: Users, color: 'indigo' },
+  { value: 'building', label: 'Edificio', icon: Building, color: 'gray' },
+  { value: 'other', label: 'Otros', icon: AlertTriangle, color: 'orange' }
+];
+
+const priorityOptions = [
+  { value: 'low', label: 'Baja', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  { value: 'medium', label: 'Media', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+  { value: 'high', label: 'Alta', color: 'bg-orange-50 text-orange-700 border-orange-200' },
+  { value: 'urgent', label: 'Urgente', color: 'bg-red-50 text-red-700 border-red-200' }
+];
+
+function CreateClaimModal({ isVisible, onClose, onSave, editingClaim, isSaving = false }: CreateClaimModalProps) {
+  const [formData, setFormData] = useState<ClaimFormData>({
+    subject: '',
+    category: '',
+    description: '',
+    location: '',
+    priority: 'medium'
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (editingClaim) {
+      setFormData({
+        subject: editingClaim.subject,
+        category: editingClaim.category,
+        description: editingClaim.description,
+        location: editingClaim.location,
+        priority: editingClaim.priority
+      });
+    } else {
+      setFormData({
+        subject: '',
+        category: '',
+        description: '',
+        location: '',
+        priority: 'medium'
+      });
+    }
+    setErrors({});
+  }, [editingClaim, isVisible]);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.subject.trim()) {
+      newErrors.subject = 'El asunto es requerido';
+    }
+
+    if (!formData.category) {
+      newErrors.category = 'Selecciona una categoría';
+    }
+
+    if (!formData.description.trim()) {
+      newErrors.description = 'La descripción es requerida';
+    } else if (formData.description.length < 10) {
+      newErrors.description = 'La descripción debe tener al menos 10 caracteres';
+    }
+
+    if (!formData.location.trim()) {
+      newErrors.location = 'La ubicación es requerida';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateForm()) {
+      onSave(formData);
+    }
+  };
+
+  const handleChange = (field: keyof ClaimFormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  if (!isVisible) return null;
+
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+          }
+        `
+      }} />
+      <AnimatePresence>
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto scrollbar-hide"
+          style={{
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none'
+          }}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {editingClaim ? 'Editar Reclamo' : 'Nuevo Reclamo'}
+                </h2>
+                <p className="text-sm text-gray-500">
+                  {editingClaim ? 'Modifica los detalles del reclamo' : 'Reporta un problema o solicita mantenimiento'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+              disabled={isSaving}
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            {/* Subject */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Asunto *
+              </label>
+              <input
+                type="text"
+                value={formData.subject}
+                onChange={(e) => handleChange('subject', e.target.value)}
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  errors.subject ? 'border-red-300' : 'border-gray-200'
+                }`}
+                placeholder="Ej: Ascensor principal fuera de servicio"
+                disabled={isSaving}
+              />
+              {errors.subject && (
+                <p className="mt-1 text-sm text-red-600">{errors.subject}</p>
+              )}
+            </div>
+
+            {/* Category */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Categoría *
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {categoryOptions.map((category) => {
+                  const Icon = category.icon;
+                  const isSelected = formData.category === category.value;
+                  
+                  return (
+                    <button
+                      key={category.value}
+                      type="button"
+                      onClick={() => handleChange('category', category.value)}
+                      disabled={isSaving}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        isSelected
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      } ${isSaving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      <Icon className={`w-6 h-6 mx-auto mb-2 ${
+                        isSelected ? 'text-blue-600' : 'text-gray-400'
+                      }`} />
+                      <span className={`text-sm font-medium ${
+                        isSelected ? 'text-blue-700' : 'text-gray-600'
+                      }`}>
+                        {category.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {errors.category && (
+                <p className="mt-1 text-sm text-red-600">{errors.category}</p>
+              )}
+            </div>
+
+            {/* Location */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Ubicación *
+              </label>
+              <input
+                type="text"
+                value={formData.location}
+                onChange={(e) => handleChange('location', e.target.value)}
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  errors.location ? 'border-red-300' : 'border-gray-200'
+                }`}
+                placeholder="Ej: Lobby principal - Ascensor A, Apartamento 3B, Gimnasio"
+                disabled={isSaving}
+              />
+              {errors.location && (
+                <p className="mt-1 text-sm text-red-600">{errors.location}</p>
+              )}
+            </div>
+
+            {/* Priority */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Prioridad
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {priorityOptions.map((priority) => {
+                  const isSelected = formData.priority === priority.value;
+                  
+                  return (
+                    <button
+                      key={priority.value}
+                      type="button"
+                      onClick={() => handleChange('priority', priority.value)}
+                      disabled={isSaving}
+                      className={`px-4 py-3 rounded-xl border-2 font-medium transition-all ${
+                        isSelected
+                          ? priority.color + ' border-current'
+                          : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                      } ${isSaving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      {priority.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Descripción detallada *
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => handleChange('description', e.target.value.slice(0, 500))}
+                rows={4}
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none ${
+                  errors.description ? 'border-red-300' : 'border-gray-200'
+                }`}
+                placeholder="Describe el problema con el mayor detalle posible. Incluye cuándo comenzó, síntomas específicos, etc."
+                disabled={isSaving}
+              />
+              <div className="flex justify-between items-center mt-1">
+                {errors.description ? (
+                  <p className="text-sm text-red-600">{errors.description}</p>
+                ) : (
+                  <p className="text-sm text-gray-500">Mínimo 10 caracteres</p>
+                )}
+                <p className="text-sm text-gray-400">{formData.description.length}/500</p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-6 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors cursor-pointer"
+                disabled={isSaving}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white px-6 py-2 rounded-xl font-semibold transition-colors cursor-pointer"
+              >
+                {isSaving ? 'Guardando...' : editingClaim ? 'Actualizar' : 'Crear Reclamo'}
+              </button>
+            </div>
+          </form>
+        </motion.div>
+      </div>
+    </AnimatePresence>
+    </>
+  );
+}
+
+export default CreateClaimModal;

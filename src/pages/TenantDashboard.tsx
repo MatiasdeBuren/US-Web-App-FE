@@ -26,6 +26,7 @@ import ReservationCancelledToast from "../components/ReservationCancelledToast";
 import ReservationHiddenToast from "../components/ReservationHiddenToast";
 import ReservationSuccessToast from "../components/ReservationSuccessToast";
 import ReservationErrorToast from "../components/ReservationErrorToast";
+import ClaimsPage from "./ClaimsPage";
 
 // Tipos
 import type { UserData, ReservationData, Reservation, Amenity } from "../types";
@@ -49,6 +50,9 @@ function TenantDashboard() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showSuccessToast, setShowSuccessToast] = useState(false);
     const [newName, setNewName] = useState("");
+    
+    // Tab navigation state
+    const [activeTab, setActiveTab] = useState<"dashboard" | "reclamos">("dashboard");
 
     // Loading states
     const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -408,6 +412,7 @@ function TenantDashboard() {
             <Header
                 userName={userData?.user.name || ""}
                 onProfileClick={() => setShowProfile((prev) => !prev)}
+                onClaimsClick={() => setActiveTab("reclamos")}
             />
 
             {/* MAIN CONTENT CONTAINER */}
@@ -477,6 +482,71 @@ function TenantDashboard() {
                     </div>
                 </div>
 
+            {/* Mostrar ClaimsPage si activeTab es 'reclamos', sino mostrar el dashboard original */}
+            {activeTab === "reclamos" ? (
+                <ClaimsPage />
+            ) : (
+                <>
+                    {/* Layout de selección - Amenities a la izquierda, Horario a la derecha */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12 items-start">
+                        {/* Columna izquierda - Selector de amenities */}
+                        <SpaceSelector
+                            spaces={amenities}
+                            selectedSpace={selectedSpace}
+                            onSpaceSelect={setSelectedSpace}
+                            selectedDate={selectedDate}
+                            selectedTime={selectedTime}
+                            getAmenityOccupancy={getAmenityOccupancy}
+                            token={token}
+                            fetchReservations={async (id) => {
+                                if (!token) return [];
+                                return getReservationsByAmenity(token, id);
+                            }}
+                        />
+
+                        {/* Columna derecha - Selector de horario */}
+                        <TimeSelector
+                            selectedSpace={selectedSpace}
+                            selectedTime={selectedTime}
+                            selectedDate={selectedDate}
+                            amenities={amenities}
+                            reservations={reservations}
+                            timeError={timeError}
+                            getCurrentReservationCount={getCurrentReservationCount}
+                            onTimeChange={(newTime) => {
+                                const [start, end] = newTime.split(" - ");
+                                const space = amenities.find(a => a.name === selectedSpace);
+                                const maxDuration = space?.maxDuration || 60;
+
+                                const [sh, sm] = start.split(":").map(Number);
+                                const [eh, em] = end.split(":").map(Number);
+                                const duration = (eh * 60 + em) - (sh * 60 + sm);
+
+                                if (duration > maxDuration) {
+                                    setTimeError(`⛔ La duración máxima para ${selectedSpace} es de ${maxDuration} minutos`);
+                                    return;
+                                }
+
+                                setSelectedTime(newTime);
+                                setTimeError(null);
+                            }}
+                            onDateChange={setSelectedDate}
+                            onReserve={handleReserve}
+                            isReserving={isReserving}
+                        />
+                    </div>
+
+                    {/* Resumen de reservas del usuario - Ancho completo */}
+                    <ReservationList
+                        reservations={userReservations}
+                        onCancelReservation={handleCancelReservation}
+                        onRemoveFromView={handleRemoveFromView}
+                        cancellingId={isCancelling}
+                        hidingId={isHiding}
+                    />
+                </>
+            )}
+
             {/* PANEL PERFIL (Derecha) */}
             <ProfilePanel
                 isVisible={showProfile}
@@ -512,66 +582,6 @@ function TenantDashboard() {
                 onConfirm={handleConfirmDelete}
                 userName={userData?.user.name || ""}
                 isDeleting={isDeletingAccount}
-            />
-
-            {/* Layout de selección - Amenities a la izquierda, Horario a la derecha */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12 items-start">
-                {/* Columna izquierda - Selector de amenities */}
-                <SpaceSelector
-                    spaces={amenities}
-                    selectedSpace={selectedSpace}
-                    onSpaceSelect={setSelectedSpace}
-                    selectedDate={selectedDate}
-                    selectedTime={selectedTime}
-                    getAmenityOccupancy={getAmenityOccupancy}
-                    token={token}
-                    fetchReservations={async (id) => {
-                        if (!token) return [];
-                        return getReservationsByAmenity(token, id);
-                    }}
-                />
-
-                {/* Columna derecha - Selector de horario */}
-                <TimeSelector
-                    selectedSpace={selectedSpace}
-                    selectedTime={selectedTime}
-                    selectedDate={selectedDate}
-                    amenities={amenities}
-                    reservations={reservations}
-                    timeError={timeError}
-                    getCurrentReservationCount={getCurrentReservationCount}
-                    onTimeChange={(newTime) => {
-                        const [start, end] = newTime.split(" - ");
-                        const space = amenities.find(a => a.name === selectedSpace);
-                        const maxDuration = space?.maxDuration || 60;
-
-                        const [sh, sm] = start.split(":").map(Number);
-                        const [eh, em] = end.split(":").map(Number);
-                        const duration = (eh * 60 + em) - (sh * 60 + sm);
-
-                        if (duration > maxDuration) {
-                            setTimeError(`⛔ La duración máxima para ${selectedSpace} es de ${maxDuration} minutos`);
-                            return;
-                        }
-
-                        setSelectedTime(newTime);
-                        setTimeError(null);
-                    }}
-                    onDateChange={setSelectedDate}
-                    onReserve={handleReserve}
-                    isReserving={isReserving}
-                />
-            </div>
-
-            {/* Resumen de reservas del usuario - Ancho completo */}
-            <ReservationList
-                reservations={userReservations}
-
-                onCancelReservation={handleCancelReservation}
-                onRemoveFromView={handleRemoveFromView}
-                cancellingId={isCancelling}
-                hidingId={isHiding}
-
             />
             </div> {/* MAIN CONTENT CONTAINER */}
 
