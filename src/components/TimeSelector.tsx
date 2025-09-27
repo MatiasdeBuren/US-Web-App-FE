@@ -15,7 +15,6 @@ interface TimeSelectorProps {
     onTimeChange: (newTime: string) => void;
     onDateChange: (newDate: string) => void;
     onReserve: () => void;
-    successMessage: string | null;
     isReserving?: boolean;
     // New prop to get real-time reservation count
     getCurrentReservationCount?: (amenityName: string, date: string, timeSlot: string) => Promise<number>;
@@ -30,7 +29,6 @@ function TimeSelector({
     onTimeChange,
     onDateChange,
     onReserve,
-    successMessage,
     isReserving = false,
     getCurrentReservationCount
 }: TimeSelectorProps) {
@@ -131,15 +129,6 @@ function TimeSelector({
                         </span>
                     </LoadingButton>
                 </div>
-
-                {successMessage && (
-                    <div className="text-center">
-                        <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 px-6 py-3 rounded-xl">
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <p className="text-green-700 font-medium">{successMessage}</p>
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     );

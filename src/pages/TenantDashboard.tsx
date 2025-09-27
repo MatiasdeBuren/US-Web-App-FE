@@ -21,6 +21,11 @@ import TimeSelector from "../components/TimeSelector";
 import ReservationList from "../components/ReservationList";
 import { LoadingOverlay } from "../components/LoadingSpinner";
 import LogoutSuccessToast from "../components/LogoutSuccessToast";
+import CancelReservationModal from "../components/CancelReservationModal";
+import ReservationCancelledToast from "../components/ReservationCancelledToast";
+import ReservationHiddenToast from "../components/ReservationHiddenToast";
+import ReservationSuccessToast from "../components/ReservationSuccessToast";
+import ReservationErrorToast from "../components/ReservationErrorToast";
 
 // Tipos
 import type { UserData, ReservationData, Reservation, Amenity } from "../types";
@@ -35,7 +40,6 @@ function TenantDashboard() {
     const [amenities, setAmenities] = useState<Amenity[]>([]);
     const [reservations, setReservations] = useState<ReservationData>({});
     const [timeError, setTimeError] = useState<string | null>(null);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [userReservations, setUserReservations] = useState<Reservation[]>([]);
     const [selectedDate, setSelectedDate] = useState("");
 
@@ -53,6 +57,22 @@ function TenantDashboard() {
     const [isHiding, setIsHiding] = useState<number | null>(null);
     const [isSavingName, setIsSavingName] = useState(false);
     const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
+    // Cancel reservation modal and toast states
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [reservationToCancel, setReservationToCancel] = useState<Reservation | null>(null);
+    const [showCancelToast, setShowCancelToast] = useState(false);
+    
+    // Hidden reservation toast state
+    const [showHiddenToast, setShowHiddenToast] = useState(false);
+    
+    // Success reservation toast state
+    const [showReservationToast, setShowReservationToast] = useState(false);
+    const [successReservationData, setSuccessReservationData] = useState<{ amenityName: string; timeSlot: string } | null>(null);
+    
+    // Error reservation toast state
+    const [showReservationErrorToast, setShowReservationErrorToast] = useState(false);
+    const [reservationErrorMessage, setReservationErrorMessage] = useState<string | null>(null);
 
     useEffect(() => {
         const savedToken = localStorage.getItem("token");
@@ -197,30 +217,54 @@ function TenantDashboard() {
             setUserReservations((prev) => [newReservation, ...prev]);
 
             setTimeError(null);
-            setSuccessMessage(`✅ Reserva confirmada para ${selectedSpace} a las ${selectedTime}`);
-            setTimeout(() => setSuccessMessage(null), 5000);
+            
+            // Show success toast with reservation details
+            setSuccessReservationData({
+                amenityName: selectedSpace,
+                timeSlot: selectedTime
+            });
+            setShowReservationToast(true);
 
 
         } catch (err: any) {
-            setTimeError(err.message);
+            // Show error toast instead of inline error
+            setReservationErrorMessage(err.message || "Error al procesar la reserva");
+            setShowReservationErrorToast(true);
+            // Clear any existing time error since we're showing toast instead
+            setTimeError(null);
         } finally {
             setIsReserving(false);
         }
     };
-        const handleCancelReservation = async (reservationId: number) => {
-        if (!token) return;
-        setIsCancelling(reservationId);
+    const handleCancelReservation = (reservationId: number) => {
+        // Find the reservation to cancel
+        const reservation = userReservations.find(r => r.id === reservationId);
+        if (reservation) {
+            setReservationToCancel(reservation);
+            setShowCancelModal(true);
+        }
+    };
+
+    const handleConfirmCancelReservation = async () => {
+        if (!token || !reservationToCancel) return;
+        
+        setIsCancelling(reservationToCancel.id);
         try {
-            await cancelReservation(token, reservationId);
+            await cancelReservation(token, reservationToCancel.id);
             // Update local state to mark as cancelled
             setUserReservations(prev =>
-                prev.map(r => r.id === reservationId ? { ...r, status: "cancelled" } : r)
+                prev.map(r => r.id === reservationToCancel.id ? { ...r, status: "cancelled" } : r)
             );
+            
+            // Close modal and show toast
+            setShowCancelModal(false);
+            setShowCancelToast(true);
         } catch (err: any) {
             console.error(err);
             alert("Error canceling reservation: " + err.message);
         } finally {
             setIsCancelling(null);
+            setReservationToCancel(null);
         }
     };
 
@@ -235,6 +279,9 @@ function TenantDashboard() {
             setUserReservations(prev =>
                 prev.filter(r => r.id !== reservationId)
             );
+            
+            // Show success toast
+            setShowHiddenToast(true);
         } catch (err: any) {
             console.error(err);
             alert("Error ocultando reserva: " + err.message);
@@ -511,7 +558,6 @@ function TenantDashboard() {
                     }}
                     onDateChange={setSelectedDate}
                     onReserve={handleReserve}
-                    successMessage={successMessage}
                     isReserving={isReserving}
                 />
             </div>
@@ -527,6 +573,51 @@ function TenantDashboard() {
 
             />
             </div> {/* MAIN CONTENT CONTAINER */}
+
+            {/* Cancel Reservation Modal */}
+            <CancelReservationModal
+                isVisible={showCancelModal}
+                onClose={() => {
+                    setShowCancelModal(false);
+                    setReservationToCancel(null);
+                }}
+                onConfirm={handleConfirmCancelReservation}
+                reservation={reservationToCancel}
+                isCancelling={reservationToCancel ? isCancelling === reservationToCancel.id : false}
+            />
+
+            {/* Reservation Cancelled Toast */}
+            <ReservationCancelledToast
+                isVisible={showCancelToast}
+                onComplete={() => setShowCancelToast(false)}
+            />
+
+            {/* Reservation Hidden Toast */}
+            <ReservationHiddenToast
+                isVisible={showHiddenToast}
+                onComplete={() => setShowHiddenToast(false)}
+            />
+
+            {/* Reservation Success Toast */}
+            <ReservationSuccessToast
+                isVisible={showReservationToast}
+                onComplete={() => {
+                    setShowReservationToast(false);
+                    setSuccessReservationData(null);
+                }}
+                amenityName={successReservationData?.amenityName}
+                timeSlot={successReservationData?.timeSlot}
+            />
+
+            {/* Reservation Error Toast */}
+            <ReservationErrorToast
+                isVisible={showReservationErrorToast}
+                onComplete={() => {
+                    setShowReservationErrorToast(false);
+                    setReservationErrorMessage(null);
+                }}
+                errorMessage={reservationErrorMessage || undefined}
+            />
 
             {/* Logout Success Toast */}
             <LogoutSuccessToast
