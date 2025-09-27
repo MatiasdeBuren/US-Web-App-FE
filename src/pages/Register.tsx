@@ -17,6 +17,7 @@ function Register() {
   const [apartments, setApartments] = useState<Apartment[]>([]);
   const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
   const [errors, setErrors] = useState<{
     name?: string;
     email?: string;
@@ -37,7 +38,7 @@ function Register() {
     loadApartments();
   }, []);
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     const tempErrors: typeof errors = {};
 
@@ -61,18 +62,25 @@ function Register() {
     setErrors(tempErrors);
 
     if (Object.keys(tempErrors).length === 0) {
-      register({
-        name,
-        email,
-        password,
-        apartmentId
-      }).then((result) => {
+      if (isRegistering) return; // Prevent spam clicking
+      
+      setIsRegistering(true);
+      try {
+        const result = await register({
+          name,
+          email,
+          password,
+          apartmentId
+        });
+        
         if (result.success) {
           setShowSuccessToast(true);
         } else {
           setErrors({ email: result.message || 'Error en el registro' });
         }
-      });
+      } finally {
+        setIsRegistering(false);
+      }
     }
   };
 
@@ -85,7 +93,7 @@ function Register() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 via-gray-300 to-gray-600">
       <div className="bg-gradient-to-b from-white via-gray-50 to-gray-200 rounded-3xl shadow-xl p-10 max-w-md w-full animate-fadeIn">
         <div className="text-center mb-6">
-          <img src="src/assets/Logo_Us_2.png" alt="Logo US" className="mx-auto w-20 h-20 animate-bounce" />
+          <img src="src/assets/Logo_Us_2.png" alt="Logo US" className="mx-auto w-20 h-20" />
           <h1 className="text-3xl font-bold text-gray-800">Crear cuenta</h1>
           <p className="text-gray-500 mt-2">Registrate para gestionar tu consorcio</p>
         </div>
@@ -120,7 +128,7 @@ function Register() {
           </div>
 
           {/* Apartment */}
-          {/* <div className="relative">
+           <div className="relative">
             <HiOutlineHome className="absolute top-3 left-3 text-gray-500" size={20} />
             <select
               value={apartmentId || ''}
@@ -136,7 +144,7 @@ function Register() {
               ))}
             </select>
             {errors.apartment && <p className="text-red-500 text-sm mt-1">{errors.apartment}</p>}
-          </div> */}
+          </div> 
 
           {/* Password */}
           <div className="relative">
@@ -214,9 +222,14 @@ function Register() {
           {/* Register button */}
           <button
             type="submit"
-            className="w-full cursor-pointer bg-gradient-to-r from-gray-400 via-gray-500 to-gray-700 text-white font-bold py-3 rounded-lg shadow-md hover:shadow-xl transition-all transform hover:scale-105 hover:from-gray-500 hover:via-gray-600 hover:to-gray-800 duration-300"
+            disabled={isRegistering}
+            className={`w-full font-bold py-3 rounded-lg shadow-md transition-all transform duration-300 ${
+              isRegistering
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'cursor-pointer bg-gradient-to-r from-gray-400 via-gray-500 to-gray-700 text-white hover:shadow-xl hover:scale-105 hover:from-gray-500 hover:via-gray-600 hover:to-gray-800'
+            }`}
           >
-            Registrarse
+            {isRegistering ? 'Registrando...' : 'Registrarse'}
           </button>
         </form>
 
