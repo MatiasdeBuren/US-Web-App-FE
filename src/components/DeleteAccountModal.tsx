@@ -5,13 +5,15 @@ interface DeleteAccountModalProps {
     onClose: () => void;
     onConfirm: () => void;
     userName: string;
+    isDeleting?: boolean;
 }
 
 function DeleteAccountModal({ 
     isVisible, 
     onClose, 
     onConfirm,
-    userName 
+    userName,
+    isDeleting = false
 }: DeleteAccountModalProps) {
     return (
         <AnimatePresence>
@@ -54,15 +56,25 @@ function DeleteAccountModal({
                         <div className="flex justify-end gap-4">
                             <button
                                 onClick={onClose}
-                                className="px-6 py-2 rounded-lg bg-gray-300 hover:bg-gray-400 transition-all cursor-pointer"
+                                disabled={isDeleting}
+                                className={`px-6 py-2 rounded-lg transition-all ${
+                                    isDeleting 
+                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                                        : 'bg-gray-300 hover:bg-gray-400 cursor-pointer'
+                                }`}
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={onConfirm}
-                                className="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-all cursor-pointer"
+                                disabled={isDeleting}
+                                className={`px-6 py-2 rounded-lg text-white transition-all ${
+                                    isDeleting
+                                        ? 'bg-red-400 cursor-not-allowed'
+                                        : 'bg-red-600 hover:bg-red-700 cursor-pointer'
+                                }`}
                             >
-                                Eliminar cuenta
+                                {isDeleting ? 'Eliminando...' : 'Eliminar cuenta'}
                             </button>
                         </div>
                     </motion.div>

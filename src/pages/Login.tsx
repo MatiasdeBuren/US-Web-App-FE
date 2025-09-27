@@ -11,16 +11,24 @@ function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); // <--- prevent page reload
+    
+    if (isLoggingIn) return; // Prevent spam clicking
+    
+    setIsLoggingIn(true);
+    try {
+      const result = await login({ email, password });
+      console.log('Login attempt:', { email, password });
 
-    const result = await login({ email, password });
-    console.log('Login attempt:', { email, password });
-
-    if (result.success) navigate("/dashboard");
-    else setErrors({ email: result.message || 'Error en el inicio de sesión' });
+      if (result.success) navigate("/dashboard");
+      else setErrors({ email: result.message || 'Error en el inicio de sesión' });
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
   const handleForgotPassword = async (email: string) => {
@@ -92,9 +100,14 @@ function Login() {
           {/* Login button */}
           <button
             type="submit"
-            className="cursor-pointer w-full bg-gradient-to-r from-gray-400 via-gray-500 to-gray-700 text-white font-bold py-3 rounded-lg shadow-md hover:from-gray-500 hover:via-gray-600 hover:to-gray-800 transition-all transform hover:scale-105"
+            disabled={isLoggingIn}
+            className={`cursor-pointer w-full font-bold py-3 rounded-lg shadow-md transition-all transform ${
+              isLoggingIn 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-gradient-to-r from-gray-400 via-gray-500 to-gray-700 text-white hover:from-gray-500 hover:via-gray-600 hover:to-gray-800 hover:scale-105'
+            }`}
           >
-            Iniciar sesión
+            {isLoggingIn ? 'Iniciando sesión...' : 'Iniciar sesión'}
           </button>
         </form>
 

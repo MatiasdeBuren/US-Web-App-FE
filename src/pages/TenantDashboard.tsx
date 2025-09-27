@@ -52,6 +52,7 @@ function TenantDashboard() {
     const [isCancelling, setIsCancelling] = useState<number | null>(null);
     const [isHiding, setIsHiding] = useState<number | null>(null);
     const [isSavingName, setIsSavingName] = useState(false);
+    const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
     useEffect(() => {
         const savedToken = localStorage.getItem("token");
@@ -338,8 +339,9 @@ function TenantDashboard() {
     };
 
     const handleConfirmDelete = async () => {
-        if (!token) return;
+        if (!token || isDeletingAccount) return;
 
+        setIsDeletingAccount(true);
         try {
             await deleteUser(token);
             setShowDeleteConfirm(false);
@@ -348,6 +350,8 @@ function TenantDashboard() {
         } catch (err) {
             setShowDeleteConfirm(false);
             alert("Error al eliminar la cuenta: " + (err instanceof Error ? err.message : "Error desconocido"));
+        } finally {
+            setIsDeletingAccount(false);
         }
     };
 
@@ -459,6 +463,7 @@ function TenantDashboard() {
                 onClose={() => setShowDeleteConfirm(false)}
                 onConfirm={handleConfirmDelete}
                 userName={userData?.user.name || ""}
+                isDeleting={isDeletingAccount}
             />
 
             {/* Layout de selección - Amenities a la izquierda, Horario a la derecha */}

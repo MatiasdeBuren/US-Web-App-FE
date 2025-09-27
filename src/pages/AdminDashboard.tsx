@@ -54,6 +54,8 @@ function AdminDashboard() {
     // Loading states
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [isSavingName, setIsSavingName] = useState(false);
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
     useEffect(() => {
         const savedToken = localStorage.getItem("token");
@@ -127,13 +129,17 @@ function AdminDashboard() {
     };
 
     const handleChangePassword = async (currentPassword: string, newPassword: string) => {
-        if (!token) return;
+        if (!token || isChangingPassword) return;
+        
+        setIsChangingPassword(true);
         try {
             await updateUserPassword(token, { currentPassword, newPassword });
             setShowPasswordPopup(false);
             alert("Contraseña actualizada exitosamente");
         } catch (err) {
             alert("Error al cambiar contraseña: " + (err instanceof Error ? err.message : "Error desconocido"));
+        } finally {
+            setIsChangingPassword(false);
         }
     };
 
@@ -142,8 +148,9 @@ function AdminDashboard() {
     };
 
     const handleConfirmDelete = async () => {
-        if (!token) return;
+        if (!token || isDeletingAccount) return;
 
+        setIsDeletingAccount(true);
         try {
             await deleteUser(token);
             setShowDeleteConfirm(false);
@@ -152,6 +159,8 @@ function AdminDashboard() {
         } catch (err) {
             setShowDeleteConfirm(false);
             alert("Error al eliminar la cuenta: " + (err instanceof Error ? err.message : "Error desconocido"));
+        } finally {
+            setIsDeletingAccount(false);
         }
     };
 
@@ -424,6 +433,7 @@ function AdminDashboard() {
                 onClose={() => setShowDeleteConfirm(false)}
                 onConfirm={handleConfirmDelete}
                 userName={userData?.user.name || ""}
+                isDeleting={isDeletingAccount}
             />
 
             {/* USER MANAGEMENT MODAL */}
