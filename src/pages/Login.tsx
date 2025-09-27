@@ -43,7 +43,7 @@ function Login() {
           <img
             src="src/assets/Logo_Us_2.png"
             alt="Logo US"
-            className="mx-auto w-25 h-25 animate-bounce"
+            className="mx-auto w-25 h-25"
           />
           <h1 className="text-3xl font-bold text-gray-800">Bienvenido a US</h1>
           <p className="text-gray-500 mt-2">Iniciá sesión para gestionar tu consorcio</p>
