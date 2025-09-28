@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Filter, AlertTriangle, Wrench, Droplets, Zap, Wind, Users, Building, Edit, Trash2, User, ChevronDown } from 'lucide-react';
+import { Plus, Search, Filter, AlertTriangle, Wrench, Droplets, Zap, Wind, Users, Building, Edit, Trash2, User, ChevronDown, Clock, PlayCircle, CheckCircle, XCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import CreateClaimModal from '../components/CreateClaimModal';
 import DeleteClaimModal from '../components/DeleteClaimModal';
@@ -26,6 +26,13 @@ const categoryIcons = {
   areas_comunes: Users,
   edificio: Building,
   otro: AlertTriangle
+};
+
+const statusIcons = {
+  pendiente: Clock,
+  en_progreso: PlayCircle,
+  resuelto: CheckCircle,
+  rechazado: XCircle
 };
 
 const categoryLabels = {
@@ -225,15 +232,19 @@ function ClaimsPage() {
     return categoryLabels[selectedCategory as keyof typeof categoryLabels];
   };
 
+  const getCurrentCategoryIcon = () => {
+    if (selectedCategory === 'all') return Filter;
+    return categoryIcons[selectedCategory as keyof typeof categoryIcons] || Filter;
+  };
+
   const getCurrentStatusLabel = () => {
     if (selectedStatus === 'all') return 'Todos los estados';
-    const labels = {
-      pending: 'Pendiente',
-      in_progress: 'En Progreso',
-      resolved: 'Resuelto',
-      rejected: 'Rechazado'
-    };
-    return labels[selectedStatus as keyof typeof labels];
+    return statusLabels[selectedStatus as keyof typeof statusLabels];
+  };
+
+  const getCurrentStatusIcon = () => {
+    if (selectedStatus === 'all') return Filter;
+    return statusIcons[selectedStatus as keyof typeof statusIcons] || Filter;
   };
 
   const getCurrentOwnershipLabel = () => {
@@ -363,7 +374,10 @@ function ClaimsPage() {
               className="flex items-center justify-between w-full px-4 py-3 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-left cursor-pointer"
             >
               <div className="flex items-center gap-2">
-                <Filter className="w-5 h-5 text-gray-400" />
+                {(() => {
+                  const IconComponent = getCurrentCategoryIcon();
+                  return <IconComponent className="w-5 h-5 text-gray-400" />;
+                })()}
                 <span className={selectedCategory === 'all' ? 'text-gray-500' : 'text-gray-900 font-medium'}>
                   {getCurrentCategoryLabel()}
                 </span>
@@ -377,7 +391,10 @@ function ClaimsPage() {
               className="flex items-center justify-between w-full px-4 py-3 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-left cursor-pointer"
             >
               <div className="flex items-center gap-2">
-                <Filter className="w-5 h-5 text-gray-400" />
+                {(() => {
+                  const IconComponent = getCurrentStatusIcon();
+                  return <IconComponent className="w-5 h-5 text-gray-400" />;
+                })()}
                 <span className={selectedStatus === 'all' ? 'text-gray-500' : 'text-gray-900 font-medium'}>
                   {getCurrentStatusLabel()}
                 </span>
