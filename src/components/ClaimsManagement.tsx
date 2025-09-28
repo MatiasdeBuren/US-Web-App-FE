@@ -216,10 +216,10 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-2xl shadow-xl max-w-7xl w-full max-h-[90vh] overflow-hidden"
+          className="bg-white rounded-2xl shadow-xl w-[1400px] max-w-[95vw] h-[90vh] overflow-hidden flex flex-col"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-100">
+          <div className="flex-shrink-0 flex items-center justify-between p-6 border-b border-gray-100">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5 text-white" />
@@ -242,10 +242,10 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
           </div>
 
           {/* Controls */}
-          <div className="p-6 border-b border-gray-100">
-            <div className="flex flex-wrap gap-4 items-center justify-between">
+          <div className="flex-shrink-0 p-6 border-b border-gray-100">
+            <div className="flex gap-4 items-center">
               {/* Search */}
-              <div className="relative flex-1 min-w-[300px]">
+              <div className="relative w-96">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
@@ -257,7 +257,7 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
               </div>
 
               {/* Filters */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 ml-auto">
                 {/* Category Filter Button */}
                 <button
                   onClick={() => setShowCategoryModal(true)}
@@ -292,7 +292,7 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
           </div>
 
           {/* Claims List */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-6 min-h-0">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>

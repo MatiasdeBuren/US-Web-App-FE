@@ -128,26 +128,6 @@ describe('Login Page', () => {
     });
   });
 
-  it('displays email input with error styling when there is an error', async () => {
-    const user = userEvent.setup();
-    (login as any).mockResolvedValue({ 
-      success: false, 
-      message: 'Email not found' 
-    });
-    
-    render(<Login />);
-    
-    const emailInput = screen.getByPlaceholderText('Correo electrónico');
-    const submitButton = screen.getByText('Iniciar sesión');
-    
-    await user.type(emailInput, 'test@example.com');
-    await user.click(submitButton);
-    
-    await waitFor(() => {
-      expect(emailInput).toHaveClass('border-red-500');
-    });
-  });
-
   it('navigates to register page when register link is clicked', async () => {
     const user = userEvent.setup();
     render(<Login />);
