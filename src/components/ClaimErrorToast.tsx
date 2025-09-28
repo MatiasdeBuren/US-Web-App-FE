@@ -1,6 +1,5 @@
-import { useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, X } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+import GenericToast from './GenericToast';
 
 interface ClaimErrorToastProps {
   isVisible: boolean;
@@ -15,16 +14,6 @@ function ClaimErrorToast({
   action = 'create',
   errorMessage 
 }: ClaimErrorToastProps) {
-  useEffect(() => {
-    if (isVisible) {
-      const timer = setTimeout(() => {
-        onComplete();
-      }, 5000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [isVisible, onComplete]);
-
   const getActionText = () => {
     switch (action) {
       case 'create': return 'crear';
@@ -43,55 +32,21 @@ function ClaimErrorToast({
     }
   };
 
+  const getMessage = () => {
+    return errorMessage || `No se pudo ${getActionText()} el reclamo. Por favor, inténtalo de nuevo.`;
+  };
+
   return (
-    <AnimatePresence>
-      {isVisible && (
-        <div className="fixed top-4 right-4 z-50">
-          <motion.div
-            initial={{ opacity: 0, x: 100, scale: 0.8 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: 100, scale: 0.8 }}
-            className="bg-white rounded-2xl shadow-xl border border-red-200 p-4 max-w-sm w-full"
-          >
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <AlertCircle className="w-4 h-4 text-red-600" />
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-red-900 mb-1">
-                  {getTitle()}
-                </h4>
-                <p className="text-sm text-red-700">
-                  {errorMessage || `No se pudo ${getActionText()} el reclamo. Por favor, inténtalo de nuevo.`}
-                </p>
-              </div>
-
-              <button
-                onClick={onComplete}
-                className="p-1 hover:bg-red-100 rounded-lg transition-colors flex-shrink-0"
-              >
-                <X className="w-4 h-4 text-red-600" />
-              </button>
-            </div>
-
-            {/* Progress bar */}
-            <motion.div
-              className="mt-3 h-1 bg-red-100 rounded-full overflow-hidden"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
-              <motion.div
-                className="h-full bg-red-500 rounded-full"
-                initial={{ width: "100%" }}
-                animate={{ width: "0%" }}
-                transition={{ duration: 5, ease: "linear" }}
-              />
-            </motion.div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
+    <GenericToast
+      isVisible={isVisible}
+      onComplete={onComplete}
+      title={getTitle()}
+      message={getMessage()}
+      type="error"
+      icon={AlertCircle}
+      position="top-right"
+      duration={5000}
+    />
   );
 }
 
