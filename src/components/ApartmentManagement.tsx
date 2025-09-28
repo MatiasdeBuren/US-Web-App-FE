@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Building, Search, Plus, Edit3, Trash2, User, Users, Home, X } from "lucide-react";
+import { useToast } from "./Toast";
 import { 
     getAdminApartments, 
     createApartment, 
@@ -27,6 +28,7 @@ interface ApartmentManagementProps {
 }
 
 function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProps) {
+    const { showToast } = useToast();
     const [apartments, setApartments] = useState<AdminApartment[]>([]);
     const [filteredApartments, setFilteredApartments] = useState<AdminApartment[]>([]);
     const [users, setUsers] = useState<AdminUser[]>([]);
@@ -133,10 +135,10 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
             await loadApartments();
             setShowCreateModal(false);
             setFormData({ unit: "", floor: "", rooms: "", areaM2: "", observations: "", ownerId: "" });
-            alert("Apartamento creado exitosamente");
+            showToast("Apartamento creado exitosamente", "success");
         } catch (error) {
             console.error("Error creating apartment:", error);
-            alert(`Error al crear apartamento: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+            showToast(`Error al crear apartamento: ${error instanceof Error ? error.message : 'Error desconocido'}`, "error");
         } finally {
             setProcessing(false);
         }
@@ -173,10 +175,10 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
             await loadApartments();
             setShowEditModal(false);
             setSelectedApartment(null);
-            alert("Apartamento actualizado exitosamente");
+            showToast("Apartamento actualizado exitosamente", "success");
         } catch (error) {
             console.error("Error updating apartment:", error);
-            alert(`Error al actualizar apartamento: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+            showToast(`Error al actualizar apartamento: ${error instanceof Error ? error.message : 'Error desconocido'}`, "error");
         } finally {
             setProcessing(false);
         }
@@ -191,16 +193,16 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
             confirmMessage += `\n\nADVERTENCIA: Este apartamento tiene ${userCount} usuario(s) y ${reservationCount} reserva(s).`;
         }
 
-        if (!confirm(confirmMessage)) return;
+        if (!window.confirm(confirmMessage)) return;
 
         setProcessing(true);
         try {
             await deleteApartment(token, apartment.id);
             await loadApartments();
-            alert("Apartamento eliminado exitosamente");
+            showToast("Apartamento eliminado exitosamente", "success");
         } catch (error) {
             console.error("Error deleting apartment:", error);
-            alert(`Error al eliminar apartamento: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+            showToast(`Error al eliminar apartamento: ${error instanceof Error ? error.message : 'Error desconocido'}`, "error");
         } finally {
             setProcessing(false);
         }
@@ -238,7 +240,7 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-6xl w-full max-h-[95vh] overflow-hidden shadow-2xl">
                 {/* Header */}
                 <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700">
@@ -412,7 +414,7 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                 {/* Create Modal */}
                 <AnimatePresence>
                     {showCreateModal && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 p-4">
+                        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-60 p-4">
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
@@ -537,7 +539,7 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                 {/* Edit Modal */}
                 <AnimatePresence>
                     {showEditModal && selectedApartment && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 p-4">
+                        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-60 p-4">
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}

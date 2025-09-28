@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Waves, Search, Plus, Edit3, Trash2, Users, Clock, Calendar, X, Eye } from "lucide-react";
+import { useToast } from "./Toast";
 import { 
     getAdminAmenities, 
     createAmenity, 
@@ -27,6 +28,7 @@ interface AmenityManagementProps {
 }
 
 function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
+    const { showToast } = useToast();
     const [amenities, setAmenities] = useState<AdminAmenity[]>([]);
     const [filteredAmenities, setFilteredAmenities] = useState<AdminAmenity[]>([]);
     const [loading, setLoading] = useState(false);
@@ -99,10 +101,10 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
             await loadAmenities();
             setShowCreateModal(false);
             setFormData({ name: "", capacity: "", maxDuration: "" });
-            alert("Amenity creado exitosamente");
+            showToast("Amenity creado exitosamente", "success");
         } catch (error) {
             console.error("Error creating amenity:", error);
-            alert(`Error al crear amenity: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+            showToast(`Error al crear amenity: ${error instanceof Error ? error.message : 'Error desconocido'}`, "error");
         } finally {
             setProcessing(false);
         }
@@ -130,10 +132,10 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
             await loadAmenities();
             setShowEditModal(false);
             setSelectedAmenity(null);
-            alert("Amenity actualizado exitosamente");
+            showToast("Amenity actualizado exitosamente", "success");
         } catch (error) {
             console.error("Error updating amenity:", error);
-            alert(`Error al actualizar amenity: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+            showToast(`Error al actualizar amenity: ${error instanceof Error ? error.message : 'Error desconocido'}`, "error");
         } finally {
             setProcessing(false);
         }
@@ -148,16 +150,16 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
             confirmMessage += `\n\nADVERTENCIA: Este amenity tiene ${activeReservationCount} reserva(s) activa(s) y ${reservationCount} reserva(s) en total.`;
         }
 
-        if (!confirm(confirmMessage)) return;
+        if (!window.confirm(confirmMessage)) return;
 
         setProcessing(true);
         try {
             await deleteAmenity(token, amenity.id);
             await loadAmenities();
-            alert("Amenity eliminado exitosamente");
+            showToast("Amenity eliminado exitosamente", "success");
         } catch (error) {
             console.error("Error deleting amenity:", error);
-            alert(`Error al eliminar amenity: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+            showToast(`Error al eliminar amenity: ${error instanceof Error ? error.message : 'Error desconocido'}`, "error");
         } finally {
             setProcessing(false);
         }
@@ -172,7 +174,7 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
             setShowReservationsModal(true);
         } catch (error) {
             console.error("Error loading amenity reservations:", error);
-            alert(`Error al cargar reservas: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+            showToast(`Error al cargar reservas: ${error instanceof Error ? error.message : 'Error desconocido'}`, "error");
         } finally {
             setProcessing(false);
         }
@@ -210,7 +212,7 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-6xl w-full max-h-[95vh] overflow-hidden shadow-2xl">
                 {/* Header */}
                 <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-cyan-600 to-blue-700">
@@ -349,7 +351,7 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                 {/* Create Modal */}
                 <AnimatePresence>
                     {showCreateModal && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 p-4">
+                        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-60 p-4">
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
@@ -383,7 +385,8 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                                             min="1"
                                             value={formData.capacity}
                                             onChange={(e) => setFormData({...formData, capacity: e.target.value})}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            style={{ MozAppearance: 'textfield' }}
                                             placeholder="Número de personas"
                                         />
                                     </div>
@@ -399,7 +402,8 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                                             step="15"
                                             value={formData.maxDuration}
                                             onChange={(e) => setFormData({...formData, maxDuration: e.target.value})}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            style={{ MozAppearance: 'textfield' }}
                                             placeholder="Ej: 60, 90, 120"
                                         />
                                         <p className="text-xs text-gray-500 mt-1">
@@ -433,7 +437,7 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                 {/* Edit Modal */}
                 <AnimatePresence>
                     {showEditModal && selectedAmenity && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 p-4">
+                        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-60 p-4">
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
@@ -468,7 +472,8 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                                             min="1"
                                             value={formData.capacity}
                                             onChange={(e) => setFormData({...formData, capacity: e.target.value})}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            style={{ MozAppearance: 'textfield' }}
                                         />
                                     </div>
 
@@ -483,7 +488,8 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                                             step="15"
                                             value={formData.maxDuration}
                                             onChange={(e) => setFormData({...formData, maxDuration: e.target.value})}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            style={{ MozAppearance: 'textfield' }}
                                         />
                                     </div>
 
@@ -513,7 +519,7 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                 {/* Reservations Modal */}
                 <AnimatePresence>
                     {showReservationsModal && selectedAmenity && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 p-4">
+                        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-60 p-4">
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
