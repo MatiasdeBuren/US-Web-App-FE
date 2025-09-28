@@ -20,7 +20,7 @@ function ReservationCard({
     // Status configuration - Neutral color scheme with subtle accent colors
     const getStatusConfig = (status: string) => {
         switch (status) {
-            case "confirmed":
+            case "confirmada":
                 return {
                     accentColor: "from-emerald-500 to-emerald-600",
                     bgColor: "bg-white",
@@ -31,7 +31,7 @@ function ReservationCard({
                     label: "Confirmada",
                     dotColor: "bg-emerald-500"
                 };
-            case "pending":
+            case "pendiente":
                 return {
                     accentColor: "from-amber-500 to-amber-600",
                     bgColor: "bg-white",
@@ -42,7 +42,7 @@ function ReservationCard({
                     label: "Pendiente",
                     dotColor: "bg-amber-500"
                 };
-            case "cancelled":
+            case "cancelada":
                 return {
                     accentColor: "from-gray-500 to-gray-600",
                     bgColor: "bg-gray-50",
