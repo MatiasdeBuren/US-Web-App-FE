@@ -172,6 +172,8 @@ function AdminDashboard() {
             <Header
                 userName={userData?.user.name || ""}
                 onProfileClick={() => setShowProfile((prev) => !prev)}
+                showClaimsTab={false}
+                showAmenitiesTab={false}
             />
 
             {/* MAIN CONTENT */}

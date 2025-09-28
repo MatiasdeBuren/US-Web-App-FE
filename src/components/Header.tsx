@@ -1,4 +1,4 @@
-import { User, LogOut, Settings } from "lucide-react";
+import { User, LogOut, Settings, Menu, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import LogoutConfirmModal from "./LogoutConfirmModal";
@@ -12,20 +12,27 @@ interface HeaderProps {
     onClaimsClick?: () => void;
     onDashboardClick?: () => void;
     activeTab?: 'dashboard' | 'reclamos';
+    showClaimsTab?: boolean;
+    showAmenitiesTab?: boolean;
 }
 
-function Header({ userName, onProfileClick, showProfileMenu = true, onLogout, onClaimsClick, onDashboardClick, activeTab = 'dashboard' }: HeaderProps) {
+function Header({ userName, onProfileClick, showProfileMenu = true, onLogout, onClaimsClick, onDashboardClick, activeTab = 'dashboard', showClaimsTab = true, showAmenitiesTab = true }: HeaderProps) {
     const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [showSuccessToast, setShowSuccessToast] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+    const mobileMenuRef = useRef<HTMLDivElement>(null);
 
-    // Close menu when clicking outside
+    // Close menus when clicking outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
                 setIsMenuOpen(false);
+            }
+            if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+                setIsMobileMenuOpen(false);
             }
         }
 
@@ -88,24 +95,43 @@ function Header({ userName, onProfileClick, showProfileMenu = true, onLogout, on
                         >
                             Dashboard
                         </button>
-                        <button 
-                            onClick={onClaimsClick}
-                            className={`font-medium transition-colors cursor-pointer ${
-                                activeTab === 'reclamos' 
-                                    ? 'text-gray-900 font-semibold' 
-                                    : 'text-gray-500 hover:text-gray-700'
-                            }`}
-                        >
-                            Reclamos
-                        </button>
-                        <button className="text-gray-500 hover:text-gray-700 font-medium transition-colors cursor-not-allowed">
-                            Amenities
-                        </button>
+                        {showClaimsTab && (
+                            <button 
+                                onClick={onClaimsClick}
+                                className={`font-medium transition-colors cursor-pointer ${
+                                    activeTab === 'reclamos' 
+                                        ? 'text-gray-900 font-semibold' 
+                                        : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                Reclamos
+                            </button>
+                        )}
+                        {showAmenitiesTab && (
+                            <button className="text-gray-500 hover:text-gray-700 font-medium transition-colors cursor-not-allowed">
+                                Amenities
+                            </button>
+                        )}
                     </nav>
+
+                    {/* Mobile menu button */}
+                    <div className="md:hidden flex items-center space-x-2">
+                        <button
+                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                            className="p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                            aria-label="Toggle mobile menu"
+                        >
+                            {isMobileMenuOpen ? (
+                                <X className="w-6 h-6 text-gray-600" />
+                            ) : (
+                                <Menu className="w-6 h-6 text-gray-600" />
+                            )}
+                        </button>
+                    </div>
 
                     {/* Right side - User menu */}
                     {showProfileMenu && (
-                        <div className="relative" ref={menuRef}>
+                        <div className="relative hidden md:block" ref={menuRef}>
                                 <button
                                     onClick={() => setIsMenuOpen(!isMenuOpen)}
                                     className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors group cursor-pointer"
@@ -150,6 +176,80 @@ function Header({ userName, onProfileClick, showProfileMenu = true, onLogout, on
                     )}
                 </div>
             </div>
+
+            {/* Mobile Navigation Menu */}
+            {isMobileMenuOpen && (
+                <div ref={mobileMenuRef} className="md:hidden bg-white border-t border-gray-200 shadow-lg">
+                    <div className="px-4 py-2 space-y-1">
+                        <button 
+                            onClick={() => {
+                                onDashboardClick?.();
+                                setIsMobileMenuOpen(false);
+                            }}
+                            className={`block w-full text-left px-3 py-2 rounded-lg font-medium transition-colors cursor-pointer ${
+                                activeTab === 'dashboard' 
+                                    ? 'text-gray-900 bg-gray-100 font-semibold' 
+                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                            }`}
+                        >
+                            Dashboard
+                        </button>
+                        {showClaimsTab && (
+                            <button 
+                                onClick={() => {
+                                    onClaimsClick?.();
+                                    setIsMobileMenuOpen(false);
+                                }}
+                                className={`block w-full text-left px-3 py-2 rounded-lg font-medium transition-colors cursor-pointer ${
+                                    activeTab === 'reclamos' 
+                                        ? 'text-gray-900 bg-gray-100 font-semibold' 
+                                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                }`}
+                            >
+                                Reclamos
+                            </button>
+                        )}
+                        {showAmenitiesTab && (
+                            <button 
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="block w-full text-left px-3 py-2 rounded-lg font-medium text-gray-400 cursor-not-allowed"
+                            >
+                                Amenities
+                            </button>
+                        )}
+                        
+                        {/* Mobile User Menu */}
+                        {showProfileMenu && (
+                            <>
+                                <hr className="my-2 border-gray-200" />
+                                <div className="px-3 py-2">
+                                    <p className="text-sm font-medium text-gray-900 mb-2">{userName}</p>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        onProfileClick();
+                                        setIsMobileMenuOpen(false);
+                                    }}
+                                    className="flex items-center space-x-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
+                                >
+                                    <Settings className="w-4 h-4" />
+                                    <span>Configuración</span>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        handleLogout();
+                                        setIsMobileMenuOpen(false);
+                                    }}
+                                    className="flex items-center space-x-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                    <span>Cerrar sesión</span>
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
             
             {/* Logout Confirmation Modal */}
             <LogoutConfirmModal

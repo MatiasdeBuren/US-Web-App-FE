@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Filter, AlertTriangle, Wrench, Droplets, Zap, Wind, Users, Building, Edit, Trash2, User } from 'lucide-react';
+import { Plus, Search, Filter, AlertTriangle, Wrench, Droplets, Zap, Wind, Users, Building, Edit, Trash2, User, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import CreateClaimModal from '../components/CreateClaimModal';
 import DeleteClaimModal from '../components/DeleteClaimModal';
@@ -368,7 +368,7 @@ function ClaimsPage() {
                   {getCurrentCategoryLabel()}
                 </span>
               </div>
-              <Filter className="w-4 h-4 text-gray-400" />
+              <ChevronDown className="w-4 h-4 text-gray-400" />
             </button>
 
             {/* Status Filter Button */}
@@ -382,7 +382,7 @@ function ClaimsPage() {
                   {getCurrentStatusLabel()}
                 </span>
               </div>
-              <Filter className="w-4 h-4 text-gray-400" />
+              <ChevronDown className="w-4 h-4 text-gray-400" />
             </button>
 
             {/* Ownership Filter Button */}
@@ -396,7 +396,7 @@ function ClaimsPage() {
                   {getCurrentOwnershipLabel()}
                 </span>
               </div>
-              <Filter className="w-4 h-4 text-gray-400" />
+              <ChevronDown className="w-4 h-4 text-gray-400" />
             </button>
           </div>
         </div>

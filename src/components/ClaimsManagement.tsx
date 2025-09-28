@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -17,7 +17,9 @@ import {
   PlayCircle,
   XCircle,
   User,
-  Calendar
+  Calendar,
+  Filter,
+  ChevronDown
 } from 'lucide-react';
 import {
   getAdminClaims,
@@ -27,6 +29,8 @@ import {
 } from '../api_calls/claims';
 import ClaimSuccessToast from './ClaimSuccessToast';
 import ClaimErrorToast from './ClaimErrorToast';
+import CategoryFilterModal from './CategoryFilterModal';
+import StatusFilterModal from './StatusFilterModal';
 
 interface ClaimsManagementProps {
   isOpen: boolean;
@@ -106,6 +110,8 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [claimToDelete, setClaimToDelete] = useState<Claim | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showStatusFilterModal, setShowStatusFilterModal] = useState(false);
   const [claimToUpdateStatus, setClaimToUpdateStatus] = useState<Claim | null>(null);
   
   // Loading states
@@ -119,8 +125,19 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
   const [toastSubject, setToastSubject] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
+  // Utility functions
+  const getCurrentCategoryLabel = () => {
+    if (selectedCategory === 'all') return 'Todas las categorías';
+    return categoryLabels[selectedCategory as keyof typeof categoryLabels];
+  };
+
+  const getCurrentStatusLabel = () => {
+    if (selectedStatus === 'all') return 'Todos los estados';
+    return statusLabels[selectedStatus as keyof typeof statusLabels];
+  };
+
   // Load claims
-  const loadClaims = async () => {
+  const loadClaims = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getAdminClaims(token, {
@@ -141,14 +158,14 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, currentPage, selectedCategory, selectedStatus, searchTerm]);
 
   // Load claims when modal opens or filters change
   useEffect(() => {
     if (isOpen) {
       loadClaims();
     }
-  }, [isOpen, currentPage, selectedCategory, selectedStatus, searchTerm]);
+  }, [isOpen, loadClaims]);
 
   // Handle status update
   const handleStatusUpdate = async (claim: Claim, newStatus: string, adminNotes?: string) => {
@@ -241,27 +258,33 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
 
               {/* Filters */}
               <div className="flex gap-2">
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500"
+                {/* Category Filter Button */}
+                <button
+                  onClick={() => setShowCategoryModal(true)}
+                  className="flex items-center justify-between px-4 py-2 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors text-left cursor-pointer min-w-[180px]"
                 >
-                  <option value="all">Todas las categorías</option>
-                  {Object.entries(categoryLabels).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
-                </select>
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-gray-400" />
+                    <span className={selectedCategory === 'all' ? 'text-gray-500' : 'text-gray-900 font-medium'}>
+                      {getCurrentCategoryLabel()}
+                    </span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                </button>
 
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500"
+                {/* Status Filter Button */}
+                <button
+                  onClick={() => setShowStatusFilterModal(true)}
+                  className="flex items-center justify-between px-4 py-2 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors text-left cursor-pointer min-w-[160px]"
                 >
-                  <option value="all">Todos los estados</option>
-                  {Object.entries(statusLabels).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
-                </select>
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-gray-400" />
+                    <span className={selectedStatus === 'all' ? 'text-gray-500' : 'text-gray-900 font-medium'}>
+                      {getCurrentStatusLabel()}
+                    </span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                </button>
               </div>
 
 
@@ -447,6 +470,22 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
         isVisible={showErrorToast}
         onComplete={() => setShowErrorToast(false)}
         errorMessage={errorMessage}
+      />
+
+      {/* Category Filter Modal */}
+      <CategoryFilterModal
+        isVisible={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
+        selectedCategory={selectedCategory}
+        onCategorySelect={setSelectedCategory}
+      />
+
+      {/* Status Filter Modal */}
+      <StatusFilterModal
+        isVisible={showStatusFilterModal}
+        onClose={() => setShowStatusFilterModal(false)}
+        selectedStatus={selectedStatus}
+        onStatusSelect={setSelectedStatus}
       />
     </AnimatePresence>
   );
