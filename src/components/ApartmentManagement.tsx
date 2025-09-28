@@ -58,6 +58,7 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
             loadApartments();
             loadUsers();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, token]);
 
     useEffect(() => {

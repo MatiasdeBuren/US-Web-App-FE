@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { LoadingButton } from "./LoadingSpinner";
+import FormInput from './FormInput';
 
 interface EditProfileModalProps {
     isVisible: boolean;
@@ -37,12 +38,15 @@ function EditProfileModal({
                         onClick={(e) => e.stopPropagation()}
                     >
                         <h3 className="text-xl font-bold mb-4 text-gray-800">Editar nombre</h3>
-                        <input
-                            type="text"
-                            value={newName}
-                            onChange={(e) => onNameChange(e.target.value)}
-                            className="w-full p-3 border border-gray-300 rounded-xl mb-4 focus:ring-2 focus:ring-gray-400 outline-none"
-                        />
+                        <div className="mb-4">
+                            <FormInput
+                                type="text"
+                                placeholder="Nombre completo"
+                                value={newName}
+                                onChange={onNameChange}
+                                disabled={isSaving}
+                            />
+                        </div>
                         <div className="flex justify-end gap-4">
                             <button
                                 onClick={onClose}

@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { HiOutlineMail } from 'react-icons/hi';
+import FormInput from './FormInput';
 
 interface ForgotPasswordModalProps {
     isVisible: boolean;
@@ -92,14 +93,13 @@ function ForgotPasswordModal({
                                 )}
 
                                 <form onSubmit={handleSubmit}>
-                                    <div className="relative mb-6">
-                                        <HiOutlineMail className="absolute top-3 left-3 text-gray-500" size={20} />
-                                        <input
+                                    <div className="mb-6">
+                                        <FormInput
                                             type="email"
                                             placeholder="Correo electrónico"
                                             value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-400 outline-none"
+                                            onChange={setEmail}
+                                            icon={HiOutlineMail}
                                             disabled={isLoading}
                                         />
                                     </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, AlertTriangle, Wrench, Droplets, Zap, Wind, Users, Building } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import FormInput from './FormInput';
 
 interface CreateClaimModalProps {
   isVisible: boolean;
@@ -168,24 +169,16 @@ function CreateClaimModal({ isVisible, onClose, onSave, editingClaim, isSaving =
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {/* Subject */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Asunto *
-              </label>
-              <input
-                type="text"
-                value={formData.subject}
-                onChange={(e) => handleChange('subject', e.target.value)}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.subject ? 'border-red-300' : 'border-gray-200'
-                }`}
-                placeholder="Ej: Ascensor principal fuera de servicio"
-                disabled={isSaving}
-              />
-              {errors.subject && (
-                <p className="mt-1 text-sm text-red-600">{errors.subject}</p>
-              )}
-            </div>
+            <FormInput
+              label="Asunto"
+              type="text"
+              value={formData.subject}
+              onChange={(value) => handleChange('subject', value)}
+              placeholder="Ej: Ascensor principal fuera de servicio"
+              error={errors.subject}
+              disabled={isSaving}
+              required
+            />
 
             {/* Category */}
             <div>
@@ -227,24 +220,16 @@ function CreateClaimModal({ isVisible, onClose, onSave, editingClaim, isSaving =
             </div>
 
             {/* Location */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ubicación *
-              </label>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => handleChange('location', e.target.value)}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.location ? 'border-red-300' : 'border-gray-200'
-                }`}
-                placeholder="Ej: Lobby principal - Ascensor A, Apartamento 3B, Gimnasio"
-                disabled={isSaving}
-              />
-              {errors.location && (
-                <p className="mt-1 text-sm text-red-600">{errors.location}</p>
-              )}
-            </div>
+            <FormInput
+              label="Ubicación"
+              type="text"
+              value={formData.location}
+              onChange={(value) => handleChange('location', value)}
+              placeholder="Ej: Lobby principal - Ascensor A, Apartamento 3B, Gimnasio"
+              error={errors.location}
+              disabled={isSaving}
+              required
+            />
 
             {/* Priority */}
             <div>
@@ -276,26 +261,21 @@ function CreateClaimModal({ isVisible, onClose, onSave, editingClaim, isSaving =
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Descripción detallada *
-              </label>
-              <textarea
+              <FormInput
+                label="Descripción detallada"
                 value={formData.description}
-                onChange={(e) => handleChange('description', e.target.value.slice(0, 500))}
+                onChange={(value) => handleChange('description', value.slice(0, 500))}
                 rows={4}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none ${
-                  errors.description ? 'border-red-300' : 'border-gray-200'
-                }`}
                 placeholder="Describe el problema con el mayor detalle posible. Incluye cuándo comenzó, síntomas específicos, etc."
+                error={errors.description}
                 disabled={isSaving}
+                required
               />
               <div className="flex justify-between items-center mt-1">
-                {errors.description ? (
-                  <p className="text-sm text-red-600">{errors.description}</p>
-                ) : (
+                {!errors.description && (
                   <p className="text-sm text-gray-500">Mínimo 10 caracteres</p>
                 )}
-                <p className="text-sm text-gray-400">{formData.description.length}/500</p>
+                <p className="text-sm text-gray-400 ml-auto">{formData.description.length}/500</p>
               </div>
             </div>
 

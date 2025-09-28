@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HiOutlineMail, HiOutlineLockClosed, HiOutlineEye, HiOutlineEyeOff } from 'react-icons/hi';
+import { HiOutlineMail, HiOutlineLockClosed } from 'react-icons/hi';
 import { login } from '../api_calls/auth';
 import { forgotPassword } from '../api_calls/forgot_password';
 import ForgotPasswordModal from '../components/ForgotPasswordModal';
+import FormInput from '../components/FormInput';
 
 function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
@@ -51,40 +52,27 @@ function Login() {
 
         <form onSubmit={handleLogin} className="space-y-5">
           {/* Email */}
-          <div className="relative">
-            <HiOutlineMail className="absolute top-3 left-3 text-gray-500" size={20} />
-            <input
-              type="email"
-              placeholder="Correo electrónico"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all ${errors.email ? 'border-red-500' : 'border-gray-300'
-                }`}
-            />
-            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-          </div>
+          <FormInput
+            type="email"
+            placeholder="Correo electrónico"
+            value={email}
+            onChange={setEmail}
+            icon={HiOutlineMail}
+            error={errors.email}
+            disabled={isLoggingIn}
+          />
 
           {/* Password */}
-          <div className="relative">
-            <HiOutlineLockClosed className="absolute top-3 left-3 text-gray-500" size={20} />
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all ${errors.password ? 'border-red-500' : 'border-gray-300'
-                }`}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 cursor-pointer"
-              aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-            >
-              {showPassword ? <HiOutlineEyeOff size={20} /> : <HiOutlineEye size={20} />}
-            </button>
-            {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
-          </div>
+          <FormInput
+            type="password"
+            placeholder="Contraseña"
+            value={password}
+            onChange={setPassword}
+            icon={HiOutlineLockClosed}
+            error={errors.password}
+            showPasswordToggle
+            disabled={isLoggingIn}
+          />
 
           {/* Forgot Password Link */}
           <div className="text-right">

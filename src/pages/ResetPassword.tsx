@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { HiOutlineLockClosed, HiOutlineEye, HiOutlineEyeOff } from 'react-icons/hi';
+import { HiOutlineLockClosed } from 'react-icons/hi';
 import { resetPassword } from '../api_calls/reset_password';
+import FormInput from '../components/FormInput';
+import PasswordRequirements from '../components/PasswordRequirements';
+import { validatePassword } from '../utils/passwordValidation';
 
 function ResetPassword() {
   const navigate = useNavigate();
@@ -9,8 +12,6 @@ function ResetPassword() {
   const [token, setToken] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
   const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string; token?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -30,16 +31,9 @@ function ResetPassword() {
     const tempErrors: typeof errors = {};
 
     // Validation
-    if (!newPassword) {
-      tempErrors.password = 'La contraseña es obligatoria';
-    } else {
-      if (newPassword.length < 6) {
-        tempErrors.password = 'La contraseña debe tener al menos 6 caracteres';
-      } else if (!/[A-Z]/.test(newPassword)) {
-        tempErrors.password = 'La contraseña debe tener al menos una letra mayúscula';
-      } else if (!/[0-9]/.test(newPassword)) {
-        tempErrors.password = 'La contraseña debe tener al menos un número';
-      }
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.isValid) {
+      tempErrors.password = passwordValidation.errors[0];
     }
 
     if (newPassword !== confirmPassword) {
@@ -120,79 +114,38 @@ function ResetPassword() {
         {!errors.token && (
           <form onSubmit={handleResetPassword} className="space-y-5">
             {/* New Password */}
-            <div className="relative">
-              <HiOutlineLockClosed className="absolute top-3 left-3 text-gray-500" size={20} />
-              <input
-                type={showNewPassword ? "text" : "password"}
+            <div>
+              <FormInput
+                type="password"
                 placeholder="Nueva contraseña"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={setNewPassword}
+                icon={HiOutlineLockClosed}
+                error={errors.password}
+                showPasswordToggle
                 onFocus={() => setShowPasswordRequirements(true)}
                 onBlur={() => setShowPasswordRequirements(false)}
-                className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all ${errors.password ? 'border-red-500' : 'border-gray-300'
-                  }`}
                 disabled={isLoading}
               />
-              <button
-                type="button"
-                onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 cursor-pointer"
-                disabled={isLoading}
-                aria-label={showNewPassword ? "Ocultar nueva contraseña" : "Mostrar nueva contraseña"}
-              >
-                {showNewPassword ? <HiOutlineEyeOff size={20} /> : <HiOutlineEye size={20} />}
-              </button>
-              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
               
-              {/* Password requirements - only shown when focused */}
-              {showPasswordRequirements && (
-                <div className="mt-2 text-xs space-y-1">
-                  <p className="text-gray-600 font-medium">La contraseña debe tener:</p>
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${newPassword.length >= 6 ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-                    <span className={newPassword.length >= 6 ? 'text-green-600' : 'text-gray-500'}>
-                      Al menos 6 caracteres
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${/[A-Z]/.test(newPassword) ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-                    <span className={/[A-Z]/.test(newPassword) ? 'text-green-600' : 'text-gray-500'}>
-                      Al menos una letra mayúscula
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${/[0-9]/.test(newPassword) ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-                    <span className={/[0-9]/.test(newPassword) ? 'text-green-600' : 'text-gray-500'}>
-                      Al menos un número
-                    </span>
-                  </div>
-                </div>
-              )}
+              <PasswordRequirements
+                password={newPassword}
+                isVisible={showPasswordRequirements}
+                className="mt-2"
+              />
             </div>
 
             {/* Confirm Password */}
-            <div className="relative">
-              <HiOutlineLockClosed className="absolute top-3 left-3 text-gray-500" size={20} />
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="Confirmar nueva contraseña"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                disabled={isLoading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 cursor-pointer"
-                disabled={isLoading}
-                aria-label={showConfirmPassword ? "Ocultar confirmación de contraseña" : "Mostrar confirmación de contraseña"}
-              >
-                {showConfirmPassword ? <HiOutlineEyeOff size={20} /> : <HiOutlineEye size={20} />}
-              </button>
-              {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
-            </div>
+            <FormInput
+              type="password"
+              placeholder="Confirmar nueva contraseña"
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              icon={HiOutlineLockClosed}
+              error={errors.confirmPassword}
+              showPasswordToggle
+              disabled={isLoading}
+            />
 
             {/* Submit button */}
             <button

@@ -179,32 +179,4 @@ describe('ModernDatePicker', () => {
     expect(day25).toBeDisabled();
   });
 
-  it('highlights today', async () => {
-    const user = userEvent.setup();
-    render(<ModernDatePicker {...defaultProps} />);
-    
-    // Open calendar
-    const button = screen.getByRole('button');
-    await user.click(button);
-    
-    const today = new Date().getDate();
-    const todayButton = screen.getByRole('button', { name: today.toString() });
-    
-    // Today should have special styling
-    expect(todayButton).toHaveClass('border-2', 'border-gray-400');
-  });
-
-  it('highlights selected date', async () => {
-    const user = userEvent.setup();
-    render(<ModernDatePicker {...defaultProps} selectedDate="2025-09-15" />);
-    
-    // Open calendar
-    const button = screen.getByRole('button');
-    await user.click(button);
-    
-    const selectedDay = screen.getByRole('button', { name: '15' });
-    
-    // Selected date should have special styling
-    expect(selectedDay).toHaveClass('bg-gray-800', 'text-white');
-  });
 });

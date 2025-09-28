@@ -1,6 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
+import FormInput from "./FormInput";
+import PasswordRequirements from "./PasswordRequirements";
+import { validatePassword } from "../utils/passwordValidation";
 
 interface ChangePasswordModalProps {
     isVisible: boolean;
@@ -19,9 +21,7 @@ function ChangePasswordModal({
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [showRequirements, setShowRequirements] = useState(false);
-    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-    const [showNewPassword, setShowNewPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
 
     const resetForm = () => {
         setCurrentPassword("");
@@ -30,9 +30,6 @@ function ChangePasswordModal({
         setError("");
         setIsLoading(false);
         setShowRequirements(false);
-        setShowCurrentPassword(false);
-        setShowNewPassword(false);
-        setShowConfirmPassword(false);
     };
 
     const handleClose = () => {
@@ -43,34 +40,15 @@ function ChangePasswordModal({
     const handleSave = async () => {
         setError("");
 
-        // Validaciones
-        if (!currentPassword || !newPassword || !confirmPassword) {
-            setError("Todos los campos son obligatorios");
+        // Validaciones usando la función centralizada
+        const validation = validatePassword(newPassword, confirmPassword, currentPassword);
+        if (!validation.isValid) {
+            setError(validation.errors[0]);
             return;
         }
 
-        if (newPassword !== confirmPassword) {
-            setError("Las contraseñas nuevas no coinciden");
-            return;
-        }
-
-        if (newPassword.length < 6) {
-            setError("La nueva contraseña debe tener al menos 6 caracteres");
-            return;
-        }
-
-        if (!/[A-Z]/.test(newPassword)) {
-            setError("La nueva contraseña debe tener al menos una letra mayúscula");
-            return;
-        }
-
-        if (!/[0-9]/.test(newPassword)) {
-            setError("La nueva contraseña debe tener al menos un número");
-            return;
-        }
-
-        if (currentPassword === newPassword) {
-            setError("La nueva contraseña debe ser diferente a la actual");
+        if (!currentPassword) {
+            setError("La contraseña actual es obligatoria");
             return;
         }
 
@@ -113,100 +91,43 @@ function ChangePasswordModal({
                         )}
 
                         <div className="space-y-4">
-                            <div className="relative">
-                                <input
-                                    type={showCurrentPassword ? "text" : "password"}
-                                    placeholder="Contraseña actual"
-                                    value={currentPassword}
-                                    onChange={(e) => setCurrentPassword(e.target.value)}
-                                    className="w-full p-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-gray-400 outline-none"
-                                    disabled={isLoading}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                                    onMouseDown={(e) => e.preventDefault()} // Prevent focus loss from input
-                                    className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 cursor-pointer"
-                                    aria-label={showCurrentPassword ? "Ocultar contraseña actual" : "Mostrar contraseña actual"}
-                                >
-                                    {showCurrentPassword ? <HiOutlineEyeOff size={20} /> : <HiOutlineEye size={20} />}
-                                </button>
-                            </div>
+                            <FormInput
+                                type="password"
+                                placeholder="Contraseña actual"
+                                value={currentPassword}
+                                onChange={setCurrentPassword}
+                                showPasswordToggle
+                                disabled={isLoading}
+                            />
                             
                             <div>
-                                <div className="relative">
-                                    <input
-                                        type={showNewPassword ? "text" : "password"}
-                                        placeholder="Nueva contraseña"
-                                        value={newPassword}
-                                        onChange={(e) => setNewPassword(e.target.value)}
-                                        onFocus={() => setShowRequirements(true)}
-                                        onBlur={() => setShowRequirements(false)}
-                                        className="w-full p-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-gray-400 outline-none"
-                                        disabled={isLoading}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowNewPassword(!showNewPassword)}
-                                        onMouseDown={(e) => e.preventDefault()} // Prevent focus loss from input
-                                        className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 cursor-pointer"
-                                        aria-label={showNewPassword ? "Ocultar nueva contraseña" : "Mostrar nueva contraseña"}
-                                    >
-                                        {showNewPassword ? <HiOutlineEyeOff size={20} /> : <HiOutlineEye size={20} />}
-                                    </button>
-                                </div>
-                                
-                                {/* Password requirements - only shown when focused */}
-                                {showRequirements && (
-                                    <div className="mt-2 text-xs space-y-1">
-                                        <p className="text-gray-600 font-medium">La contraseña debe tener:</p>
-                                        <div className="flex items-center gap-2">
-                                            <span className={`w-2 h-2 rounded-full ${newPassword.length >= 6 ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-                                            <span className={newPassword.length >= 6 ? 'text-green-600' : 'text-gray-500'}>
-                                                Al menos 6 caracteres
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className={`w-2 h-2 rounded-full ${/[A-Z]/.test(newPassword) ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-                                            <span className={/[A-Z]/.test(newPassword) ? 'text-green-600' : 'text-gray-500'}>
-                                                Al menos una letra mayúscula
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className={`w-2 h-2 rounded-full ${/[0-9]/.test(newPassword) ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-                                            <span className={/[0-9]/.test(newPassword) ? 'text-green-600' : 'text-gray-500'}>
-                                                Al menos un número
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className={`w-2 h-2 rounded-full ${currentPassword && newPassword && currentPassword !== newPassword ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-                                            <span className={currentPassword && newPassword && currentPassword !== newPassword ? 'text-green-600' : 'text-gray-500'}>
-                                                Diferente a la contraseña actual
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                            
-                            <div className="relative">
-                                <input
-                                    type={showConfirmPassword ? "text" : "password"}
-                                    placeholder="Confirmar nueva contraseña"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    className="w-full p-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-gray-400 outline-none"
+                                <FormInput
+                                    type="password"
+                                    placeholder="Nueva contraseña"
+                                    value={newPassword}
+                                    onChange={setNewPassword}
+                                    showPasswordToggle
+                                    onFocus={() => setShowRequirements(true)}
+                                    onBlur={() => setShowRequirements(false)}
                                     disabled={isLoading}
                                 />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                    onMouseDown={(e) => e.preventDefault()} // Prevent focus loss from input
-                                    className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 cursor-pointer"
-                                    aria-label={showConfirmPassword ? "Ocultar confirmación de contraseña" : "Mostrar confirmación de contraseña"}
-                                >
-                                    {showConfirmPassword ? <HiOutlineEyeOff size={20} /> : <HiOutlineEye size={20} />}
-                                </button>
+                                
+                                <PasswordRequirements
+                                    password={newPassword}
+                                    currentPassword={currentPassword}
+                                    isVisible={showRequirements}
+                                    className="mt-2"
+                                />
                             </div>
+                            
+                            <FormInput
+                                type="password"
+                                placeholder="Confirmar nueva contraseña"
+                                value={confirmPassword}
+                                onChange={setConfirmPassword}
+                                showPasswordToggle
+                                disabled={isLoading}
+                            />
                         </div>
 
                         <div className="flex justify-end gap-4 mt-6">
