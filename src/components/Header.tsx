@@ -10,9 +10,11 @@ interface HeaderProps {
     showProfileMenu?: boolean;
     onLogout?: () => void;
     onClaimsClick?: () => void;
+    onDashboardClick?: () => void;
+    activeTab?: 'dashboard' | 'reclamos';
 }
 
-function Header({ userName, onProfileClick, showProfileMenu = true, onLogout, onClaimsClick }: HeaderProps) {
+function Header({ userName, onProfileClick, showProfileMenu = true, onLogout, onClaimsClick, onDashboardClick, activeTab = 'dashboard' }: HeaderProps) {
     const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -74,14 +76,25 @@ function Header({ userName, onProfileClick, showProfileMenu = true, onLogout, on
                         </div>
                     </div>
 
-                    {/* Center - Navigation (for future expansion) */}
+                    {/* Center - Navigation */}
                     <nav className="hidden md:flex items-center space-x-8">
-                        <button className="text-gray-700 hover:text-gray-900 font-medium transition-colors cursor-pointer">
+                        <button 
+                            onClick={onDashboardClick}
+                            className={`font-medium transition-colors cursor-pointer ${
+                                activeTab === 'dashboard' 
+                                    ? 'text-gray-900 font-semibold' 
+                                    : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                        >
                             Dashboard
                         </button>
                         <button 
                             onClick={onClaimsClick}
-                            className="text-gray-500 hover:text-gray-700 font-medium transition-colors cursor-pointer"
+                            className={`font-medium transition-colors cursor-pointer ${
+                                activeTab === 'reclamos' 
+                                    ? 'text-gray-900 font-semibold' 
+                                    : 'text-gray-500 hover:text-gray-700'
+                            }`}
                         >
                             Reclamos
                         </button>

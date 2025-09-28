@@ -21,6 +21,7 @@ import UserManagement from "../components/UserManagement";
 import ReservationManagement from "../components/ReservationManagement";
 import ApartmentManagement from "../components/ApartmentManagement";
 import AmenityManagement from "../components/AmenityManagement";
+import ClaimsManagement from "../components/ClaimsManagement";
 import { LoadingOverlay } from "../components/LoadingSpinner";
 import LogoutSuccessToast from "../components/LogoutSuccessToast";
 
@@ -48,6 +49,7 @@ function AdminDashboard() {
     const [showReservationManagement, setShowReservationManagement] = useState(false);
     const [showApartmentManagement, setShowApartmentManagement] = useState(false);
     const [showAmenityManagement, setShowAmenityManagement] = useState(false);
+    const [showClaimsManagement, setShowClaimsManagement] = useState(false);
     const [showSuccessToast, setShowSuccessToast] = useState(false);
     const [newName, setNewName] = useState("");
     
@@ -351,6 +353,30 @@ function AdminDashboard() {
                         </div>
                     </motion.div>
 
+                    {/* Claims Management */}
+                    <motion.div 
+                        className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setShowClaimsManagement(true)}
+                    >
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
+                                <Shield className="w-6 h-6 text-white" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-800">Gestión de Reclamos</h3>
+                        </div>
+                        <p className="text-gray-600 mb-4">
+                            Administra y resuelve reclamos de los inquilinos
+                        </p>
+                        <div className="text-sm text-gray-500">
+                            • Ver todos los reclamos<br />
+                            • Cambiar estados<br />
+                            • Asignar prioridades<br />
+                            • Crear reclamos administrativos
+                        </div>
+                    </motion.div>
+
                     {/* Analytics */}
                     
                     <motion.div 
@@ -468,6 +494,15 @@ function AdminDashboard() {
                 <AmenityManagement
                     isOpen={showAmenityManagement}
                     onClose={() => setShowAmenityManagement(false)}
+                    token={token}
+                />
+            )}
+
+            {/* CLAIMS MANAGEMENT MODAL */}
+            {token && (
+                <ClaimsManagement
+                    isOpen={showClaimsManagement}
+                    onClose={() => setShowClaimsManagement(false)}
                     token={token}
                 />
             )}

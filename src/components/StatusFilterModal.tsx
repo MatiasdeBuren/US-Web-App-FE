@@ -17,28 +17,28 @@ const statusOptions = [
     description: 'Ver todos los reclamos sin filtro'
   },
   { 
-    value: 'pending', 
+    value: 'pendiente', 
     label: 'Pendiente', 
     icon: Clock, 
     color: 'bg-gray-100 text-gray-800 border-gray-200',
     description: 'Reclamos que están esperando revisión'
   },
   { 
-    value: 'in_progress', 
+    value: 'en_progreso', 
     label: 'En Progreso', 
     icon: PlayCircle, 
     color: 'bg-blue-100 text-blue-800 border-blue-200',
     description: 'Reclamos que se están resolviendo actualmente'
   },
   { 
-    value: 'resolved', 
+    value: 'resuelto', 
     label: 'Resuelto', 
     icon: CheckCircle, 
     color: 'bg-green-100 text-green-800 border-green-200',
     description: 'Reclamos que han sido completados'
   },
   { 
-    value: 'rejected', 
+    value: 'rechazado', 
     label: 'Rechazado', 
     icon: XCircle, 
     color: 'bg-red-100 text-red-800 border-red-200',

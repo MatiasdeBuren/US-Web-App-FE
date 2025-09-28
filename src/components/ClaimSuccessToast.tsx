@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, X, XCircle } from 'lucide-react';
+import { CheckCircle, X } from 'lucide-react';
 
 interface ClaimSuccessToastProps {
   isVisible: boolean;
@@ -80,11 +80,7 @@ function ClaimSuccessToast({
           >
             <div className="flex items-start gap-3">
               <div className={`w-8 h-8 ${themeClasses.iconBg} rounded-full flex items-center justify-center flex-shrink-0`}>
-                {isDeleteAction ? (
-                  <XCircle className={`w-4 h-4 ${themeClasses.iconColor}`} />
-                ) : (
-                  <CheckCircle className={`w-4 h-4 ${themeClasses.iconColor}`} />
-                )}
+                <CheckCircle className={`w-4 h-4 ${themeClasses.iconColor}`} />
               </div>
               
               <div className="flex-1 min-w-0">
@@ -92,11 +88,25 @@ function ClaimSuccessToast({
                   {getTitle()}
                 </h4>
                 <p className={`text-sm ${themeClasses.textColor}`}>
-                  Tu reclamo ha sido {getActionText()} exitosamente
-                  {claimSubject && action !== 'deleted' && (
+                  {action === 'deleted' ? (
                     <>
-                      <br />
-                      <span className="font-medium">"{claimSubject}"</span>
+                      Tu reclamo ha sido eliminado exitosamente
+                      {claimSubject && (
+                        <>
+                          <br />
+                          <span className="font-medium">"{claimSubject}"</span>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      Tu reclamo ha sido {getActionText()} exitosamente
+                      {claimSubject && (
+                        <>
+                          <br />
+                          <span className="font-medium">"{claimSubject}"</span>
+                        </>
+                      )}
                     </>
                   )}
                 </p>

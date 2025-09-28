@@ -31,20 +31,20 @@ interface Claim {
 }
 
 const categoryOptions = [
-  { value: 'elevator', label: 'Ascensor', icon: Wrench, color: 'purple' },
-  { value: 'plumbing', label: 'Plomería', icon: Droplets, color: 'blue' },
-  { value: 'electrical', label: 'Eléctrico', icon: Zap, color: 'yellow' },
-  { value: 'hvac', label: 'Aire Acondicionado', icon: Wind, color: 'green' },
-  { value: 'common_areas', label: 'Áreas Comunes', icon: Users, color: 'indigo' },
-  { value: 'building', label: 'Edificio', icon: Building, color: 'gray' },
-  { value: 'other', label: 'Otros', icon: AlertTriangle, color: 'orange' }
+  { value: 'ascensor', label: 'Ascensor', icon: Wrench, color: 'purple' },
+  { value: 'plomeria', label: 'Plomería', icon: Droplets, color: 'blue' },
+  { value: 'electricidad', label: 'Eléctrico', icon: Zap, color: 'yellow' },
+  { value: 'temperatura', label: 'Calefacción/Aire', icon: Wind, color: 'green' },
+  { value: 'areas_comunes', label: 'Áreas Comunes', icon: Users, color: 'indigo' },
+  { value: 'edificio', label: 'Edificio', icon: Building, color: 'gray' },
+  { value: 'otro', label: 'Otros', icon: AlertTriangle, color: 'orange' }
 ];
 
 const priorityOptions = [
-  { value: 'low', label: 'Baja', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-  { value: 'medium', label: 'Media', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
-  { value: 'high', label: 'Alta', color: 'bg-orange-50 text-orange-700 border-orange-200' },
-  { value: 'urgent', label: 'Urgente', color: 'bg-red-50 text-red-700 border-red-200' }
+  { value: 'baja', label: 'Baja', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  { value: 'media', label: 'Media', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+  { value: 'alta', label: 'Alta', color: 'bg-orange-50 text-orange-700 border-orange-200' },
+  { value: 'urgente', label: 'Urgente', color: 'bg-red-50 text-red-700 border-red-200' }
 ];
 
 function CreateClaimModal({ isVisible, onClose, onSave, editingClaim, isSaving = false }: CreateClaimModalProps) {

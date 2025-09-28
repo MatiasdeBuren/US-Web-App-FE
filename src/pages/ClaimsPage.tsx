@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, Filter, AlertTriangle, Wrench, Droplets, Zap, Wind, Users, Building, Edit, Trash2, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import CreateClaimModal from '../components/CreateClaimModal';
@@ -7,87 +7,80 @@ import ClaimSuccessToast from '../components/ClaimSuccessToast';
 import ClaimErrorToast from '../components/ClaimErrorToast';
 import CategoryFilterModal from '../components/CategoryFilterModal';
 import StatusFilterModal from '../components/StatusFilterModal';
+import OwnershipFilterModal from '../components/OwnershipFilterModal';
+import { 
+  getClaims,
+  createClaim, 
+  updateClaim, 
+  deleteClaim,
+  type Claim,
+  type UpdateClaimData
+} from '../api_calls/claims';
 
-interface Claim {
-  id: number;
-  subject: string;
-  category: 'elevator' | 'plumbing' | 'electrical' | 'hvac' | 'common_areas' | 'building' | 'other';
-  description: string;
-  location: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  status: 'pending' | 'in_progress' | 'resolved' | 'rejected';
-  createdAt: string;
-  updatedAt: string;
-  createdBy: string;
-}
 
 const categoryIcons = {
-  elevator: Wrench,
-  plumbing: Droplets,
-  electrical: Zap,
-  hvac: Wind,
-  common_areas: Users,
-  building: Building,
-  other: AlertTriangle
+  ascensor: Wrench,
+  plomeria: Droplets,
+  electricidad: Zap,
+  temperatura: Wind,
+  areas_comunes: Users,
+  edificio: Building,
+  otro: AlertTriangle
 };
 
 const categoryLabels = {
-  elevator: 'Ascensor',
-  plumbing: 'Plomería',
-  electrical: 'Eléctrico',
-  hvac: 'Aire Acondicionado',
-  common_areas: 'Áreas Comunes',
-  building: 'Edificio',
-  other: 'Otros'
+  ascensor: 'Ascensor',
+  plomeria: 'Plomería',
+  electricidad: 'Eléctrico',
+  temperatura: 'Calefacción/Aire',
+  areas_comunes: 'Áreas Comunes',
+  edificio: 'Edificio',
+  otro: 'Otros'
 };
 
 const priorityColors = {
-  low: 'bg-blue-100 text-blue-800 border-blue-200',
-  medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  high: 'bg-orange-100 text-orange-800 border-orange-200',
-  urgent: 'bg-red-100 text-red-800 border-red-200'
+  baja: 'bg-blue-100 text-blue-800 border-blue-200',
+  media: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  alta: 'bg-orange-100 text-orange-800 border-orange-200',
+  urgente: 'bg-red-100 text-red-800 border-red-200'
+};
+
+const priorityLabels = {
+  baja: 'Baja',
+  media: 'Media',
+  alta: 'Alta',
+  urgente: 'Urgente'
 };
 
 const statusColors = {
-  pending: 'bg-gray-100 text-gray-800 border-gray-200',
-  in_progress: 'bg-blue-100 text-blue-800 border-blue-200',
-  resolved: 'bg-green-100 text-green-800 border-green-200',
-  rejected: 'bg-red-100 text-red-800 border-red-200'
+  pendiente: 'bg-gray-100 text-gray-800 border-gray-200',
+  en_progreso: 'bg-blue-100 text-blue-800 border-blue-200',
+  resuelto: 'bg-green-100 text-green-800 border-green-200',
+  rechazado: 'bg-red-100 text-red-800 border-red-200'
 };
 
+const statusLabels = {
+  pendiente: 'Pendiente',
+  en_progreso: 'En Progreso',
+  resuelto: 'Resuelto',
+  rechazado: 'Rechazado'
+};
+
+
+
 function ClaimsPage() {
-  const [claims, setClaims] = useState<Claim[]>([
-    {
-      id: 1,
-      subject: 'Ascensor principal fuera de servicio',
-      category: 'elevator',
-      description: 'El ascensor principal del edificio no funciona desde esta mañana. Los botones no responden.',
-      location: 'Lobby principal - Ascensor A',
-      priority: 'urgent',
-      status: 'pending',
-      createdAt: '2024-01-15T10:30:00',
-      updatedAt: '2024-01-15T10:30:00',
-      createdBy: 'María González'
-    },
-    {
-      id: 2,
-      subject: 'Filtración de agua en el gimnasio',
-      category: 'plumbing',
-      description: 'Se observa una filtración de agua en el techo del gimnasio, cerca del área de pesas.',
-      location: 'Gimnasio - Área de pesas',
-      priority: 'high',
-      status: 'in_progress',
-      createdAt: '2024-01-14T15:20:00',
-      updatedAt: '2024-01-15T09:15:00',
-      createdBy: 'Carlos Rodríguez'
-    }
-  ]);
+  // API and loading states
+  const [token, setToken] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [claims, setClaims] = useState<Claim[]>([]);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingClaim, setEditingClaim] = useState<Claim | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedOwnership, setSelectedOwnership] = useState<'all' | 'mine' | 'others'>('all');
   const [isSaving, setIsSaving] = useState(false);
 
   // Delete modal and toast states
@@ -98,6 +91,7 @@ function ClaimsPage() {
   // Filter modal states
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showOwnershipModal, setShowOwnershipModal] = useState(false);
   
   // Toast states
   const [showSuccessToast, setShowSuccessToast] = useState(false);
@@ -105,6 +99,104 @@ function ClaimsPage() {
   const [toastAction, setToastAction] = useState<'created' | 'updated' | 'deleted'>('created');
   const [toastClaimSubject, setToastClaimSubject] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
+
+  // Load claims function - stable function that always gets all data and lets React handle filtering
+  const loadClaimsData = useCallback(async (authToken: string, includeAll: boolean = false) => {
+    try {
+      const response = await getClaims(authToken, {
+        search: searchTerm,
+        category: selectedCategory !== 'all' ? selectedCategory : undefined,
+        status: selectedStatus !== 'all' ? selectedStatus : undefined,
+        includeAll
+      });
+      
+      return response.claims;
+    } catch (error) {
+      console.error('Error loading claims:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Error al cargar reclamos';
+      setErrorMessage(errorMsg);
+      setShowErrorToast(true);
+      
+      setTimeout(() => {
+        setShowErrorToast(false);
+        setErrorMessage('');
+      }, 5000);
+      return [];
+    }
+  }, [searchTerm, selectedCategory, selectedStatus]);
+
+  // Effect to load and filter claims
+  useEffect(() => {
+    const loadAndFilterClaims = async () => {
+      if (!token) return;
+      
+      setIsInitialLoading(true);
+      
+      try {
+        // Determine if we need all claims based on ownership filter
+        const needAllClaims = selectedOwnership === 'all' || selectedOwnership === 'others';
+        
+        // Load claims from API (API handles ownership filtering)
+        const allClaims = await loadClaimsData(token, needAllClaims);
+        
+        // Apply client-side filtering for "others" ownership
+        let filteredClaims = allClaims;
+        if (selectedOwnership === 'others' && currentUser) {
+          // When showing "others", filter out current user's claims
+          filteredClaims = allClaims.filter(claim => claim.userId !== currentUser.id);
+        }
+        
+        setClaims(filteredClaims);
+      } catch (error) {
+        console.error('Error loading claims:', error);
+        setClaims([]);
+      } finally {
+        setIsInitialLoading(false);
+      }
+    };
+
+    loadAndFilterClaims();
+  }, [token, searchTerm, selectedCategory, selectedStatus, selectedOwnership, currentUser, loadClaimsData]);
+
+  // Load user data function
+  const loadUserData = useCallback(async (authToken: string) => {
+    try {
+      const userResponse = await fetch(`${import.meta.env.VITE_API_URL}/dashboard`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        setCurrentUser(userData.user);
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
+  }, []);
+
+  // Load token and user data on component mount
+  useEffect(() => {
+    const savedToken = localStorage.getItem("token");
+    if (!savedToken) {
+      setToken(null);
+      setIsInitialLoading(false);
+      return;
+    }
+    setToken(savedToken);
+    loadUserData(savedToken);
+  }, [loadUserData]);
+
+  // Clear error states on component unmount
+  useEffect(() => {
+    return () => {
+      setShowErrorToast(false);
+      setShowSuccessToast(false);
+      setErrorMessage('');
+    };
+  }, []);
 
   const filteredClaims = claims.filter(claim => {
     const matchesSearch = claim.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -126,25 +218,7 @@ function ClaimsPage() {
     });
   };
 
-  const getPriorityLabel = (priority: string) => {
-    const labels = {
-      low: 'Baja',
-      medium: 'Media',
-      high: 'Alta',
-      urgent: 'Urgente'
-    };
-    return labels[priority as keyof typeof labels];
-  };
 
-  const getStatusLabel = (status: string) => {
-    const labels = {
-      pending: 'Pendiente',
-      in_progress: 'En Progreso',
-      resolved: 'Resuelto',
-      rejected: 'Rechazado'
-    };
-    return labels[status as keyof typeof labels];
-  };
 
   const getCurrentCategoryLabel = () => {
     if (selectedCategory === 'all') return 'Todas las categorías';
@@ -162,28 +236,35 @@ function ClaimsPage() {
     return labels[selectedStatus as keyof typeof labels];
   };
 
+  const getCurrentOwnershipLabel = () => {
+    const labels = {
+      all: 'Todos los reclamos',
+      mine: 'Mis reclamos',
+      others: 'Reclamos de otros'
+    };
+    return labels[selectedOwnership];
+  };
+
   const handleSaveClaim = async (claimData: any) => {
+    if (!token) {
+      setErrorMessage('No hay sesión activa');
+      setShowErrorToast(true);
+      return;
+    }
+
     setIsSaving(true);
     try {
       if (editingClaim) {
         // Update existing claim
+        const updatedClaim = await updateClaim(token, editingClaim.id, claimData as UpdateClaimData);
         setClaims(prev => prev.map(claim => 
-          claim.id === editingClaim.id 
-            ? { ...claim, ...claimData, updatedAt: new Date().toISOString() }
-            : claim
+          claim.id === editingClaim.id ? updatedClaim : claim
         ));
         setToastAction('updated');
         setToastClaimSubject(claimData.subject);
       } else {
         // Create new claim
-        const newClaim: Claim = {
-          id: Date.now(),
-          ...claimData,
-          status: 'pending' as const,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          createdBy: 'Usuario Actual' // This would come from the logged-in user context in a real app
-        };
+        const newClaim = await createClaim(token, claimData);
         setClaims(prev => [newClaim, ...prev]);
         setToastAction('created');
         setToastClaimSubject(claimData.subject);
@@ -194,8 +275,15 @@ function ClaimsPage() {
       setShowSuccessToast(true);
     } catch (error) {
       console.error('Error saving claim:', error);
-      setErrorMessage(editingClaim ? 'No se pudo actualizar el reclamo' : 'No se pudo crear el reclamo');
+      const errorMsg = error instanceof Error ? error.message : (editingClaim ? 'No se pudo actualizar el reclamo' : 'No se pudo crear el reclamo');
+      setErrorMessage(errorMsg);
       setShowErrorToast(true);
+      
+      // Auto-clear error after 5 seconds to prevent navigation issues
+      setTimeout(() => {
+        setShowErrorToast(false);
+        setErrorMessage('');
+      }, 5000);
     } finally {
       setIsSaving(false);
     }
@@ -212,10 +300,15 @@ function ClaimsPage() {
   };
 
   const handleConfirmDelete = async () => {
-    if (!claimToDelete) return;
+    if (!claimToDelete || !token) {
+      setErrorMessage('No hay sesión activa');
+      setShowErrorToast(true);
+      return;
+    }
     
     setIsDeleting(true);
     try {
+      await deleteClaim(token, claimToDelete.id);
       setClaims(prev => prev.filter(claim => claim.id !== claimToDelete.id));
       setShowDeleteModal(false);
       setClaimToDelete(null);
@@ -224,7 +317,7 @@ function ClaimsPage() {
       setShowSuccessToast(true);
     } catch (error) {
       console.error('Error deleting claim:', error);
-      setErrorMessage('No se pudo eliminar el reclamo');
+      setErrorMessage(error instanceof Error ? error.message : 'No se pudo eliminar el reclamo');
       setShowErrorToast(true);
     } finally {
       setIsDeleting(false);
@@ -291,13 +384,40 @@ function ClaimsPage() {
               </div>
               <Filter className="w-4 h-4 text-gray-400" />
             </button>
+
+            {/* Ownership Filter Button */}
+            <button
+              onClick={() => setShowOwnershipModal(true)}
+              className="flex items-center justify-between w-full px-4 py-3 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <User className="w-5 h-5 text-gray-400" />
+                <span className={selectedOwnership === 'all' ? 'text-gray-500' : 'text-gray-900 font-medium'}>
+                  {getCurrentOwnershipLabel()}
+                </span>
+              </div>
+              <Filter className="w-4 h-4 text-gray-400" />
+            </button>
           </div>
         </div>
       </div>
 
       {/* Claims List */}
       <div className="space-y-4">
-        {filteredClaims.length === 0 ? (
+        {isInitialLoading ? (
+          <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
+            <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-gray-500">Cargando reclamos...</p>
+          </div>
+        ) : token === null ? (
+          <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
+            <AlertTriangle className="w-16 h-16 text-red-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">Sesión expirada</h3>
+            <p className="text-gray-500 mb-6">
+              Por favor, inicia sesión nuevamente para ver tus reclamos.
+            </p>
+          </div>
+        ) : filteredClaims.length === 0 ? (
           <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
             <AlertTriangle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-600 mb-2">No hay reclamos</h3>
@@ -329,12 +449,12 @@ function ClaimsPage() {
                   {/* Header with icon and title */}
                   <div className="flex items-center gap-3 mb-3">
                     <div className={`p-2 rounded-xl ${
-                      claim.category === 'elevator' ? 'bg-purple-100 text-purple-600' :
-                      claim.category === 'plumbing' ? 'bg-blue-100 text-blue-600' :
-                      claim.category === 'electrical' ? 'bg-yellow-100 text-yellow-600' :
-                      claim.category === 'hvac' ? 'bg-green-100 text-green-600' :
-                      claim.category === 'common_areas' ? 'bg-indigo-100 text-indigo-600' :
-                      claim.category === 'building' ? 'bg-gray-100 text-gray-600' :
+                      claim.category === 'ascensor' ? 'bg-purple-100 text-purple-600' :
+                      claim.category === 'plomeria' ? 'bg-blue-100 text-blue-600' :
+                      claim.category === 'electricidad' ? 'bg-yellow-100 text-yellow-600' :
+                      claim.category === 'temperatura' ? 'bg-green-100 text-green-600' :
+                      claim.category === 'areas_comunes' ? 'bg-indigo-100 text-indigo-600' :
+                      claim.category === 'edificio' ? 'bg-gray-100 text-gray-600' :
                       'bg-orange-100 text-orange-600'
                     }`}>
                       <CategoryIcon className="w-5 h-5" />
@@ -348,10 +468,10 @@ function ClaimsPage() {
                   {/* Badges - responsive layout */}
                   <div className="flex flex-wrap gap-2 sm:justify-start justify-center">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${priorityColors[claim.priority]}`}>
-                      {getPriorityLabel(claim.priority)}
+                      {priorityLabels[claim.priority]}
                     </span>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[claim.status]}`}>
-                      {getStatusLabel(claim.status)}
+                      {statusLabels[claim.status]}
                     </span>
                   </div>
                 </div>
@@ -373,23 +493,25 @@ function ClaimsPage() {
                     </div>
                   </div>
                   
-                  {/* Action buttons - responsive layout */}
-                  <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
-                    <button 
-                      onClick={() => handleEditClaim(claim)}
-                      className="flex items-center justify-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
-                    >
-                      <Edit className="w-4 h-4" />
-                      Editar
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteClaim(claim)}
-                      className="flex items-center justify-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Eliminar
-                    </button>
-                  </div>
+                  {/* Action buttons - only show for user's own claims */}
+                  {currentUser && claim.userId === currentUser.id && (
+                    <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+                      <button 
+                        onClick={() => handleEditClaim(claim)}
+                        className="flex items-center justify-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Editar
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteClaim(claim)}
+                        className="flex items-center justify-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Eliminar
+                      </button>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             );
@@ -456,6 +578,14 @@ function ClaimsPage() {
         onClose={() => setShowStatusModal(false)}
         selectedStatus={selectedStatus}
         onStatusSelect={setSelectedStatus}
+      />
+
+      {/* Ownership Filter Modal */}
+      <OwnershipFilterModal
+        isVisible={showOwnershipModal}
+        onClose={() => setShowOwnershipModal(false)}
+        selectedOwnership={selectedOwnership}
+        onOwnershipSelect={setSelectedOwnership}
       />
     </div>
   );

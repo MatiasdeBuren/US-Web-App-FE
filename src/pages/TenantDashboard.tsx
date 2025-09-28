@@ -413,6 +413,8 @@ function TenantDashboard() {
                 userName={userData?.user.name || ""}
                 onProfileClick={() => setShowProfile((prev) => !prev)}
                 onClaimsClick={() => setActiveTab("reclamos")}
+                onDashboardClick={() => setActiveTab("dashboard")}
+                activeTab={activeTab}
             />
 
             {/* MAIN CONTENT CONTAINER */}

@@ -10,13 +10,13 @@ interface CategoryFilterModalProps {
 
 const categoryOptions = [
   { value: 'all', label: 'Todas las Categorías', icon: AlertTriangle, color: 'gray' },
-  { value: 'elevator', label: 'Ascensor', icon: Wrench, color: 'purple' },
-  { value: 'plumbing', label: 'Plomería', icon: Droplets, color: 'blue' },
-  { value: 'electrical', label: 'Eléctrico', icon: Zap, color: 'yellow' },
-  { value: 'hvac', label: 'Aire Acondicionado', icon: Wind, color: 'green' },
-  { value: 'common_areas', label: 'Áreas Comunes', icon: Users, color: 'indigo' },
-  { value: 'building', label: 'Edificio', icon: Building, color: 'gray' },
-  { value: 'other', label: 'Otros', icon: AlertTriangle, color: 'orange' }
+  { value: 'ascensor', label: 'Ascensor', icon: Wrench, color: 'purple' },
+  { value: 'plomeria', label: 'Plomería', icon: Droplets, color: 'blue' },
+  { value: 'electricidad', label: 'Eléctrico', icon: Zap, color: 'yellow' },
+  { value: 'temperatura', label: 'Calefacción/Aire', icon: Wind, color: 'green' },
+  { value: 'areas_comunes', label: 'Áreas Comunes', icon: Users, color: 'indigo' },
+  { value: 'edificio', label: 'Edificio', icon: Building, color: 'gray' },
+  { value: 'otro', label: 'Otros', icon: AlertTriangle, color: 'orange' }
 ];
 
 function CategoryFilterModal({ isVisible, onClose, selectedCategory, onCategorySelect }: CategoryFilterModalProps) {
