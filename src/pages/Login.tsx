@@ -5,6 +5,7 @@ import { login } from '../api_calls/auth';
 import { forgotPassword } from '../api_calls/forgot_password';
 import ForgotPasswordModal from '../components/ForgotPasswordModal';
 import FormInput from '../components/FormInput';
+import logoUs from '../assets/Logo_Us_2.png';
 
 function Login() {
   const navigate = useNavigate();
@@ -42,7 +43,7 @@ function Login() {
       <div className="bg-gradient-to-b from-white via-gray-50 to-gray-200 rounded-3xl shadow-xl p-10 max-w-md w-full animate-fadeIn">
         <div className="text-center mb-4">
           <img
-            src="src/assets/Logo_Us_2.png"
+            src={logoUs}
             alt="Logo US"
             className="mx-auto w-25 h-25"
           />

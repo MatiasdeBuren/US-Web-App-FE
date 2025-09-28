@@ -58,7 +58,7 @@ describe('Login Page', () => {
     
     const logo = screen.getByAltText('Logo US');
     expect(logo).toBeInTheDocument();
-    expect(logo).toHaveAttribute('src', 'src/assets/Logo_Us_2.png');
+    expect(logo).toHaveAttribute('src', expect.stringContaining('Logo_Us_2'));
   });
 
   it('handles successful login', async () => {

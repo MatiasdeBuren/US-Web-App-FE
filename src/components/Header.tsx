@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import LogoutConfirmModal from "./LogoutConfirmModal";
 import LogoutSuccessToast from "./LogoutSuccessToast";
+import logoUs from '../assets/Logo_Us_2.png';
 
 interface HeaderProps {
     userName: string;
@@ -73,7 +74,7 @@ function Header({ userName, onProfileClick, showProfileMenu = true, onLogout, on
                     {/* Logo and App Name */}
                     <div className="flex items-center space-x-3">
                         <img
-                            src="/src/assets/Logo_Us_2.png"
+                            src={logoUs}
                             alt="Logo US"
                             className="w-10 h-10 object-contain"
                         />

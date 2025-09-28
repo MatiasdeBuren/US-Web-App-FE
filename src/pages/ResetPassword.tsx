@@ -5,6 +5,7 @@ import { resetPassword } from '../api_calls/reset_password';
 import FormInput from '../components/FormInput';
 import PasswordRequirements from '../components/PasswordRequirements';
 import { validatePassword } from '../utils/passwordValidation';
+import logoUs from '../assets/Logo_Us_2.png';
 
 function ResetPassword() {
   const navigate = useNavigate();
@@ -93,7 +94,7 @@ function ResetPassword() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 via-gray-300 to-gray-600">
       <div className="bg-gradient-to-b from-white via-gray-50 to-gray-200 rounded-3xl shadow-xl p-10 max-w-md w-full animate-fadeIn">
         <div className="text-center mb-6">
-          <img src="src/assets/Logo_Us_2.png" alt="Logo US" className="mx-auto w-20 h-20" />
+          <img src={logoUs} alt="Logo US" className="mx-auto w-20 h-20" />
           <h1 className="text-3xl font-bold text-gray-800">Restablecer contraseña</h1>
           <p className="text-gray-500 mt-2">Ingresa tu nueva contraseña</p>
         </div>
