@@ -114,8 +114,10 @@ function ManagementModal<T extends BaseItem>({
     setProcessing(true);
 
     try {
-      const newItem = await createItem(token, formData);
-      setItems(prev => [...prev, newItem]);
+      await createItem(token, formData);
+      // Refresh the entire list to ensure we have complete data
+      const itemsData = await loadItems(token);
+      setItems(Array.isArray(itemsData) ? itemsData : []);
       showToast(`${title} creado exitosamente`, "success");
       setShowCreateModal(false);
       setFormData(initialFormData);
@@ -198,7 +200,7 @@ function ManagementModal<T extends BaseItem>({
             <h2 className="text-2xl font-bold text-gray-800">Gestión de {title}</h2>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
             >
               <X className="w-6 h-6 text-gray-500" />
             </button>

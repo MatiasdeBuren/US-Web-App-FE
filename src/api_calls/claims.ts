@@ -14,6 +14,12 @@ export interface Claim {
     updatedAt: string;
     createdBy: string;
     userId?: number; // ID del usuario que creó el reclamo
+    adminNotes?: string; // Notas administrativas agregadas por el admin
+    adhesion_counts?: {
+        support: number;
+        disagree: number;
+    };
+    user_adhesion?: 'support' | 'disagree' | null;
 }
 
 export interface CreateClaimData {
@@ -366,6 +372,109 @@ export async function deleteAdminClaim(token: string, claimId: number): Promise<
         }
     } catch (error) {
         console.error('Error en deleteAdminClaim:', error);
+        throw error;
+    }
+}
+
+// ================================
+// FUNCIONES DE ADHESIÓN A RECLAMOS
+// ================================
+
+// GET /claims/:id/adhesions - Obtener adhesiones de un reclamo
+export async function getClaimAdhesions(token: string, claimId: number): Promise<{
+    total_support: number;
+    total_disagree: number;
+    user_adhesion: 'support' | 'disagree' | null;
+}> {
+    try {
+        const response = await fetch(`${API_URL}/claims/${claimId}/adhesions`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                throw new Error('Token de autenticación inválido.');
+            }
+            if (response.status === 404) {
+                throw new Error('Reclamo no encontrado.');
+            }
+            throw new Error(`Error del servidor: ${response.status}`);
+        }
+
+        return response.json();
+    } catch (error) {
+        console.error('Error en getClaimAdhesions:', error);
+        throw error;
+    }
+}
+
+// POST /claims/:id/adhesions - Crear/actualizar adhesión
+export async function createClaimAdhesion(
+    token: string, 
+    claimId: number, 
+    adhesionType: 'support' | 'disagree'
+): Promise<{ message: string; adhesion_type: string }> {
+    try {
+        const response = await fetch(`${API_URL}/claims/${claimId}/adhesions`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ adhesion_type: adhesionType })
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                throw new Error('Token de autenticación inválido.');
+            }
+            if (response.status === 403) {
+                throw new Error('No puedes adherirte a tu propio reclamo.');
+            }
+            if (response.status === 404) {
+                throw new Error('Reclamo no encontrado.');
+            }
+            if (response.status === 400) {
+                const error = await response.json();
+                throw new Error(error.message || 'Datos de adhesión inválidos.');
+            }
+            throw new Error(`Error del servidor: ${response.status}`);
+        }
+
+        return response.json();
+    } catch (error) {
+        console.error('Error en createClaimAdhesion:', error);
+        throw error;
+    }
+}
+
+// DELETE /claims/:id/adhesions - Eliminar adhesión del usuario
+export async function deleteClaimAdhesion(token: string, claimId: number): Promise<{ message: string }> {
+    try {
+        const response = await fetch(`${API_URL}/claims/${claimId}/adhesions`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                throw new Error('Token de autenticación inválido.');
+            }
+            if (response.status === 404) {
+                throw new Error('Adhesión no encontrada.');
+            }
+            throw new Error(`Error del servidor: ${response.status}`);
+        }
+
+        return response.json();
+    } catch (error) {
+        console.error('Error en deleteClaimAdhesion:', error);
         throw error;
     }
 }

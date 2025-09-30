@@ -16,14 +16,11 @@ interface AvailabilityViewerProps {
   amenityId: number;
   amenityName: string;
   capacity: number;
+  openTime?: string; // Format: "HH:mm" - amenity opening time
+  closeTime?: string; // Format: "HH:mm" - amenity closing time
   fetchReservations: (amenityId: number) => Promise<Reservation[]>;
   isLoading?: boolean;
 }
-
-// Config: rango visible (ajustable)
-const VISIBLE_START_HOUR = 8; // 08:00
-const VISIBLE_END_HOUR = 20; // 20:00
-const TOTAL_MINUTES = (VISIBLE_END_HOUR - VISIBLE_START_HOUR) * 60;
 
 function getDayKey(d: Date) {
   // Usar toLocaleDateString para evitar problemas de zona horaria
@@ -45,6 +42,8 @@ export default function AvailabilityTimelineViewer({
   amenityId,
   amenityName,
   capacity,
+  openTime,
+  closeTime,
   fetchReservations,
   isLoading = false,
 }: AvailabilityViewerProps) {
@@ -57,6 +56,27 @@ export default function AvailabilityTimelineViewer({
     timeSlot: string;
     day: string;
   } | null>(null);
+
+  // Calculate dynamic hour range based on amenity operating hours
+  const { VISIBLE_START_HOUR, VISIBLE_END_HOUR, TOTAL_MINUTES } = useMemo(() => {
+    // Parse operating hours or use defaults
+    const parseHour = (timeStr?: string) => timeStr ? parseInt(timeStr.split(':')[0]) : null;
+    
+    const startHour = parseHour(openTime) ?? 8; // Default to 8 AM
+    const endHour = parseHour(closeTime) ?? 20; // Default to 8 PM
+    
+    // Ensure we have at least a 2-hour window and don't exceed day boundaries
+    const finalStartHour = Math.max(6, Math.min(startHour, 22));
+    const finalEndHour = Math.min(23, Math.max(endHour, finalStartHour + 2));
+    
+    const totalMinutes = (finalEndHour - finalStartHour) * 60;
+    
+    return {
+      VISIBLE_START_HOUR: finalStartHour,
+      VISIBLE_END_HOUR: finalEndHour,
+      TOTAL_MINUTES: totalMinutes
+    };
+  }, [openTime, closeTime]);
 
   // Generate days for current week + weekOffset
   const days = useMemo(() => {

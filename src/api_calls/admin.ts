@@ -35,6 +35,9 @@ export interface AdminAmenity {
     name: string;
     capacity: number;
     maxDuration: number;
+    openTime?: string;  // Format: "HH:mm"
+    closeTime?: string; // Format: "HH:mm"
+    isActive: boolean;
     createdAt: string;
     updatedAt: string;
     _count?: {
@@ -249,6 +252,9 @@ export async function createAmenity(
         name: string;
         capacity: number;
         maxDuration: number;
+        openTime?: string;
+        closeTime?: string;
+        isActive?: boolean;
     }
 ): Promise<AdminAmenity> {
     try {
@@ -290,6 +296,9 @@ export async function updateAmenity(
         name?: string;
         capacity?: number;
         maxDuration?: number;
+        openTime?: string;
+        closeTime?: string;
+        isActive?: boolean;
     }
 ): Promise<AdminAmenity> {
     try {

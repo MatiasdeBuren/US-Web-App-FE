@@ -19,7 +19,10 @@ import {
   User,
   Calendar,
   Filter,
-  ChevronDown
+  ChevronDown,
+  MessageSquare,
+  ThumbsUp,
+  ThumbsDown
 } from 'lucide-react';
 import {
   getAdminClaims,
@@ -139,6 +142,7 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
   // Load claims
   const loadClaims = useCallback(async () => {
     try {
+      console.log('🔄 [CLAIMS LOAD DEBUG] Loading claims...');
       setLoading(true);
       const response = await getAdminClaims(token, {
         page: currentPage,
@@ -148,7 +152,36 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
         search: searchTerm || undefined
       });
       
-      setClaims(response.claims);
+      console.log('🔄 [CLAIMS LOAD DEBUG] Loaded claims:', response.claims.length);
+      response.claims.forEach(claim => {
+        if (claim.adminNotes) {
+          console.log(`🔄 [CLAIMS LOAD DEBUG] Claim ${claim.id} has adminNotes:`, claim.adminNotes);
+        }
+      });
+      
+      // Sort claims: prioritize by opinion count, then finalized claims go to the bottom
+      const sortedClaims = response.claims.sort((a, b) => {
+        // Priority order: 
+        // 1. Finalized claims (resolved/rejected) go to the bottom
+        const aFinalized = a.status === 'resuelto' || a.status === 'rechazado';
+        const bFinalized = b.status === 'resuelto' || b.status === 'rechazado';
+        
+        if (aFinalized && !bFinalized) return 1;
+        if (!aFinalized && bFinalized) return -1;
+        
+        // 2. Within each group (active vs finalized), sort by opinion count (most opinions first)
+        const aOpinionCount = (a.adhesion_counts?.support || 0) + (a.adhesion_counts?.disagree || 0);
+        const bOpinionCount = (b.adhesion_counts?.support || 0) + (b.adhesion_counts?.disagree || 0);
+        
+        if (aOpinionCount !== bOpinionCount) {
+          return bOpinionCount - aOpinionCount; // More opinions first
+        }
+        
+        // 3. If same opinion count, sort by updated date (newest first)
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      });
+      
+      setClaims(sortedClaims);
       setTotalClaims(response.total);
       setTotalPages(Math.ceil(response.total / 10));
     } catch (error) {
@@ -170,8 +203,15 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
   // Handle status update
   const handleStatusUpdate = async (claim: Claim, newStatus: string, adminNotes?: string) => {
     try {
+      console.log('📝 [ADMIN NOTES DEBUG] Updating claim:', claim.id);
+      console.log('📝 [ADMIN NOTES DEBUG] New status:', newStatus);
+      console.log('📝 [ADMIN NOTES DEBUG] Admin notes:', adminNotes);
+      
       setIsUpdatingStatus(true);
-      await updateClaimStatus(token, claim.id, newStatus as any, adminNotes);
+      const updatedClaim = await updateClaimStatus(token, claim.id, newStatus as any, adminNotes);
+      
+      console.log('📝 [ADMIN NOTES DEBUG] Updated claim response:', updatedClaim);
+      
       await loadClaims();
       setToastAction('updated');
       setToastSubject(claim.subject);
@@ -179,6 +219,7 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
       setShowStatusModal(false);
       setClaimToUpdateStatus(null);
     } catch (error: any) {
+      console.error('❌ [ADMIN NOTES DEBUG] Error updating claim:', error);
       setErrorMessage(error.message || 'Error al actualizar el estado');
       setShowErrorToast(true);
     } finally {
@@ -320,9 +361,9 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
                       animate={{ opacity: 1, y: 0 }}
                       className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors"
                     >
-                      <div className="flex items-start gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
                         {/* Category Icon */}
-                        <div className={`p-2 rounded-xl ${
+                        <div className={`self-start p-2 rounded-xl ${
                           claim.category === 'ascensor' ? 'bg-purple-100 text-purple-600' :
                           claim.category === 'plomeria' ? 'bg-blue-100 text-blue-600' :
                           claim.category === 'electricidad' ? 'bg-yellow-100 text-yellow-600' :
@@ -336,32 +377,55 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
 
                         {/* Main Content */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-4 mb-2">
-                            <div>
-                              <h3 className="font-semibold text-gray-900 mb-1">
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-2">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-gray-900 mb-1 break-words">
                                 {claim.subject}
                               </h3>
-                              <p className="text-sm text-gray-600 mb-2">
+                              <p className="text-sm text-gray-600 mb-2 break-words">
                                 {claim.description}
                               </p>
-                              <div className="flex items-center gap-4 text-xs text-gray-500">
+                              
+                              {/* Admin Notes Comment Section */}
+                              {claim.adminNotes && (
+                                <div className="mb-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400 rounded-r-lg">
+                                  <div className="flex items-start gap-2">
+                                    <div className="flex-shrink-0">
+                                      <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                                        <MessageSquare className="w-3 h-3 text-white" />
+                                      </div>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-xs font-semibold text-blue-800">Administración</span>
+                                        <span className="text-xs text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full">
+                                          Nota oficial
+                                        </span>
+                                      </div>
+                                      <p className="text-xs text-blue-700 leading-relaxed break-words">{claim.adminNotes}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-gray-500">
                                 <span className="flex items-center gap-1">
-                                  <User className="w-3 h-3" />
-                                  {claim.createdBy}
+                                  <User className="w-3 h-3 flex-shrink-0" />
+                                  <span className="truncate">{claim.createdBy}</span>
                                 </span>
                                 <span className="flex items-center gap-1">
-                                  <Building className="w-3 h-3" />
-                                  {claim.location}
+                                  <Building className="w-3 h-3 flex-shrink-0" />
+                                  <span className="truncate">{claim.location}</span>
                                 </span>
                                 <span className="flex items-center gap-1">
-                                  <Calendar className="w-3 h-3" />
-                                  {new Date(claim.createdAt).toLocaleDateString()}
+                                  <Calendar className="w-3 h-3 flex-shrink-0" />
+                                  <span className="whitespace-nowrap">{new Date(claim.createdAt).toLocaleDateString()}</span>
                                 </span>
                               </div>
                             </div>
 
                             {/* Actions */}
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 self-start">
                               <button
                                 onClick={() => {
                                   setClaimToUpdateStatus(claim);
@@ -386,14 +450,33 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
                           </div>
 
                           {/* Tags */}
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium border ${priorityColors[claim.priority]}`}>
                               {priorityLabels[claim.priority]}
                             </span>
                             <span className={`px-2 py-1 rounded-full text-xs font-medium border ${statusColors[claim.status]} flex items-center gap-1`}>
                               <StatusIcon className="w-3 h-3" />
-                              {statusLabels[claim.status]}
+                              <span className="hidden sm:inline">{statusLabels[claim.status]}</span>
+                              <span className="sm:hidden">{statusLabels[claim.status].substring(0, 3)}</span>
                             </span>
+                            
+                            {/* Adhesion counters for admin */}
+                            {claim.adhesion_counts && (claim.adhesion_counts.support > 0 || claim.adhesion_counts.disagree > 0) && (
+                              <div key={`adhesion-${claim.id}`} className="contents">
+                                {claim.adhesion_counts.support > 0 && (
+                                  <span className="px-2 py-1 rounded-full text-xs font-medium border bg-green-50 text-green-700 border-green-200 flex items-center gap-1">
+                                    <ThumbsUp className="w-3 h-3 flex-shrink-0" />
+                                    <span>{claim.adhesion_counts.support}</span>
+                                  </span>
+                                )}
+                                {claim.adhesion_counts.disagree > 0 && (
+                                  <span className="px-2 py-1 rounded-full text-xs font-medium border bg-red-50 text-red-700 border-red-200 flex items-center gap-1">
+                                    <ThumbsDown className="w-3 h-3 flex-shrink-0" />
+                                    <span>{claim.adhesion_counts.disagree}</span>
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -502,7 +585,17 @@ interface StatusUpdateModalProps {
 
 function StatusUpdateModal({ claim, isVisible, onClose, onUpdate, isLoading }: StatusUpdateModalProps) {
   const [selectedStatus, setSelectedStatus] = useState<string>(claim.status);
-  const [adminNotes, setAdminNotes] = useState('');
+  const [adminNotes, setAdminNotes] = useState(claim.adminNotes || '');
+
+  // Update state when claim changes or modal becomes visible
+  useEffect(() => {
+    if (isVisible) {
+      console.log('🔍 [MODAL DEBUG] Opening modal for claim:', claim.id);
+      console.log('🔍 [MODAL DEBUG] Claim adminNotes:', claim.adminNotes);
+      setSelectedStatus(claim.status);
+      setAdminNotes(claim.adminNotes || '');
+    }
+  }, [claim, isVisible]);
 
   if (!isVisible) return null;
 
@@ -539,14 +632,23 @@ function StatusUpdateModal({ claim, isVisible, onClose, onUpdate, isLoading }: S
 
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Notas Administrativas (Opcional)
+            Notas Administrativas
           </label>
+          {claim.adminNotes && (
+            <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+              <div className="flex items-center gap-2 mb-2">
+                <MessageSquare className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-800">Notas existentes:</span>
+              </div>
+              <p className="text-sm text-blue-700">{claim.adminNotes}</p>
+            </div>
+          )}
           <textarea
             value={adminNotes}
             onChange={(e) => setAdminNotes(e.target.value)}
             rows={3}
             className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500"
-            placeholder="Añadir notas sobre el cambio de estado..."
+            placeholder={claim.adminNotes ? "Editar o añadir más notas..." : "Añadir notas sobre el cambio de estado..."}
           />
         </div>
 

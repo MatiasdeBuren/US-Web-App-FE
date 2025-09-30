@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Filter, AlertTriangle, Wrench, Droplets, Zap, Wind, Users, Building, Edit, Trash2, User, ChevronDown, Clock, PlayCircle, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Search, Filter, AlertTriangle, Wrench, Droplets, Zap, Wind, Users, Building, Edit, Trash2, User, ChevronDown, Clock, PlayCircle, CheckCircle, XCircle, MessageSquare, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import CreateClaimModal from '../components/CreateClaimModal';
 import DeleteClaimModal from '../components/DeleteClaimModal';
@@ -13,6 +13,8 @@ import {
   createClaim, 
   updateClaim, 
   deleteClaim,
+  createClaimAdhesion,
+  deleteClaimAdhesion,
   type Claim,
   type UpdateClaimData
 } from '../api_calls/claims';
@@ -213,6 +215,25 @@ function ClaimsPage() {
     const matchesStatus = selectedStatus === 'all' || claim.status === selectedStatus;
     
     return matchesSearch && matchesCategory && matchesStatus;
+  }).sort((a, b) => {
+    // Priority order: 
+    // 1. Finalized claims (resolved/rejected) go to the bottom
+    const aFinalized = a.status === 'resuelto' || a.status === 'rechazado';
+    const bFinalized = b.status === 'resuelto' || b.status === 'rechazado';
+    
+    if (aFinalized && !bFinalized) return 1;
+    if (!aFinalized && bFinalized) return -1;
+    
+    // 2. Within each group (active vs finalized), sort by opinion count (most opinions first)
+    const aOpinionCount = (a.adhesion_counts?.support || 0) + (a.adhesion_counts?.disagree || 0);
+    const bOpinionCount = (b.adhesion_counts?.support || 0) + (b.adhesion_counts?.disagree || 0);
+    
+    if (aOpinionCount !== bOpinionCount) {
+      return bOpinionCount - aOpinionCount; // More opinions first
+    }
+    
+    // 3. If same opinion count, sort by updated date (newest first)
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 
   const formatDate = (dateString: string) => {
@@ -332,6 +353,83 @@ function ClaimsPage() {
       setShowErrorToast(true);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleAdhesion = async (claimId: number, adhesionType: 'support' | 'disagree') => {
+    if (!token) {
+      setErrorMessage('No hay sesión activa');
+      setShowErrorToast(true);
+      return;
+    }
+
+    try {
+      // Find the current claim
+      const claim = claims.find(c => c.id === claimId);
+      if (!claim) return;
+
+      // If user already has this adhesion, remove it; otherwise, create/update it
+      if (claim.user_adhesion === adhesionType) {
+        await deleteClaimAdhesion(token, claimId);
+        
+        // Update local state
+        setClaims(prev => prev.map(c => {
+          if (c.id === claimId) {
+            const currentCounts = c.adhesion_counts || { support: 0, disagree: 0 };
+            const newCounts = {
+              support: adhesionType === 'support' ? Math.max(0, currentCounts.support - 1) : currentCounts.support,
+              disagree: adhesionType === 'disagree' ? Math.max(0, currentCounts.disagree - 1) : currentCounts.disagree
+            };
+            return {
+              ...c,
+              user_adhesion: null,
+              adhesion_counts: newCounts
+            };
+          }
+          return c;
+        }));
+      } else {
+        await createClaimAdhesion(token, claimId, adhesionType);
+        
+        // Update local state
+        setClaims(prev => prev.map(c => {
+          if (c.id === claimId) {
+            const currentCounts = c.adhesion_counts || { support: 0, disagree: 0 };
+            const oldAdhesion = c.user_adhesion;
+            
+            let newSupport = currentCounts.support;
+            let newDisagree = currentCounts.disagree;
+            
+            // Remove from old count if switching
+            if (oldAdhesion === 'support') {
+              newSupport = Math.max(0, newSupport - 1);
+            } else if (oldAdhesion === 'disagree') {
+              newDisagree = Math.max(0, newDisagree - 1);
+            }
+            
+            // Add to new count
+            if (adhesionType === 'support') {
+              newSupport = newSupport + 1;
+            } else {
+              newDisagree = newDisagree + 1;
+            }
+            
+            return {
+              ...c,
+              user_adhesion: adhesionType,
+              adhesion_counts: {
+                support: newSupport,
+                disagree: newDisagree
+              }
+            };
+          }
+          return c;
+        }));
+      }
+    } catch (error) {
+      console.error('Error handling adhesion:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Error al procesar adhesión');
+      setShowErrorToast(true);
     }
   };
 
@@ -495,6 +593,28 @@ function ClaimsPage() {
 
                 <p className="text-gray-700 mb-4">{claim.description}</p>
 
+                {/* Admin Notes Comment Section */}
+                {claim.adminNotes && (
+                  <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400 rounded-r-lg">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0">
+                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                          <MessageSquare className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-semibold text-blue-800">Administración</span>
+                          <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+                            Nota oficial
+                          </span>
+                        </div>
+                        <p className="text-sm text-blue-700 leading-relaxed">{claim.adminNotes}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="pt-4 border-t border-gray-100 space-y-3">
                   {/* User info */}
                   <div className="text-sm text-gray-500 space-y-1">
@@ -509,6 +629,74 @@ function ClaimsPage() {
                       )}
                     </div>
                   </div>
+                  
+                  {/* Adhesion Section - only show for others' claims and not finalized */}
+                  {currentUser && claim.userId !== currentUser.id && claim.status !== 'resuelto' && claim.status !== 'rechazado' && (
+                    <div className="pt-3 border-t border-gray-100">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        {/* Counters */}
+                        <div className="flex items-center gap-3 sm:gap-4">
+                          <div className="flex items-center gap-1 text-sm text-gray-600">
+                            <ThumbsUp className="w-4 h-4 text-green-600 flex-shrink-0" />
+                            <span className="whitespace-nowrap">{claim.adhesion_counts?.support || 0} de acuerdo</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-sm text-gray-600">
+                            <ThumbsDown className="w-4 h-4 text-red-600 flex-shrink-0" />
+                            <span className="whitespace-nowrap">{claim.adhesion_counts?.disagree || 0} en desacuerdo</span>
+                          </div>
+                        </div>
+                        
+                        {/* Action Buttons */}
+                        <div className="flex gap-2 w-full sm:w-auto">
+                          <button
+                            onClick={() => handleAdhesion(claim.id, 'support')}
+                            className={`flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer flex-1 sm:flex-initial ${
+                              claim.user_adhesion === 'support'
+                                ? 'bg-green-100 text-green-700 border border-green-300'
+                                : 'bg-gray-50 text-gray-700 hover:bg-green-50 hover:text-green-700 border border-gray-200'
+                            }`}
+                          >
+                            <ThumbsUp className="w-4 h-4 flex-shrink-0 sm:hidden" />
+                            <span className="hidden sm:inline">Me adhiero</span>
+                          </button>
+                          <button
+                            onClick={() => handleAdhesion(claim.id, 'disagree')}
+                            className={`flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer flex-1 sm:flex-initial ${
+                              claim.user_adhesion === 'disagree'
+                                ? 'bg-red-100 text-red-700 border border-red-300'
+                                : 'bg-gray-50 text-gray-700 hover:bg-red-50 hover:text-red-700 border border-gray-200'
+                            }`}
+                          >
+                            <ThumbsDown className="w-4 h-4 flex-shrink-0 sm:hidden" />
+                            <span className="hidden sm:inline">No estoy de acuerdo</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Adhesion counters - show for finalized claims (read-only) */}
+                  {claim.status === 'resuelto' || claim.status === 'rechazado' ? (
+                    claim.adhesion_counts && (claim.adhesion_counts.support > 0 || claim.adhesion_counts.disagree > 0) && (
+                      <div className="pt-3 border-t border-gray-100">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                          <div className="flex items-center gap-3 sm:gap-4">
+                            <div className="flex items-center gap-1 text-sm text-gray-500">
+                              <ThumbsUp className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                              <span className="whitespace-nowrap">{claim.adhesion_counts.support} estuvieron de acuerdo</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-sm text-gray-500">
+                              <ThumbsDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                              <span className="whitespace-nowrap">{claim.adhesion_counts.disagree} estuvieron en desacuerdo</span>
+                            </div>
+                          </div>
+                          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full w-fit">
+                            Reclamo finalizado
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  ) : null}
                   
                   {/* Action buttons - only show for user's own claims */}
                   {currentUser && claim.userId === currentUser.id && (

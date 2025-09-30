@@ -33,4 +33,7 @@ export interface Amenity {
     name: string;
     capacity: number;
     maxDuration: number;
+    openTime?: string;  // Format: "HH:mm"
+    closeTime?: string; // Format: "HH:mm"
+    isActive: boolean;
 }

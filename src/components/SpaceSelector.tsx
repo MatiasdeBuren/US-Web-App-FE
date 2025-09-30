@@ -76,6 +76,8 @@ function SpaceSelector({
                                 amenityId={amenity.id}
                                 amenityName={selectedSpace}
                                 capacity={amenity.capacity || 1}
+                                openTime={amenity.openTime}
+                                closeTime={amenity.closeTime}
                                 isLoading={false}
                                 fetchReservations={fetchReservations}
                             />
@@ -86,7 +88,7 @@ function SpaceSelector({
 
             {/* Amenities List */}
             <div className="space-y-6 max-h-[480px] sm:max-h-[560px] md:max-h-[640px] lg:max-h-[720px] overflow-y-auto pr-2 scrollbar-hidden">
-                {spaces.map((space) => (
+                {spaces.filter(space => space.isActive !== false).map((space) => (
                     <div
                         key={space.name}
                         className={`p-6 rounded-xl cursor-pointer transition-all duration-300 transform hover:scale-[1.02] ${
@@ -110,6 +112,13 @@ function SpaceSelector({
                                     }`}>
                                         Duración máx: {space.maxDuration || 60} min
                                     </p>
+                                    {(space.openTime || space.closeTime) && (
+                                        <p className={`text-sm font-medium ${
+                                            selectedSpace === space.name ? 'text-gray-300' : 'text-gray-600'
+                                        }`}>
+                                            Horario: {space.openTime || '00:00'} - {space.closeTime || '23:59'}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                             {selectedSpace === space.name && (

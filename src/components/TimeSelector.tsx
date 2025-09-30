@@ -1,9 +1,40 @@
 import { useState, useEffect } from "react";
 import type { ReservationData, Amenity } from "../types";
 import { LoadingButton } from "./LoadingSpinner";
-import { Calendar, Users } from "lucide-react";
+import { Calendar, Users, Clock, AlertCircle } from "lucide-react";
 import ModernDatePicker from "./ModernDatePicker";
 import ModernTimePicker from "./ModernTimePicker";
+
+// Helper function to check if time is within operating hours
+function isTimeWithinOperatingHours(timeSlot: string, openTime?: string, closeTime?: string): boolean {
+    if (!openTime || !closeTime) return true; // No restrictions if no hours set
+    
+    const [startTime, endTime] = timeSlot.split(" - ");
+    const [openHour, openMin] = openTime.split(":").map(Number);
+    const [closeHour, closeMin] = closeTime.split(":").map(Number);
+    const [startHour, startMin] = startTime.split(":").map(Number);
+    const [endHour, endMin] = endTime.split(":").map(Number);
+    
+    const openMinutes = openHour * 60 + openMin;
+    const closeMinutes = closeHour * 60 + closeMin;
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    
+    return startMinutes >= openMinutes && endMinutes <= closeMinutes;
+}
+
+// Helper function to format operating hours for display
+function formatOperatingHours(openTime?: string, closeTime?: string): string {
+    if (!openTime || !closeTime) return "";
+    
+    // Normalize time format to ensure consistent display (e.g., "8:00" -> "08:00")
+    const normalizeTime = (time: string) => {
+        const [hour, minute] = time.split(':');
+        return `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
+    };
+    
+    return `${normalizeTime(openTime)} - ${normalizeTime(closeTime)}`;
+}
 
 interface TimeSelectorProps {
     selectedSpace: string;
@@ -38,6 +69,10 @@ function TimeSelector({
     const selectedAmenity = amenities.find(a => a.name === selectedSpace);
     const maxDuration = selectedAmenity?.maxDuration || 60;
     
+    // Check if current time selection is valid
+    const isTimeValid = !selectedTime || !selectedAmenity || isTimeWithinOperatingHours(selectedTime, selectedAmenity.openTime, selectedAmenity.closeTime);
+    const isAmenityActive = selectedAmenity?.isActive !== false;
+    
     // Update reservation count when date, time, or space changes
     useEffect(() => {
         const updateReservationCount = async () => {
@@ -70,6 +105,44 @@ function TimeSelector({
             </div>
 
             <div className="space-y-6">
+                {/* Operating Hours - Prominent Display */}
+                {selectedAmenity && selectedAmenity.openTime && selectedAmenity.closeTime && (
+                    <div className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white p-6 rounded-2xl shadow-lg">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="bg-white/20 p-2 rounded-lg">
+                                <Clock className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold">Horarios Disponibles</h3>
+                                <p className="text-blue-100">Reservas disponibles durante estos horarios</p>
+                            </div>
+                        </div>
+                        <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl">
+                            <div className="text-center">
+                                <div className="text-3xl font-bold mb-1">
+                                    {formatOperatingHours(selectedAmenity.openTime, selectedAmenity.closeTime)}
+                                </div>
+                                <div className="text-blue-100 text-sm">
+                                    {selectedAmenity.name} - Duración máxima: {selectedAmenity.maxDuration} min
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Inactive Amenity Warning */}
+                {selectedAmenity && !isAmenityActive && (
+                    <div className="bg-red-50 border border-red-200 p-4 rounded-xl">
+                        <div className="flex items-center gap-2 mb-2">
+                            <AlertCircle className="w-5 h-5 text-red-600" />
+                            <span className="font-medium text-red-800">Amenity no disponible</span>
+                        </div>
+                        <p className="text-red-700">
+                            Este amenity está temporalmente fuera de servicio.
+                        </p>
+                    </div>
+                )}
+
                 {/* Modern Date Picker */}
                 <ModernDatePicker
                     selectedDate={selectedDate}
@@ -84,8 +157,26 @@ function TimeSelector({
                     onTimeChange={onTimeChange}
                     maxDuration={maxDuration}
                     selectedDate={selectedDate}
+                    openTime={selectedAmenity?.openTime}
+                    closeTime={selectedAmenity?.closeTime}
                     label="Horario de Reserva"
                 />
+
+                {/* Schedule Validation Warning */}
+                {selectedTime && selectedAmenity && !isTimeWithinOperatingHours(selectedTime, selectedAmenity.openTime, selectedAmenity.closeTime) && (
+                    <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl">
+                        <div className="flex items-center gap-2 mb-2">
+                            <AlertCircle className="w-5 h-5 text-amber-600" />
+                            <span className="font-medium text-amber-800">Horario fuera de operación</span>
+                        </div>
+                        <p className="text-amber-700">
+                            El horario seleccionado está fuera del horario de operación del amenity.
+                            {selectedAmenity.openTime && selectedAmenity.closeTime && (
+                                <> Horario disponible: {formatOperatingHours(selectedAmenity.openTime, selectedAmenity.closeTime)}</>
+                            )}
+                        </p>
+                    </div>
+                )}
 
                 {/* Error */}
                 {timeError && (
@@ -120,12 +211,17 @@ function TimeSelector({
                     <LoadingButton
                         onClick={onReserve}
                         loading={isReserving}
-                        className="w-full py-5 bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-900 hover:to-gray-700 text-white text-xl font-bold rounded-2xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300"
+                        disabled={!isTimeValid || !isAmenityActive}
+                        className={`w-full py-5 text-xl font-bold rounded-2xl shadow-2xl transition-all duration-300 ${
+                            !isTimeValid || !isAmenityActive
+                                ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                                : 'bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-900 hover:to-gray-700 text-white hover:shadow-3xl transform hover:scale-105'
+                        }`}
                         loadingText="Reservando..."
                     >
                         <span className="flex items-center justify-center gap-2">
                             <Calendar className="w-5 h-5" />
-                            Reservar {selectedSpace}
+                            {!isAmenityActive ? 'Amenity no disponible' : !isTimeValid ? 'Horario no válido' : `Reservar ${selectedSpace}`}
                         </span>
                     </LoadingButton>
                 </div>

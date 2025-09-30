@@ -1,5 +1,5 @@
 // Refactored AmenityManagement using ManagementModal pattern
-import { Waves, Users, Clock, Edit3, Trash2 } from "lucide-react";
+import { Users, Clock, Edit3, Trash2 } from "lucide-react";
 import ManagementModal from "./ManagementModal";
 import FormInput from "./FormInput";
 import { 
@@ -27,20 +27,87 @@ const formatDuration = (minutes: number): string => {
 };
 
 function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
+    // Transform form data to proper types for API
+    const transformFormDataForCreate = (formData: any) => {
+        const capacity = parseInt(formData.capacity);
+        const maxDuration = parseInt(formData.maxDuration);
+        
+        // Validate required fields
+        if (!formData.name?.trim()) {
+            throw new Error("El nombre es obligatorio");
+        }
+        if (isNaN(capacity) || capacity <= 0) {
+            throw new Error("La capacidad debe ser un número positivo");
+        }
+        if (isNaN(maxDuration) || maxDuration <= 0) {
+            throw new Error("La duración máxima debe ser un número positivo");
+        }
+
+        return {
+            name: formData.name.trim(),
+            capacity: capacity,
+            maxDuration: maxDuration,
+            openTime: formData.openTime || undefined,
+            closeTime: formData.closeTime || undefined,
+            isActive: formData.isActive
+        };
+    };
+
+    const transformFormDataForUpdate = (formData: any) => {
+        const capacity = parseInt(formData.capacity);
+        const maxDuration = parseInt(formData.maxDuration);
+        
+        // Validate required fields
+        if (!formData.name?.trim()) {
+            throw new Error("El nombre es obligatorio");
+        }
+        if (isNaN(capacity) || capacity <= 0) {
+            throw new Error("La capacidad debe ser un número positivo");
+        }
+        if (isNaN(maxDuration) || maxDuration <= 0) {
+            throw new Error("La duración máxima debe ser un número positivo");
+        }
+
+        return {
+            name: formData.name.trim(),
+            capacity: capacity,
+            maxDuration: maxDuration,
+            openTime: formData.openTime || undefined,
+            closeTime: formData.closeTime || undefined,
+            isActive: formData.isActive
+        };
+    };
+
+    // Wrapper functions that transform data before calling API
+    const createAmenityWithTransform = async (token: string, formData: any) => {
+        const transformedData = transformFormDataForCreate(formData);
+        return await createAmenity(token, transformedData);
+    };
+
+    const updateAmenityWithTransform = async (token: string, id: number, formData: any) => {
+        const transformedData = transformFormDataForUpdate(formData);
+        return await updateAmenity(token, id, transformedData);
+    };
     const renderItem = (
         amenity: AdminAmenity, 
         onEdit: (item: AdminAmenity) => void, 
         onDelete: (id: number) => void
     ) => (
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-all duration-300">
+        <div className={`bg-white border rounded-2xl p-6 hover:shadow-lg transition-all duration-300 ${!amenity.isActive ? 'border-red-200 bg-red-50' : 'border-gray-200'}`}>
             <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4">
-                    <div className="bg-cyan-100 p-3 rounded-xl">
-                        <Waves className="w-6 h-6 text-cyan-600" />
-                    </div>
                     <div className="flex-1">
-                        <h3 className="text-xl font-semibold text-gray-800 mb-2">{amenity.name}</h3>
-                        <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                        <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-xl font-semibold text-gray-800">{amenity.name}</h3>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                amenity.isActive 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-red-100 text-red-800'
+                            }`}>
+                                {amenity.isActive ? 'Activo' : 'Inactivo'}
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
                             <div className="flex items-center gap-2">
                                 <Users className="w-4 h-4 text-gray-400" />
                                 <span>{amenity.capacity} personas</span>
@@ -50,19 +117,27 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                                 <span>{formatDuration(amenity.maxDuration)}</span>
                             </div>
                         </div>
+                        {(amenity.openTime || amenity.closeTime) && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <Clock className="w-4 h-4 text-gray-400" />
+                                <span>
+                                    Horario: {amenity.openTime || '00:00'} - {amenity.closeTime || '23:59'}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className="flex gap-2">
                     <button
                         onClick={() => onEdit(amenity)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
                         title="Editar amenity"
                     >
                         <Edit3 className="w-4 h-4" />
                     </button>
                     <button
                         onClick={() => onDelete(amenity.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                         title="Eliminar amenity"
                     >
                         <Trash2 className="w-4 h-4" />
@@ -97,6 +172,7 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                     onChange={(value) => setFormData({...formData, capacity: value})}
                     type="number"
                     min="1"
+                    inputClassName="no-spinner"
                     required
                     disabled={processing}
                 />
@@ -109,14 +185,49 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                     type="number"
                     min="15"
                     step="15"
+                    inputClassName="no-spinner"
                     required
                     disabled={processing}
                 />
 
+                <div className="grid grid-cols-2 gap-4">
+                    <FormInput
+                        label="Hora de apertura"
+                        placeholder="09:00"
+                        value={formData.openTime}
+                        onChange={(value) => setFormData({...formData, openTime: value})}
+                        type="time"
+                        disabled={processing}
+                    />
+                    
+                    <FormInput
+                        label="Hora de cierre"
+                        placeholder="22:00"
+                        value={formData.closeTime}
+                        onChange={(value) => setFormData({...formData, closeTime: value})}
+                        type="time"
+                        disabled={processing}
+                    />
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <input
+                        type="checkbox"
+                        id="isActive-create"
+                        checked={formData.isActive}
+                        onChange={(e) => setFormData({...formData, isActive: e.target.checked})}
+                        className="w-4 h-4 text-cyan-600 border-2 border-gray-300 rounded focus:ring-cyan-500 focus:ring-2"
+                        disabled={processing}
+                    />
+                    <label htmlFor="isActive-create" className="text-sm font-medium text-gray-700">
+                        Amenity activo
+                    </label>
+                </div>
+
                 <div className="flex justify-end gap-4 pt-4">
                     <button
                         type="submit"
-                        className="px-6 py-2 bg-cyan-600 text-white rounded-xl hover:bg-cyan-700 transition-colors disabled:opacity-50"
+                        className="px-6 py-2 bg-cyan-600 text-white rounded-xl hover:bg-cyan-700 transition-colors disabled:opacity-50 cursor-pointer"
                         disabled={processing}
                     >
                         {processing ? 'Creando...' : 'Crear Amenity'}
@@ -152,6 +263,7 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                     onChange={(value) => setFormData({...formData, capacity: value})}
                     type="number"
                     min="1"
+                    inputClassName="no-spinner"
                     required
                     disabled={processing}
                 />
@@ -164,14 +276,49 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                     type="number"
                     min="15"
                     step="15"
+                    inputClassName="no-spinner"
                     required
                     disabled={processing}
                 />
 
+                <div className="grid grid-cols-2 gap-4">
+                    <FormInput
+                        label="Hora de apertura"
+                        placeholder="09:00"
+                        value={formData.openTime}
+                        onChange={(value) => setFormData({...formData, openTime: value})}
+                        type="time"
+                        disabled={processing}
+                    />
+                    
+                    <FormInput
+                        label="Hora de cierre"
+                        placeholder="22:00"
+                        value={formData.closeTime}
+                        onChange={(value) => setFormData({...formData, closeTime: value})}
+                        type="time"
+                        disabled={processing}
+                    />
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <input
+                        type="checkbox"
+                        id="isActive-edit"
+                        checked={formData.isActive}
+                        onChange={(e) => setFormData({...formData, isActive: e.target.checked})}
+                        className="w-4 h-4 text-cyan-600 border-2 border-gray-300 rounded focus:ring-cyan-500 focus:ring-2"
+                        disabled={processing}
+                    />
+                    <label htmlFor="isActive-edit" className="text-sm font-medium text-gray-700">
+                        Amenity activo
+                    </label>
+                </div>
+
                 <div className="flex justify-end gap-4 pt-4">
                     <button
                         type="submit"
-                        className="px-6 py-2 bg-cyan-600 text-white rounded-xl hover:bg-cyan-700 transition-colors disabled:opacity-50"
+                        className="px-6 py-2 bg-cyan-600 text-white rounded-xl hover:bg-cyan-700 transition-colors disabled:opacity-50 cursor-pointer"
                         disabled={processing}
                     >
                         {processing ? 'Actualizando...' : 'Actualizar Amenity'}
@@ -188,18 +335,28 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
             onClose={onClose}
             token={token}
             loadItems={getAdminAmenities}
-            createItem={createAmenity}
-            updateItem={updateAmenity}
+            createItem={createAmenityWithTransform}
+            updateItem={updateAmenityWithTransform}
             deleteItem={deleteAmenity}
             renderItem={renderItem}
             renderCreateForm={renderCreateForm}
             renderEditForm={renderEditForm}
             searchFields={['name']}
-            initialFormData={{ name: "", capacity: "", maxDuration: "" }}
+            initialFormData={{ 
+                name: "", 
+                capacity: "", 
+                maxDuration: "", 
+                openTime: "", 
+                closeTime: "", 
+                isActive: true 
+            }}
             getFormDataFromItem={(amenity) => ({
                 name: amenity.name,
                 capacity: amenity.capacity.toString(),
-                maxDuration: amenity.maxDuration.toString()
+                maxDuration: amenity.maxDuration.toString(),
+                openTime: amenity.openTime || "",
+                closeTime: amenity.closeTime || "",
+                isActive: amenity.isActive ?? true
             })}
             createButtonText="Crear Amenity"
             emptyStateMessage="No hay amenities registrados"

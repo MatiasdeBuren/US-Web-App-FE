@@ -160,6 +160,40 @@ function TenantDashboard() {
         try {
             const [startStr, endStr] = selectedTime.split(" - ");
             
+            // Get selected amenity for validation
+            const selectedAmenity = amenities.find((a) => a.name === selectedSpace);
+            if (!selectedAmenity) {
+                setTimeError("❌ Amenity no encontrado");
+                setIsReserving(false);
+                return;
+            }
+
+            // Check if amenity is active
+            if (selectedAmenity.isActive === false) {
+                setTimeError("❌ Este amenity no está disponible actualmente");
+                setIsReserving(false);
+                return;
+            }
+
+            // Validation: Check operating hours
+            if (selectedAmenity.openTime && selectedAmenity.closeTime) {
+                const [openHour, openMin] = selectedAmenity.openTime.split(":").map(Number);
+                const [closeHour, closeMin] = selectedAmenity.closeTime.split(":").map(Number);
+                const [startHour, startMin] = startStr.split(":").map(Number);
+                const [endHour, endMin] = endStr.split(":").map(Number);
+                
+                const openMinutes = openHour * 60 + openMin;
+                const closeMinutes = closeHour * 60 + closeMin;
+                const startMinutes = startHour * 60 + startMin;
+                const endMinutes = endHour * 60 + endMin;
+                
+                if (startMinutes < openMinutes || endMinutes > closeMinutes) {
+                    setTimeError(`❌ El horario seleccionado está fuera del horario de operación (${selectedAmenity.openTime} - ${selectedAmenity.closeTime})`);
+                    setIsReserving(false);
+                    return;
+                }
+            }
+            
             // Crear fecha en zona horaria local, no UTC
             const [year, month, day] = selectedDate.split('-').map(Number);
             const baseDate = new Date(year, month - 1, day); // month es 0-indexado
@@ -187,7 +221,7 @@ function TenantDashboard() {
                 return;
             }
 
-            const amenity = amenities.find((a) => a.name === selectedSpace);
+            const amenity = selectedAmenity;
             if (!amenity) return;
 
             const reservationData = await createReservation(token, {

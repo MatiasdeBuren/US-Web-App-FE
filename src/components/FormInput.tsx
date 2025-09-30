@@ -8,7 +8,7 @@ interface FormInputProps {
   placeholder: string;
   value: string;
   onChange: (value: string) => void;
-  type?: 'text' | 'email' | 'password' | 'number';
+  type?: 'text' | 'email' | 'password' | 'number' | 'time';
   icon?: LucideIcon | IconType;
   error?: string;
   required?: boolean;
@@ -21,7 +21,8 @@ interface FormInputProps {
   showPasswordToggle?: boolean;
   onFocus?: () => void;
   onBlur?: () => void;
-  className?: string;
+  className?: string; // For the container div
+  inputClassName?: string; // For the input element itself
   showCharacterCount?: boolean;
   helperText?: string;
 }
@@ -45,6 +46,7 @@ function FormInput({
   onFocus,
   onBlur,
   className = '',
+  inputClassName = '',
   showCharacterCount,
   helperText
 }: FormInputProps) {
@@ -59,6 +61,7 @@ function FormInput({
     ${Icon || showPasswordToggle ? 'pl-10' : 'px-4'}
     ${showPasswordToggle ? 'pr-12' : 'pr-4'}
     py-3
+    ${inputClassName}
   `.trim();
 
   const InputComponent = isTextarea ? 'textarea' : 'input';
