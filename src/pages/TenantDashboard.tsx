@@ -157,15 +157,11 @@ function TenantDashboard() {
         setIsReserving(true);
         setTimeError(null); // Clear any previous errors
         
-        // Helper function to format date as local ISO string (without timezone conversion)
-        const toLocalISOString = (date: Date): string => {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const hours = String(date.getHours()).padStart(2, '0');
-            const minutes = String(date.getMinutes()).padStart(2, '0');
-            const seconds = String(date.getSeconds()).padStart(2, '0');
-            return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.000Z`;
+        // Helper function to build timestamp from user's selected time (NO timezone conversion)
+        const buildTimestampFromUserTime = (dateStr: string, timeStr: string): string => {
+            // dateStr: "2025-10-01", timeStr: "19:00"
+            const [hours, minutes] = timeStr.split(':');
+            return `${dateStr}T${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:00.000Z`;
         };
         
         try {
@@ -237,8 +233,8 @@ function TenantDashboard() {
 
             const reservationData = await createReservation(token, {
                 amenityId: amenity.id,
-                startTime: toLocalISOString(startDateTime),
-                endTime: toLocalISOString(endDateTime),
+                startTime: buildTimestampFromUserTime(selectedDate, startStr),
+                endTime: buildTimestampFromUserTime(selectedDate, endStr),
             });
 
             // Actualizar contador de reservas
@@ -253,8 +249,8 @@ function TenantDashboard() {
             // Crear la nueva reserva para añadir a la lista
             const newReservation: Reservation = {
                 id: reservationData.id || reservationData.reservation?.id || Date.now(),
-                startTime: toLocalISOString(startDateTime),
-                endTime: toLocalISOString(endDateTime),
+                startTime: buildTimestampFromUserTime(selectedDate, startStr),
+                endTime: buildTimestampFromUserTime(selectedDate, endStr),
                 status: reservationData.status || reservationData.reservation?.status || "pending",
                 amenity: {
                     id: amenity.id,
