@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Search, Crown, Home, AlertTriangle } from "lucide-react";
 import { getAdminUsers, updateUserRole, type AdminUser } from "../api_calls/admin";
+import ClaimSuccessToast from './ClaimSuccessToast';
+import ClaimErrorToast from './ClaimErrorToast';
 
 // Helper function to safely get reservation count from user object
 const getReservationCount = (user: AdminUser): number => {
@@ -21,6 +23,12 @@ function UserManagement({ isOpen, onClose, token }: UserManagementProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [filterRole, setFilterRole] = useState<string>("all");
     const [updatingUserId, setUpdatingUserId] = useState<number | null>(null);
+    
+    // Toast states
+    const [showSuccessToast, setShowSuccessToast] = useState(false);
+    const [showErrorToast, setShowErrorToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState<string>('');
+    const [errorMessage, setErrorMessage] = useState<string>('');
 
     useEffect(() => {
         if (isOpen && token) {
@@ -81,10 +89,12 @@ function UserManagement({ isOpen, onClose, token }: UserManagementProps) {
                 user.id === userId ? { ...user, role: updatedUser.role } : user
             ));
             
-            alert("Role actualizado exitosamente");
+            setToastMessage("Role actualizado exitosamente");
+            setShowSuccessToast(true);
         } catch (error) {
             console.error("Error updating role:", error);
-            alert("Error al actualizar role: " + (error instanceof Error ? error.message : "Error desconocido"));
+            setErrorMessage("Error al actualizar role: " + (error instanceof Error ? error.message : "Error desconocido"));
+            setShowErrorToast(true);
         } finally {
             setUpdatingUserId(null);
         }
@@ -246,6 +256,21 @@ function UserManagement({ isOpen, onClose, token }: UserManagementProps) {
                     </div>
                 </motion.div>
             </div>
+
+            {/* Success Toast */}
+            <ClaimSuccessToast
+                isVisible={showSuccessToast}
+                onComplete={() => setShowSuccessToast(false)}
+                action="updated"
+                claimSubject={toastMessage}
+            />
+
+            {/* Error Toast */}
+            <ClaimErrorToast
+                isVisible={showErrorToast}
+                onComplete={() => setShowErrorToast(false)}
+                errorMessage={errorMessage}
+            />
         </AnimatePresence>
     );
 }

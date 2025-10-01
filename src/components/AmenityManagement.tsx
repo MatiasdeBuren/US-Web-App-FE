@@ -1,5 +1,5 @@
 // Refactored AmenityManagement using ManagementModal pattern
-import { Users, Clock, Edit3, Trash2 } from "lucide-react";
+import { Users, Clock, Edit3, Trash2, AlertTriangle } from "lucide-react";
 import ManagementModal from "./ManagementModal";
 import FormInput from "./FormInput";
 import { 
@@ -118,10 +118,20 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                             </div>
                         </div>
                         {(amenity.openTime || amenity.closeTime) && (
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                                 <Clock className="w-4 h-4 text-gray-400" />
                                 <span>
                                     Horario: {amenity.openTime || '00:00'} - {amenity.closeTime || '23:59'}
+                                </span>
+                            </div>
+                        )}
+                        
+                        {/* Reservation information */}
+                        {(amenity.activeReservationCount ?? amenity._count?.activeReservations ?? 0) > 0 && (
+                            <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-2 py-1 rounded-lg">
+                                <AlertTriangle className="w-4 h-4" />
+                                <span>
+                                    {amenity.activeReservationCount ?? amenity._count?.activeReservations} reserva(s) activa(s)
                                 </span>
                             </div>
                         )}
@@ -137,8 +147,17 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                     </button>
                     <button
                         onClick={() => onDelete(amenity.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                        title="Eliminar amenity"
+                        className={`p-2 rounded-lg transition-colors cursor-pointer ${
+                            (amenity.activeReservationCount ?? amenity._count?.activeReservations ?? 0) > 0
+                                ? 'text-gray-400 hover:bg-gray-50 cursor-not-allowed opacity-50'
+                                : 'text-red-600 hover:bg-red-50'
+                        }`}
+                        title={
+                            (amenity.activeReservationCount ?? amenity._count?.activeReservations ?? 0) > 0
+                                ? 'No se puede eliminar: tiene reservas activas'
+                                : 'Eliminar amenity'
+                        }
+                        disabled={(amenity.activeReservationCount ?? amenity._count?.activeReservations ?? 0) > 0}
                     >
                         <Trash2 className="w-4 h-4" />
                     </button>

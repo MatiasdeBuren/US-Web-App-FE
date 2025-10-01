@@ -157,6 +157,17 @@ function TenantDashboard() {
         setIsReserving(true);
         setTimeError(null); // Clear any previous errors
         
+        // Helper function to format date as local ISO string (without timezone conversion)
+        const toLocalISOString = (date: Date): string => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.000Z`;
+        };
+        
         try {
             const [startStr, endStr] = selectedTime.split(" - ");
             
@@ -226,8 +237,8 @@ function TenantDashboard() {
 
             const reservationData = await createReservation(token, {
                 amenityId: amenity.id,
-                startTime: startDateTime.toISOString(),
-                endTime: endDateTime.toISOString(),
+                startTime: toLocalISOString(startDateTime),
+                endTime: toLocalISOString(endDateTime),
             });
 
             // Actualizar contador de reservas
@@ -242,8 +253,8 @@ function TenantDashboard() {
             // Crear la nueva reserva para añadir a la lista
             const newReservation: Reservation = {
                 id: reservationData.id || reservationData.reservation?.id || Date.now(),
-                startTime: startDateTime.toISOString(),
-                endTime: endDateTime.toISOString(),
+                startTime: toLocalISOString(startDateTime),
+                endTime: toLocalISOString(endDateTime),
                 status: reservationData.status || reservationData.reservation?.status || "pending",
                 amenity: {
                     id: amenity.id,

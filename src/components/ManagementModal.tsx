@@ -162,7 +162,25 @@ function ManagementModal<T extends BaseItem>({
       showToast(`${title} eliminado exitosamente`, "success");
     } catch (error) {
       console.error("Error deleting item:", error);
-      showToast(`Error al eliminar ${title.toLowerCase()}`, "error");
+      
+      // Handle specific error messages
+      let errorMessage = `Error al eliminar ${title.toLowerCase()}`;
+      if (error instanceof Error) {
+        const message = error.message.toLowerCase();
+        if (message.includes('reservas activas') || message.includes('active reservations')) {
+          errorMessage = `No se puede eliminar este ${title.toLowerCase()} porque tiene reservas activas. Cancela las reservas primero.`;
+        } else if (message.includes('reservas') || message.includes('reservations')) {
+          errorMessage = `No se puede eliminar este ${title.toLowerCase()} porque tiene reservas asociadas.`;
+        } else if (message.includes('acceso denegado') || message.includes('access denied')) {
+          errorMessage = `No tienes permisos para eliminar este ${title.toLowerCase()}.`;
+        } else if (message.includes('no encontrado') || message.includes('not found')) {
+          errorMessage = `El ${title.toLowerCase()} no existe o ya fue eliminado.`;
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      showToast(errorMessage, "error");
     }
   };
 
