@@ -2,6 +2,7 @@
 import { Users, Clock, Edit3, Trash2, AlertTriangle } from "lucide-react";
 import ManagementModal from "./ManagementModal";
 import FormInput from "./FormInput";
+import AdminTimePicker from "./AdminTimePicker";
 import { 
     getAdminAmenities, 
     createAmenity, 
@@ -210,21 +211,19 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                 />
 
                 <div className="grid grid-cols-2 gap-4">
-                    <FormInput
+                    <AdminTimePicker
                         label="Hora de apertura"
                         placeholder="09:00"
                         value={formData.openTime}
                         onChange={(value) => setFormData({...formData, openTime: value})}
-                        type="time"
                         disabled={processing}
                     />
                     
-                    <FormInput
+                    <AdminTimePicker
                         label="Hora de cierre"
                         placeholder="22:00"
                         value={formData.closeTime}
                         onChange={(value) => setFormData({...formData, closeTime: value})}
-                        type="time"
                         disabled={processing}
                     />
                 </div>
@@ -301,21 +300,19 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                 />
 
                 <div className="grid grid-cols-2 gap-4">
-                    <FormInput
+                    <AdminTimePicker
                         label="Hora de apertura"
                         placeholder="09:00"
                         value={formData.openTime}
                         onChange={(value) => setFormData({...formData, openTime: value})}
-                        type="time"
                         disabled={processing}
                     />
                     
-                    <FormInput
+                    <AdminTimePicker
                         label="Hora de cierre"
                         placeholder="22:00"
                         value={formData.closeTime}
                         onChange={(value) => setFormData({...formData, closeTime: value})}
-                        type="time"
                         disabled={processing}
                     />
                 </div>

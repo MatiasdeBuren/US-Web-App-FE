@@ -14,9 +14,10 @@ interface UserManagementProps {
     isOpen: boolean;
     onClose: () => void;
     token: string;
+    currentUserEmail?: string; // Email del usuario actual para evitar auto-modificaciones
 }
 
-function UserManagement({ isOpen, onClose, token }: UserManagementProps) {
+function UserManagement({ isOpen, onClose, token, currentUserEmail }: UserManagementProps) {
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [filteredUsers, setFilteredUsers] = useState<AdminUser[]>([]);
     const [loading, setLoading] = useState(false);
@@ -203,16 +204,28 @@ function UserManagement({ isOpen, onClose, token }: UserManagementProps) {
                                             </div>
                                             
                                             <div className="flex items-center gap-3">
-                                                <select
-                                                    value={user.role}
-                                                    onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                                                    disabled={updatingUserId === user.id}
-                                                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 cursor-pointer"
-                                                >
-                                                    <option value="tenant">Inquilino</option>
-                                                    <option value="owner">Propietario</option>
-                                                    <option value="admin">Administrador</option>
-                                                </select>
+                                                {currentUserEmail === user.email ? (
+                                                    // Si es el usuario actual, mostrar badge sin posibilidad de edición
+                                                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg">
+                                                        <span className="text-sm text-gray-600 font-medium">Tu cuenta</span>
+                                                        <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getRoleBadgeColor(user.role)}`}>
+                                                            {getRoleIcon(user.role)}
+                                                            {user.role}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    // Para otros usuarios, permitir cambiar rol
+                                                    <select
+                                                        value={user.role}
+                                                        onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                                                        disabled={updatingUserId === user.id}
+                                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 cursor-pointer"
+                                                    >
+                                                        <option value="tenant">Inquilino</option>
+                                                        <option value="owner">Propietario</option>
+                                                        <option value="admin">Administrador</option>
+                                                    </select>
+                                                )}
                                                 
                                                 {updatingUserId === user.id && (
                                                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>

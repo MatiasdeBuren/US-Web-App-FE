@@ -476,6 +476,7 @@ function AdminDashboard() {
                     isOpen={showUserManagement}
                     onClose={() => setShowUserManagement(false)}
                     token={token}
+                    currentUserEmail={userData?.user?.email}
                 />
             )}
 

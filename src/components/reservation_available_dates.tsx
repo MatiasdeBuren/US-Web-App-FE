@@ -222,10 +222,10 @@ export default function AvailabilityTimelineViewer({
             </div>
 
             <div className="flex-1 overflow-auto">
-              <div className="grid grid-cols-8 gap-2 min-h-[700px]"> {/* Increased from 600px to 700px */}
+              <div className="grid grid-cols-8 gap-2 min-h-[1050px]"> {/* Increased by 50% from 700px to 1050px */}
                 {/* Time labels */}
                 <div className="flex flex-col">
-                  <div className="h-16 flex items-center justify-center font-bold text-gray-700 border-b border-gray-200">
+                  <div className="h-24 flex items-center justify-center font-bold text-gray-700 border-b border-gray-200">
                     Hora
                   </div>
                   <div className="flex-1 relative">
@@ -248,7 +248,7 @@ export default function AvailabilityTimelineViewer({
                 {/* Day columns */}
                 {days.map((dayObj) => (
                   <div key={dayObj.key} className="flex flex-col">
-                    <div className="h-16 flex flex-col items-center justify-center border-b border-gray-200">
+                    <div className="h-24 flex flex-col items-center justify-center border-b border-gray-200">
                       <div className="font-bold text-gray-700">{dayObj.label}</div>
                       <div className="text-xs text-gray-500">{dayObj.date.getDate()}/{dayObj.date.getMonth() + 1}</div>
                     </div>
@@ -348,10 +348,9 @@ export default function AvailabilityTimelineViewer({
                                 className={`absolute rounded-lg p-1 border-2 shadow-lg cursor-pointer hover:shadow-xl hover:z-10 transition-all ${colorClass}`}
                                 style={{
                                   top: `${topPct}%`,
-                                  height: `${Math.max(heightPct, 8)}%`,
+                                  height: `${heightPct}%`, // Use exact calculated height, no artificial minimum
                                   left: `2%`,
                                   width: `96%`,
-                                  minHeight: "40px",
                                   zIndex: 1
                                 }}
                                 onClick={() => {
