@@ -66,7 +66,9 @@ function ManagementModal<T extends BaseItem>({
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<T | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<T | null>(null);
   const [processing, setProcessing] = useState(false);
   
   // Form states
@@ -152,14 +154,22 @@ function ManagementModal<T extends BaseItem>({
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm(`¿Estás seguro de que quieres eliminar este ${title.toLowerCase()}?`)) {
-      return;
-    }
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    
+    setItemToDelete(item);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
 
     try {
-      await deleteItem(token, id);
-      setItems(prev => prev.filter(item => item.id !== id));
+      await deleteItem(token, itemToDelete.id);
+      setItems(prev => prev.filter(item => item.id !== itemToDelete.id));
       showToast(`${title} eliminado exitosamente`, "success");
+      setShowDeleteModal(false);
+      setItemToDelete(null);
     } catch (error) {
       console.error("Error deleting item:", error);
       
@@ -181,6 +191,8 @@ function ManagementModal<T extends BaseItem>({
       }
       
       showToast(errorMessage, "error");
+      setShowDeleteModal(false);
+      setItemToDelete(null);
     }
   };
 
@@ -319,6 +331,53 @@ function ManagementModal<T extends BaseItem>({
               onClick={(e) => e.stopPropagation()}
             >
               {renderEditForm(selectedItem, formData, setFormData, handleEdit, processing)}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteModal && itemToDelete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-60 flex items-center justify-center backdrop-blur-sm bg-black/20"
+            onClick={() => setShowDeleteModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="bg-white rounded-3xl shadow-2xl max-w-md w-full mx-4 p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <X className="w-8 h-8 text-red-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Confirmar Eliminación
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  ¿Estás seguro de que quieres eliminar este {title.toLowerCase()}? Esta acción no se puede deshacer.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowDeleteModal(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}
