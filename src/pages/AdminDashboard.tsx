@@ -181,11 +181,12 @@ function AdminDashboard() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className={`min-h-screen bg-gray-100 ${(showSuccessToast || showPasswordChangeToast) ? 'pointer-events-none' : ''}`}>
             {/* HEADER */}
             <Header
                 userName={userData?.user.name || ""}
                 onProfileClick={() => setShowProfile((prev) => !prev)}
+                onLogout={handleLogout}
                 showClaimsTab={false}
                 showAmenitiesTab={false}
             />
@@ -545,6 +546,7 @@ function AdminDashboard() {
                     setErrorMessage('');
                 }}
             />
+
         </div>
     );
 }

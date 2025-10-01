@@ -468,11 +468,12 @@ function TenantDashboard() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 overflow-hidden">
+        <div className={`min-h-screen bg-gray-100 overflow-hidden ${(showSuccessToast || showPasswordChangeToast) ? 'pointer-events-none' : ''}`}>
             {/* HEADER */}
             <Header
                 userName={userData?.user.name || ""}
                 onProfileClick={() => setShowProfile((prev) => !prev)}
+                onLogout={handleLogout}
                 onClaimsClick={() => setActiveTab("reclamos")}
                 onDashboardClick={() => setActiveTab("dashboard")}
                 activeTab={activeTab}
@@ -714,6 +715,7 @@ function TenantDashboard() {
                     setErrorMessage('');
                 }}
             />
+
         </div>
     );
 }
