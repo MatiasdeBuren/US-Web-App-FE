@@ -353,6 +353,8 @@ function TenantDashboard() {
         } catch (err) {
             setErrorMessage("Error al actualizar nombre: " + (err instanceof Error ? err.message : "Error desconocido"));
             setShowErrorToast(true);
+        } finally {
+            setIsSavingName(false);
         }
     };
 
