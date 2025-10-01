@@ -107,8 +107,18 @@ function CreateClaimModal({ isVisible, onClose, onSave, editingClaim, isSaving =
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      onSave(formData);
+    console.log('Form submitted with data:', formData);
+    
+    try {
+      if (validateForm()) {
+        console.log('Form validation passed, calling onSave');
+        onSave(formData);
+      } else {
+        console.log('Form validation failed:', errors);
+      }
+    } catch (error) {
+      console.error('Error in handleSubmit:', error);
+      // Prevent blank screen by ensuring the form stays visible
     }
   };
 

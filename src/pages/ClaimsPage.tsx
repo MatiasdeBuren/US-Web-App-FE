@@ -297,9 +297,22 @@ function ClaimsPage() {
       } else {
         // Create new claim
         const newClaim = await createClaim(token, claimData);
-        setClaims(prev => [newClaim, ...prev]);
-        setToastAction('created');
-        setToastClaimSubject(claimData.subject);
+        console.log('Received new claim from backend:', newClaim);
+        
+        // Handle empty response from backend
+        if (!newClaim || !newClaim.id) {
+          console.warn('Backend returned invalid claim data, refreshing claims list');
+          // Refresh the entire claims list to get the newly created claim
+          const refreshedClaims = await getClaims(token, { includeAll: true });
+          setClaims(refreshedClaims.claims || []);
+          setToastAction('created');
+          setToastClaimSubject(claimData.subject);
+        } else {
+          // Normal case: backend returned valid claim data
+          setClaims(prev => [newClaim, ...prev]);
+          setToastAction('created');
+          setToastClaimSubject(claimData.subject);
+        }
       }
       
       setShowCreateModal(false);
@@ -316,6 +329,9 @@ function ClaimsPage() {
         setShowErrorToast(false);
         setErrorMessage('');
       }, 5000);
+      
+      // Ensure modal stays open on error
+      setShowCreateModal(true);
     } finally {
       setIsSaving(false);
     }

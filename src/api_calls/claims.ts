@@ -165,7 +165,17 @@ export async function createClaim(
             throw new Error(error.message || `Error al crear reclamo: ${response.status}`);
         }
 
-        return response.json();
+        const result = await response.json();
+        console.log('Backend response for createClaim:', result);
+        
+        // Handle empty or invalid response from backend
+        if (!result || typeof result !== 'object' || !result.id) {
+            console.warn('Backend returned invalid claim data:', result);
+            // Return a minimal valid response so frontend doesn't crash
+            return result || {};
+        }
+        
+        return result;
     } catch (error) {
         console.error('Error en createClaim:', error);
         throw error;
