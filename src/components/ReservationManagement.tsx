@@ -84,17 +84,28 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
     };
 
     const formatDateTime = (dateString: string) => {
-        const date = new Date(dateString);
+        // Parse timestamps as local time (no timezone conversion)
+        const parseLocalDateTime = (timestamp: string) => {
+            const [datePart, timePart] = timestamp.split('T');
+            const [time] = timePart.split('.');
+            const [hours, minutes] = time.split(':').map(Number);
+            return {
+                datePart,
+                hours,
+                minutes
+            };
+        };
+
+        const parsed = parseLocalDateTime(dateString);
+        const date = new Date(parsed.datePart); // Only use date part for date formatting
+        
         return {
             date: date.toLocaleDateString('es-ES', { 
                 day: '2-digit', 
                 month: '2-digit', 
                 year: 'numeric' 
             }),
-            time: date.toLocaleTimeString('es-ES', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            })
+            time: `${String(parsed.hours).padStart(2, '0')}:${String(parsed.minutes).padStart(2, '0')}`
         };
     };
 

@@ -272,11 +272,19 @@ export default function AvailabilityTimelineViewer({
                           
                           if (dayReservations.length === 0) return null;
                           
+                          // Helper to parse local time to minutes
+                          const parseLocalTimeToMinutes = (timestamp: string) => {
+                            const [, timePart] = timestamp.split('T');
+                            const [time] = timePart.split('.');
+                            const [hours, minutes] = time.split(':').map(Number);
+                            return hours * 60 + minutes;
+                          };
+
                           // Get all unique time boundaries (start and end times)
                           const boundaries = new Set<number>();
                           dayReservations.forEach(res => {
-                            const startMinutes = new Date(res.startTime).getHours() * 60 + new Date(res.startTime).getMinutes();
-                            const endMinutes = new Date(res.endTime).getHours() * 60 + new Date(res.endTime).getMinutes();
+                            const startMinutes = parseLocalTimeToMinutes(res.startTime);
+                            const endMinutes = parseLocalTimeToMinutes(res.endTime);
                             boundaries.add(startMinutes);
                             boundaries.add(endMinutes);
                           });
@@ -291,8 +299,8 @@ export default function AvailabilityTimelineViewer({
                             
                             // Find all reservations that overlap with this segment
                             const overlappingReservations = dayReservations.filter(res => {
-                              const resStart = new Date(res.startTime).getHours() * 60 + new Date(res.startTime).getMinutes();
-                              const resEnd = new Date(res.endTime).getHours() * 60 + new Date(res.endTime).getMinutes();
+                              const resStart = parseLocalTimeToMinutes(res.startTime);
+                              const resEnd = parseLocalTimeToMinutes(res.endTime);
                               return resStart < segmentEnd && resEnd > segmentStart;
                             });
                             
@@ -321,20 +329,15 @@ export default function AvailabilityTimelineViewer({
                             const topPct = (startRelative / TOTAL_MINUTES) * 100;
                             const heightPct = ((endRelative - startRelative) / TOTAL_MINUTES) * 100;
                             
-                            // Create time strings
-                            const startDate = new Date();
-                            startDate.setHours(Math.floor(segment.start / 60), segment.start % 60, 0, 0);
-                            const endDate = new Date();
-                            endDate.setHours(Math.floor(segment.end / 60), segment.end % 60, 0, 0);
+                            // Create time strings directly from minutes
+                            const formatTimeFromMinutes = (totalMinutes: number) => {
+                              const hours = Math.floor(totalMinutes / 60);
+                              const minutes = totalMinutes % 60;
+                              return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                            };
                             
-                            const startStr = startDate.toLocaleTimeString("es-ES", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            });
-                            const endStr = endDate.toLocaleTimeString("es-ES", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            });
+                            const startStr = formatTimeFromMinutes(segment.start);
+                            const endStr = formatTimeFromMinutes(segment.end);
 
                             const ratio = segment.count / capacity;
                             const colorClass = getColorByRatio(ratio);
@@ -434,14 +437,17 @@ export default function AvailabilityTimelineViewer({
 
             <div className="space-y-3">
               {selectedSlot.reservations.map((reservation, idx) => {
-                const startTime = new Date(reservation.startTime).toLocaleTimeString("es-ES", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                });
-                const endTime = new Date(reservation.endTime).toLocaleTimeString("es-ES", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                });
+                // Parse timestamps as local time (no timezone conversion)
+                const parseLocalTimeString = (timestamp: string) => {
+                  // timestamp format: "2025-10-02T19:00:00.000Z"
+                  const [, timePart] = timestamp.split('T');
+                  const [time] = timePart.split('.');
+                  const [hours, minutes] = time.split(':').map(Number);
+                  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                };
+                
+                const startTime = parseLocalTimeString(reservation.startTime);
+                const endTime = parseLocalTimeString(reservation.endTime);
 
                 return (
                   <div 

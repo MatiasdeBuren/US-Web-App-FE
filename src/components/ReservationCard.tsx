@@ -80,33 +80,53 @@ function ReservationCard({
 
     const statusConfig = getStatusConfig(reservation.status);
 
-    // Format dates
-    const startDate = new Date(reservation.startTime);
-    const endDate = new Date(reservation.endTime);
-    
-    const formatDate = (date: Date) => {
-        return date.toLocaleDateString("es-ES", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric"
-        });
+    // Helper to parse timestamp as local time (no timezone conversion)
+    const parseLocalTime = (timestamp: string) => {
+        // timestamp format: "2025-10-02T19:00:00.000Z"
+        const [datePart, timePart] = timestamp.split('T');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const [time] = timePart.split('.');
+        const [hours, minutes, seconds] = time.split(':').map(Number);
+        
+        return {
+            year, month: month - 1, day, hours, minutes, seconds,
+            formatDate: () => {
+                const date = new Date(year, month - 1, day);
+                return date.toLocaleDateString("es-ES", {
+                    weekday: "long",
+                    year: "numeric", 
+                    month: "long",
+                    day: "numeric"
+                });
+            },
+            formatTime: () => {
+                return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+            }
+        };
     };
 
-    const formatTime = (date: Date) => {
-        return date.toLocaleTimeString("es-ES", {
-            hour: "2-digit",
-            minute: "2-digit"
-        });
+    // Parse start and end times
+    const startTime = parseLocalTime(reservation.startTime);
+    const endTime = parseLocalTime(reservation.endTime);
+    
+    const formatDate = (parsedTime: ReturnType<typeof parseLocalTime>) => {
+        return parsedTime.formatDate();
+    };
+
+    const formatTime = (parsedTime: ReturnType<typeof parseLocalTime>) => {
+        return parsedTime.formatTime();
     };
 
     const getDuration = () => {
-        const diffMs = endDate.getTime() - startDate.getTime();
-        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-        const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        const startMinutes = startTime.hours * 60 + startTime.minutes;
+        const endMinutes = endTime.hours * 60 + endTime.minutes;
+        const diffMinutes = endMinutes - startMinutes;
+        
+        const diffHours = Math.floor(diffMinutes / 60);
+        const remainingMinutes = diffMinutes % 60;
         
         if (diffHours > 0) {
-            return diffMinutes > 0 ? `${diffHours}h ${diffMinutes}min` : `${diffHours}h`;
+            return remainingMinutes > 0 ? `${diffHours}h ${remainingMinutes}min` : `${diffHours}h`;
         }
         return `${diffMinutes}min`;
     };
@@ -143,7 +163,7 @@ function ReservationCard({
                         <Calendar className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
                         <div>
                             <p className="font-semibold text-gray-800 capitalize">
-                                {formatDate(startDate)}
+                                {formatDate(startTime)}
                             </p>
                         </div>
                     </div>
@@ -154,7 +174,7 @@ function ReservationCard({
                         <div className="flex-1">
                             <div className="flex items-center gap-2">
                                 <span className="font-semibold text-gray-800">
-                                    {formatTime(startDate)} - {formatTime(endDate)}
+                                    {formatTime(startTime)} - {formatTime(endTime)}
                                 </span>
                                 <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
                                     {getDuration()}
