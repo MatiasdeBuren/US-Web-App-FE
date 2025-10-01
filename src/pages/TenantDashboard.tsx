@@ -21,6 +21,7 @@ import TimeSelector from "../components/TimeSelector";
 import ReservationList from "../components/ReservationList";
 import { LoadingOverlay } from "../components/LoadingSpinner";
 import LogoutSuccessToast from "../components/LogoutSuccessToast";
+import PasswordChangeSuccessToast from "../components/PasswordChangeSuccessToast";
 import CancelReservationModal from "../components/CancelReservationModal";
 import ReservationCancelledToast from "../components/ReservationCancelledToast";
 import ReservationHiddenToast from "../components/ReservationHiddenToast";
@@ -49,6 +50,7 @@ function TenantDashboard() {
     const [showPasswordPopup, setShowPasswordPopup] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showSuccessToast, setShowSuccessToast] = useState(false);
+    const [showPasswordChangeToast, setShowPasswordChangeToast] = useState(false);
     const [newName, setNewName] = useState("");
     
     // Tab navigation state
@@ -361,6 +363,8 @@ function TenantDashboard() {
     const handleChangePassword = async (currentPassword: string, newPassword: string) => {
         if (!token) return;
         await updateUserPassword(token, { currentPassword, newPassword });
+        setShowPasswordPopup(false);
+        setShowPasswordChangeToast(true);
     };
 
     // Function to get current reservation count for a specific time slot
@@ -431,6 +435,12 @@ function TenantDashboard() {
 
     const handleLogoutComplete = () => {
         setShowSuccessToast(false);
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+    };
+
+    const handlePasswordChangeComplete = () => {
+        setShowPasswordChangeToast(false);
         localStorage.removeItem("token");
         window.location.href = "/login";
     };
@@ -687,6 +697,12 @@ function TenantDashboard() {
             <LogoutSuccessToast
                 isVisible={showSuccessToast}
                 onComplete={handleLogoutComplete}
+            />
+
+            {/* Password Change Success Toast */}
+            <PasswordChangeSuccessToast
+                isVisible={showPasswordChangeToast}
+                onComplete={handlePasswordChangeComplete}
             />
             
             {/* General Error Toast */}

@@ -24,6 +24,7 @@ import AmenityManagement from "../components/AmenityManagement";
 import ClaimsManagement from "../components/ClaimsManagement";
 import { LoadingOverlay } from "../components/LoadingSpinner";
 import LogoutSuccessToast from "../components/LogoutSuccessToast";
+import PasswordChangeSuccessToast from "../components/PasswordChangeSuccessToast";
 import ReservationErrorToast from "../components/ReservationErrorToast";
 
 // API calls
@@ -52,6 +53,7 @@ function AdminDashboard() {
     const [showAmenityManagement, setShowAmenityManagement] = useState(false);
     const [showClaimsManagement, setShowClaimsManagement] = useState(false);
     const [showSuccessToast, setShowSuccessToast] = useState(false);
+    const [showPasswordChangeToast, setShowPasswordChangeToast] = useState(false);
     const [showErrorToast, setShowErrorToast] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [newName, setNewName] = useState("");
@@ -119,6 +121,12 @@ function AdminDashboard() {
         window.location.href = "/login";
     };
 
+    const handlePasswordChangeComplete = () => {
+        setShowPasswordChangeToast(false);
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+    };
+
     const handleSaveName = async () => {
         if (!token) return;
         setIsSavingName(true);
@@ -141,7 +149,7 @@ function AdminDashboard() {
         try {
             await updateUserPassword(token, { currentPassword, newPassword });
             setShowPasswordPopup(false);
-            setShowSuccessToast(true);
+            setShowPasswordChangeToast(true);
         } catch (err) {
             setErrorMessage("Error al cambiar contraseña: " + (err instanceof Error ? err.message : "Error desconocido"));
             setShowErrorToast(true);
@@ -520,6 +528,12 @@ function AdminDashboard() {
             <LogoutSuccessToast
                 isVisible={showSuccessToast}
                 onComplete={handleLogoutComplete}
+            />
+
+            {/* Password Change Success Toast */}
+            <PasswordChangeSuccessToast
+                isVisible={showPasswordChangeToast}
+                onComplete={handlePasswordChangeComplete}
             />
             
             {/* Error Toast */}
