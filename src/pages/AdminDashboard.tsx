@@ -395,7 +395,7 @@ function AdminDashboard() {
                     </motion.div>
 
                     {/* Analytics */}
-                    
+                    {/*
                     <motion.div 
                         className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
                         whileHover={{ scale: 1.02 }}
@@ -416,7 +416,7 @@ function AdminDashboard() {
                             • Análisis de tendencias
                         </div>
                     </motion.div>
-                    
+                    */}
 
                     {/* System Settings */}
                     
