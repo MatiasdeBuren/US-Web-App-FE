@@ -72,6 +72,10 @@ function TenantDashboard() {
     
     // Success reservation toast state
     const [showReservationToast, setShowReservationToast] = useState(false);
+    
+    // Error toast state
+    const [showErrorToast, setShowErrorToast] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
     const [successReservationData, setSuccessReservationData] = useState<{ amenityName: string; timeSlot: string } | null>(null);
     
     // Error reservation toast state
@@ -306,7 +310,8 @@ function TenantDashboard() {
             setShowCancelToast(true);
         } catch (err: any) {
             console.error(err);
-            alert("Error canceling reservation: " + err.message);
+            setErrorMessage("Error canceling reservation: " + err.message);
+            setShowErrorToast(true);
         } finally {
             setIsCancelling(null);
             setReservationToCancel(null);
@@ -329,7 +334,8 @@ function TenantDashboard() {
             setShowHiddenToast(true);
         } catch (err: any) {
             console.error(err);
-            alert("Error ocultando reserva: " + err.message);
+            setErrorMessage("Error ocultando reserva: " + err.message);
+            setShowErrorToast(true);
         } finally {
             setIsHiding(null);
         }
@@ -345,7 +351,8 @@ function TenantDashboard() {
             setShowEditPopup(false);
 
         } catch (err) {
-            alert("Error al actualizar nombre: " + (err instanceof Error ? err.message : "Error desconocido"));
+            setErrorMessage("Error al actualizar nombre: " + (err instanceof Error ? err.message : "Error desconocido"));
+            setShowErrorToast(true);
         }
     };
 
@@ -441,7 +448,8 @@ function TenantDashboard() {
             setShowSuccessToast(true);
         } catch (err) {
             setShowDeleteConfirm(false);
-            alert("Error al eliminar la cuenta: " + (err instanceof Error ? err.message : "Error desconocido"));
+            setErrorMessage("Error al eliminar la cuenta: " + (err instanceof Error ? err.message : "Error desconocido"));
+            setShowErrorToast(true);
         } finally {
             setIsDeletingAccount(false);
         }
@@ -677,6 +685,16 @@ function TenantDashboard() {
             <LogoutSuccessToast
                 isVisible={showSuccessToast}
                 onComplete={handleLogoutComplete}
+            />
+            
+            {/* General Error Toast */}
+            <ReservationErrorToast
+                isVisible={showErrorToast}
+                errorMessage={errorMessage}
+                onComplete={() => {
+                    setShowErrorToast(false);
+                    setErrorMessage('');
+                }}
             />
         </div>
     );

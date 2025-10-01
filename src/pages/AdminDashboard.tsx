@@ -24,6 +24,7 @@ import AmenityManagement from "../components/AmenityManagement";
 import ClaimsManagement from "../components/ClaimsManagement";
 import { LoadingOverlay } from "../components/LoadingSpinner";
 import LogoutSuccessToast from "../components/LogoutSuccessToast";
+import ReservationErrorToast from "../components/ReservationErrorToast";
 
 // API calls
 import { getAdminStats, type AdminStats as AdminStatsType } from "../api_calls/admin";
@@ -51,6 +52,8 @@ function AdminDashboard() {
     const [showAmenityManagement, setShowAmenityManagement] = useState(false);
     const [showClaimsManagement, setShowClaimsManagement] = useState(false);
     const [showSuccessToast, setShowSuccessToast] = useState(false);
+    const [showErrorToast, setShowErrorToast] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
     const [newName, setNewName] = useState("");
     
     // Loading states
@@ -124,7 +127,8 @@ function AdminDashboard() {
             setUserData((prev) => prev && { ...prev, user: { ...prev.user, name: newName } });
             setShowEditPopup(false);
         } catch (err) {
-            alert("Error al actualizar nombre: " + (err instanceof Error ? err.message : "Error desconocido"));
+            setErrorMessage("Error al actualizar nombre: " + (err instanceof Error ? err.message : "Error desconocido"));
+            setShowErrorToast(true);
         } finally {
             setIsSavingName(false);
         }
@@ -137,9 +141,10 @@ function AdminDashboard() {
         try {
             await updateUserPassword(token, { currentPassword, newPassword });
             setShowPasswordPopup(false);
-            alert("Contraseña actualizada exitosamente");
+            setShowSuccessToast(true);
         } catch (err) {
-            alert("Error al cambiar contraseña: " + (err instanceof Error ? err.message : "Error desconocido"));
+            setErrorMessage("Error al cambiar contraseña: " + (err instanceof Error ? err.message : "Error desconocido"));
+            setShowErrorToast(true);
         } finally {
             setIsChangingPassword(false);
         }
@@ -160,7 +165,8 @@ function AdminDashboard() {
             setShowSuccessToast(true);
         } catch (err) {
             setShowDeleteConfirm(false);
-            alert("Error al eliminar la cuenta: " + (err instanceof Error ? err.message : "Error desconocido"));
+            setErrorMessage("Error al eliminar la cuenta: " + (err instanceof Error ? err.message : "Error desconocido"));
+            setShowErrorToast(true);
         } finally {
             setIsDeletingAccount(false);
         }
@@ -513,6 +519,16 @@ function AdminDashboard() {
             <LogoutSuccessToast
                 isVisible={showSuccessToast}
                 onComplete={handleLogoutComplete}
+            />
+            
+            {/* Error Toast */}
+            <ReservationErrorToast
+                isVisible={showErrorToast}
+                errorMessage={errorMessage}
+                onComplete={() => {
+                    setShowErrorToast(false);
+                    setErrorMessage('');
+                }}
             />
         </div>
     );
