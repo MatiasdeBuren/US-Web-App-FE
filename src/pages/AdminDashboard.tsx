@@ -117,7 +117,7 @@ function AdminDashboard() {
     const handleLogoutComplete = () => {
         setShowSuccessToast(false);
         localStorage.removeItem("token");
-        window.location.href = "/login";
+        window.location.replace("/login");
     };
 
     const handlePasswordChangeComplete = () => {
@@ -175,7 +175,7 @@ function AdminDashboard() {
             
             // Redirect to login after a short delay to show success message
             setTimeout(() => {
-                window.location.href = "/login";
+                window.location.replace("/login");
             }, 2000);
         } catch (err) {
             setShowDeleteConfirm(false);
