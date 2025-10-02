@@ -2,7 +2,7 @@ services:
   - type: web
     name: us-web-app-frontend
     env: static
-    buildCommand: npm ci && npm run build
+    buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     envVars:
       - key: VITE_API_URL
@@ -16,7 +16,7 @@ services:
         value: nosniff
       - path: /*
         name: Cache-Control
-        value: no-cache
+        value: no-cache, no-store, must-revalidate
     routes:
       - type: rewrite
         source: /*
