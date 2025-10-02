@@ -135,7 +135,7 @@ function ReservationCard({
         onCancel(reservation.id);
     };
 
-    const isActive = reservation.status !== "cancelled" && reservation.status !== "denied";
+    const isActive = reservation.status !== "cancelada" && reservation.status !== "cancelled" && reservation.status !== "denied";
 
     return (
         <div className={`relative overflow-hidden rounded-2xl border ${statusConfig.borderColor} ${statusConfig.bgColor} shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300`}>
