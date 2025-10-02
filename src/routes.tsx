@@ -10,10 +10,10 @@ const AppRoutes: React.FC = () => {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
         {/* Catch-all route - redirect any unknown route to login */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
