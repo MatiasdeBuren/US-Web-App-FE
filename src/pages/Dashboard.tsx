@@ -56,7 +56,7 @@ function Dashboard() {
         );
     }
 
-    if (!token) return <Navigate to="/login" />;
+    if (!token) return <Navigate to="/login" replace />;
 
     // Determine which dashboard to show based on user role
     const userRole = userData?.user?.role || "tenant";
