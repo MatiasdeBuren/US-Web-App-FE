@@ -94,7 +94,7 @@ function Header({ userName, onProfileClick, showProfileMenu = true, onLogout, on
                                     : 'text-gray-500 hover:text-gray-700'
                             }`}
                         >
-                            Dashboard
+                            Reservas
                         </button>
                         {showClaimsTab && (
                             <button 
@@ -108,11 +108,7 @@ function Header({ userName, onProfileClick, showProfileMenu = true, onLogout, on
                                 Reclamos
                             </button>
                         )}
-                        {showAmenitiesTab && (
-                            <button className="text-gray-500 hover:text-gray-700 font-medium transition-colors cursor-not-allowed">
-                                Amenities
-                            </button>
-                        )}
+                    
                     </nav>
 
                     {/* Mobile menu button */}
