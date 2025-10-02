@@ -21,6 +21,7 @@ import TimeSelector from "../components/TimeSelector";
 import ReservationList from "../components/ReservationList";
 import { LoadingOverlay } from "../components/LoadingSpinner";
 import LogoutSuccessToast from "../components/LogoutSuccessToast";
+import PasswordChangeSuccessToast from "../components/PasswordChangeSuccessToast";
 import CancelReservationModal from "../components/CancelReservationModal";
 import ReservationCancelledToast from "../components/ReservationCancelledToast";
 import ReservationHiddenToast from "../components/ReservationHiddenToast";
@@ -49,6 +50,7 @@ function TenantDashboard() {
     const [showPasswordPopup, setShowPasswordPopup] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showSuccessToast, setShowSuccessToast] = useState(false);
+    const [showPasswordChangeToast, setShowPasswordChangeToast] = useState(false);
     const [newName, setNewName] = useState("");
     
     // Tab navigation state
@@ -361,6 +363,8 @@ function TenantDashboard() {
     const handleChangePassword = async (currentPassword: string, newPassword: string) => {
         if (!token) return;
         await updateUserPassword(token, { currentPassword, newPassword });
+        setShowPasswordPopup(false);
+        setShowPasswordChangeToast(true);
     };
 
     // Function to get current reservation count for a specific time slot
@@ -435,6 +439,12 @@ function TenantDashboard() {
         window.location.href = "/login";
     };
 
+    const handlePasswordChangeComplete = () => {
+        setShowPasswordChangeToast(false);
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+    };
+
     const handleDeleteAccount = () => {
         setShowDeleteConfirm(true);
     };
@@ -465,11 +475,12 @@ function TenantDashboard() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 overflow-hidden">
+        <div className={`min-h-screen bg-gray-100 overflow-hidden ${(showSuccessToast || showPasswordChangeToast) ? 'pointer-events-none' : ''}`}>
             {/* HEADER */}
             <Header
                 userName={userData?.user.name || ""}
                 onProfileClick={() => setShowProfile((prev) => !prev)}
+                onLogout={handleLogout}
                 onClaimsClick={() => setActiveTab("reclamos")}
                 onDashboardClick={() => setActiveTab("dashboard")}
                 activeTab={activeTab}
@@ -695,6 +706,12 @@ function TenantDashboard() {
                 isVisible={showSuccessToast}
                 onComplete={handleLogoutComplete}
             />
+
+            {/* Password Change Success Toast */}
+            <PasswordChangeSuccessToast
+                isVisible={showPasswordChangeToast}
+                onComplete={handlePasswordChangeComplete}
+            />
             
             {/* General Error Toast */}
             <ReservationErrorToast
@@ -705,6 +722,7 @@ function TenantDashboard() {
                     setErrorMessage('');
                 }}
             />
+
         </div>
     );
 }
