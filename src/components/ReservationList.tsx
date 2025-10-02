@@ -20,9 +20,27 @@ function ReservationList({
     cancellingId,
     hidingId
 }: ReservationListProps) {
-    // Separate active and cancelled/denied reservations
-    const activeReservations = reservations.filter(r => r.status !== "cancelled" && r.status !== "denied");
-    const inactiveReservations = reservations.filter(r => r.status === "cancelled" || r.status === "denied");
+    // Helper function to check if a reservation is in the past
+    const isReservationPast = (reservation: Reservation): boolean => {
+        const now = new Date();
+        const reservationDate = new Date(reservation.startTime);
+        return reservationDate < now;
+    };
+
+    // Separate active and inactive reservations
+    // Active: confirmed status AND not in the past
+    // Inactive: cancelled, denied, OR in the past
+    const activeReservations = reservations.filter(r => 
+        r.status === "confirmada" && 
+        !isReservationPast(r)
+    );
+    
+    const inactiveReservations = reservations.filter(r => 
+        r.status === "cancelada" || 
+        r.status === "cancelled" || 
+        r.status === "denied" || 
+        isReservationPast(r)
+    );
 
     // Pagination state for active reservations
     const [activeCurrentPage, setActiveCurrentPage] = useState(1);
