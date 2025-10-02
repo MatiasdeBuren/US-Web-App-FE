@@ -379,9 +379,16 @@ function TenantDashboard() {
             const [startTimeStr, endTimeStr] = timeSlot.split(" - ");
             if (!startTimeStr || !endTimeStr) return 0;
 
-            // Create start and end datetime strings in local timezone
-            const localSlotStart = new Date(`${date}T${startTimeStr}:00`);
-            const localSlotEnd = new Date(`${date}T${endTimeStr}:00`);
+            // Helper function to build timestamp from user's selected time (NO timezone conversion)
+            const buildTimestampFromUserTime = (dateStr: string, timeStr: string): string => {
+                // dateStr: "2025-10-01", timeStr: "14:00"
+                const [hours, minutes] = timeStr.split(':');
+                return `${dateStr}T${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:00.000Z`;
+            };
+
+            // Convert user's selected time to UTC format (matching server format)
+            const utcSlotStart = new Date(buildTimestampFromUserTime(date, startTimeStr));
+            const utcSlotEnd = new Date(buildTimestampFromUserTime(date, endTimeStr));
 
             // Get reservations for the specific date
             const reservations = await getReservationsByAmenity(token, amenity.id, date, date);
@@ -396,8 +403,8 @@ function TenantDashboard() {
                 const resStart = new Date(reservation.startTime); // UTC from backend
                 const resEnd = new Date(reservation.endTime);     // UTC from backend
 
-                // Check if there's any overlap (all times in UTC for consistent comparison)
-                const hasOverlap = resStart < localSlotEnd && resEnd > localSlotStart;
+                // Check if there's any overlap (all times now in UTC for consistent comparison)
+                const hasOverlap = resStart < utcSlotEnd && resEnd > utcSlotStart;
                 
                 if (hasOverlap) {
                     count++;

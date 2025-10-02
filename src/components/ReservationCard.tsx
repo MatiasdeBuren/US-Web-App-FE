@@ -142,10 +142,18 @@ function ReservationCard({
         return reservationDate < now;
     };
 
+    // Helper function to check if a reservation is cancelled
+    const isReservationCancelled = (): boolean => {
+        const cancelledStatuses = ["cancelada", "cancelled", "canceled", "denied"];
+        return cancelledStatuses.includes(reservation.status.toLowerCase());
+    };
+
     // Determine button logic:
-    // - Show "Cancelar reserva" only if: confirmed AND future date
+    // - Show "Cancelar reserva" only if: confirmed AND future date AND not cancelled
     // - Show "Eliminar de vista" if: cancelled, denied, OR past date
-    const isActive = reservation.status === "confirmada" && !isReservationPast();
+    const isActive = reservation.status === "confirmada" && 
+                     !isReservationPast() && 
+                     !isReservationCancelled();
 
     return (
         <div className={`relative overflow-hidden rounded-2xl border ${statusConfig.borderColor} ${statusConfig.bgColor} shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300`}>

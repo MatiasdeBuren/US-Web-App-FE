@@ -20,6 +20,14 @@ function ReservationList({
     cancellingId,
     hidingId
 }: ReservationListProps) {
+    // Debug: Log reservations to help identify the issue
+    console.log('ReservationList - All reservations:', reservations.map(r => ({
+        id: r.id,
+        status: r.status,
+        startTime: r.startTime,
+        amenityName: r.amenity?.name
+    })));
+
     // Helper function to check if a reservation is in the past
     const isReservationPast = (reservation: Reservation): boolean => {
         const now = new Date();
@@ -27,20 +35,39 @@ function ReservationList({
         return reservationDate < now;
     };
 
+    // Helper function to check if a reservation is cancelled
+    const isReservationCancelled = (reservation: Reservation): boolean => {
+        const cancelledStatuses = ["cancelada", "cancelled", "canceled", "denied"];
+        return cancelledStatuses.includes(reservation.status.toLowerCase());
+    };
+
     // Separate active and inactive reservations
-    // Active: confirmed status AND not in the past
+    // Active: confirmed status AND not in the past AND not cancelled
     // Inactive: cancelled, denied, OR in the past
     const activeReservations = reservations.filter(r => 
         r.status === "confirmada" && 
-        !isReservationPast(r)
+        !isReservationPast(r) &&
+        !isReservationCancelled(r)
     );
     
     const inactiveReservations = reservations.filter(r => 
-        r.status === "cancelada" || 
-        r.status === "cancelled" || 
-        r.status === "denied" || 
+        isReservationCancelled(r) || 
         isReservationPast(r)
     );
+
+    // Debug: Log the separation results
+    console.log('ReservationList - Active reservations:', activeReservations.map(r => ({
+        id: r.id,
+        status: r.status,
+        startTime: r.startTime
+    })));
+    console.log('ReservationList - Inactive reservations:', inactiveReservations.map(r => ({
+        id: r.id,
+        status: r.status,
+        startTime: r.startTime,
+        isCancelled: isReservationCancelled(r),
+        isPast: isReservationPast(r)
+    })));
 
     // Pagination state for active reservations
     const [activeCurrentPage, setActiveCurrentPage] = useState(1);
