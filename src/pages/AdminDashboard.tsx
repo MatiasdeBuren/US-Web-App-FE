@@ -4,8 +4,7 @@ import {
     Users, 
     Building, 
     Calendar, 
-    Settings, 
-    BarChart3, 
+    Settings,  
     Shield,
     Home,
     Clock
