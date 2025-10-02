@@ -7,7 +7,3 @@ services:
     envVars:
       - key: VITE_API_URL
         value: https://us-web-app-be.onrender.com
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
