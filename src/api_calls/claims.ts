@@ -15,6 +15,7 @@ export interface Claim {
     createdBy: string;
     userId?: number; // ID del usuario que creó el reclamo
     adminNotes?: string; // Notas administrativas agregadas por el admin
+    isAnonymous?: boolean; // Si el reclamo fue marcado como anónimo por el creador
     adhesion_counts?: {
         support: number;
         disagree: number;
@@ -28,6 +29,7 @@ export interface CreateClaimData {
     description: string;
     location: string;
     priority: 'baja' | 'media' | 'alta' | 'urgente';
+    isAnonymous?: boolean; // Si el reclamo debe ser mostrado como anónimo
 }
 
 export interface UpdateClaimData {

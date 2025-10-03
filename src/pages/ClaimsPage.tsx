@@ -636,7 +636,11 @@ function ClaimsPage() {
                   <div className="text-sm text-gray-500 space-y-1">
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4" />
-                      <span>Creado por: <span className="font-medium text-gray-700">{claim.createdBy}</span></span>
+                      <span>Creado por: <span className="font-medium text-gray-700">
+                        {claim.isAnonymous && currentUser?.role !== 'admin' 
+                          ? 'Anónimo' 
+                          : claim.createdBy}
+                      </span></span>
                     </div>
                     <div className="flex flex-col sm:flex-row sm:gap-4 gap-1">
                       <span>Creado: {formatDate(claim.createdAt)}</span>

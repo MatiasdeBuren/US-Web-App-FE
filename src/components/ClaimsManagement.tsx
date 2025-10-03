@@ -411,6 +411,7 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
                               <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-gray-500">
                                 <span className="flex items-center gap-1">
                                   <User className="w-3 h-3 flex-shrink-0" />
+                                  {/* Admins always see the real username, regardless of anonymity */}
                                   <span className="truncate">{claim.createdBy}</span>
                                 </span>
                                 <span className="flex items-center gap-1">

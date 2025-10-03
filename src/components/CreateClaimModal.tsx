@@ -17,6 +17,7 @@ interface ClaimFormData {
   description: string;
   location: string;
   priority: string;
+  isAnonymous: boolean;
 }
 
 interface Claim {
@@ -54,7 +55,8 @@ function CreateClaimModal({ isVisible, onClose, onSave, editingClaim, isSaving =
     category: '',
     description: '',
     location: '',
-    priority: 'medium'
+    priority: 'medium',
+    isAnonymous: false
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -66,7 +68,8 @@ function CreateClaimModal({ isVisible, onClose, onSave, editingClaim, isSaving =
         category: editingClaim.category,
         description: editingClaim.description,
         location: editingClaim.location,
-        priority: editingClaim.priority
+        priority: editingClaim.priority,
+        isAnonymous: (editingClaim as any).isAnonymous || false
       });
     } else {
       setFormData({
@@ -74,7 +77,8 @@ function CreateClaimModal({ isVisible, onClose, onSave, editingClaim, isSaving =
         category: '',
         description: '',
         location: '',
-        priority: 'medium'
+        priority: 'medium',
+        isAnonymous: false
       });
     }
     setErrors({});
@@ -122,7 +126,7 @@ function CreateClaimModal({ isVisible, onClose, onSave, editingClaim, isSaving =
     }
   };
 
-  const handleChange = (field: keyof ClaimFormData, value: string) => {
+  const handleChange = (field: keyof ClaimFormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -286,6 +290,30 @@ function CreateClaimModal({ isVisible, onClose, onSave, editingClaim, isSaving =
                   <p className="text-sm text-gray-500">Mínimo 10 caracteres</p>
                 )}
                 <p className="text-sm text-gray-400 ml-auto">{formData.description.length}/500</p>
+              </div>
+            </div>
+
+            {/* Anonymity Option */}
+            <div className="bg-gray-50 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex items-center h-5">
+                  <input
+                    id="isAnonymous"
+                    type="checkbox"
+                    checked={formData.isAnonymous}
+                    onChange={(e) => handleChange('isAnonymous', e.target.checked)}
+                    disabled={isSaving}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label htmlFor="isAnonymous" className="text-sm font-medium text-gray-700 cursor-pointer">
+                    Publicar como anónimo
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Cuando esté marcado, tu nombre no será visible para otros usuarios. Los administradores siempre podrán ver quién creó el reclamo.
+                  </p>
+                </div>
               </div>
             </div>
 
