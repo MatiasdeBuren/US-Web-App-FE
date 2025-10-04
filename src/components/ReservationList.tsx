@@ -31,21 +31,21 @@ function ReservationList({
     // Helper function to check if a reservation is in the past
     const isReservationPast = (reservation: Reservation): boolean => {
         const now = new Date();
-        const reservationDate = new Date(reservation.startTime);
-        return reservationDate < now;
+        const reservationEndDate = new Date(reservation.endTime);
+        return reservationEndDate < now;
     };
 
     // Helper function to check if a reservation is cancelled
     const isReservationCancelled = (reservation: Reservation): boolean => {
         const cancelledStatuses = ["cancelada", "cancelled", "canceled", "denied"];
-        return cancelledStatuses.includes(reservation.status.toLowerCase());
+        return cancelledStatuses.includes(reservation.status?.name?.toLowerCase() || '');
     };
 
     // Separate active and inactive reservations
     // Active: confirmed status AND not in the past AND not cancelled
     // Inactive: cancelled, denied, OR in the past
     const activeReservations = reservations.filter(r => 
-        r.status === "confirmada" && 
+        r.status?.name === "confirmada" && 
         !isReservationPast(r) &&
         !isReservationCancelled(r)
     );

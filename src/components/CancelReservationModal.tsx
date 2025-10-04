@@ -20,26 +20,28 @@ function CancelReservationModal({
     if (!reservation) return null;
 
     // Format the reservation details
-    // Parse timestamps as local time (no timezone conversion)
-    const parseLocalTime = (timestamp: string) => {
-        const [, timePart] = timestamp.split('T');
-        const [time] = timePart.split('.');
-        const [hours, minutes] = time.split(':').map(Number);
-        return { hours, minutes };
-    };
-
-    const startTimeLocal = parseLocalTime(reservation.startTime);
-    const endTimeLocal = parseLocalTime(reservation.endTime);
-    
+    // Parse UTC timestamp and convert to local time for display
     const startDate = new Date(reservation.startTime);
+    const endDate = new Date(reservation.endTime);
+    
     const dateStr = startDate.toLocaleDateString('es-ES', { 
         weekday: 'long', 
         year: 'numeric', 
         month: 'long', 
         day: 'numeric' 
     });
-    const startTimeStr = `${String(startTimeLocal.hours).padStart(2, '0')}:${String(startTimeLocal.minutes).padStart(2, '0')}`;
-    const endTimeStr = `${String(endTimeLocal.hours).padStart(2, '0')}:${String(endTimeLocal.minutes).padStart(2, '0')}`;
+    
+    const startTimeStr = startDate.toLocaleTimeString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    });
+    
+    const endTimeStr = endDate.toLocaleTimeString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    });
 
     return (
         <AnimatePresence>

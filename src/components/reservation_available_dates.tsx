@@ -272,12 +272,10 @@ export default function AvailabilityTimelineViewer({
                           
                           if (dayReservations.length === 0) return null;
                           
-                          // Helper to parse local time to minutes
+                          // Helper to parse UTC timestamp to local time minutes
                           const parseLocalTimeToMinutes = (timestamp: string) => {
-                            const [, timePart] = timestamp.split('T');
-                            const [time] = timePart.split('.');
-                            const [hours, minutes] = time.split(':').map(Number);
-                            return hours * 60 + minutes;
+                            const utcDate = new Date(timestamp);
+                            return utcDate.getHours() * 60 + utcDate.getMinutes();
                           };
 
                           // Get all unique time boundaries (start and end times)
@@ -438,11 +436,13 @@ export default function AvailabilityTimelineViewer({
               {selectedSlot.reservations.map((reservation, idx) => {
                 // Parse timestamps as local time (no timezone conversion)
                 const parseLocalTimeString = (timestamp: string) => {
-                  // timestamp format: "2025-10-02T19:00:00.000Z"
-                  const [, timePart] = timestamp.split('T');
-                  const [time] = timePart.split('.');
-                  const [hours, minutes] = time.split(':').map(Number);
-                  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                  // timestamp format: "2025-10-02T19:00:00.000Z" (UTC)
+                  const utcDate = new Date(timestamp);
+                  return utcDate.toLocaleTimeString("es-ES", {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                  });
                 };
                 
                 const startTime = parseLocalTimeString(reservation.startTime);

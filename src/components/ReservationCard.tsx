@@ -78,21 +78,16 @@ function ReservationCard({
         }
     };
 
-    const statusConfig = getStatusConfig(reservation.status);
+    const statusConfig = getStatusConfig(reservation.status?.name || 'unknown');
 
-    // Helper to parse timestamp as local time (no timezone conversion)
+    // Helper to parse UTC timestamp and convert to local time for display
     const parseLocalTime = (timestamp: string) => {
-        // timestamp format: "2025-10-02T19:00:00.000Z"
-        const [datePart, timePart] = timestamp.split('T');
-        const [year, month, day] = datePart.split('-').map(Number);
-        const [time] = timePart.split('.');
-        const [hours, minutes, seconds] = time.split(':').map(Number);
+        // timestamp format: "2025-10-02T19:00:00.000Z" (UTC)
+        const utcDate = new Date(timestamp);
         
         return {
-            year, month: month - 1, day, hours, minutes, seconds,
             formatDate: () => {
-                const date = new Date(year, month - 1, day);
-                return date.toLocaleDateString("es-ES", {
+                return utcDate.toLocaleDateString("es-ES", {
                     weekday: "long",
                     year: "numeric", 
                     month: "long",
@@ -100,7 +95,11 @@ function ReservationCard({
                 });
             },
             formatTime: () => {
-                return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                return utcDate.toLocaleTimeString("es-ES", {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
             }
         };
     };
@@ -118,9 +117,10 @@ function ReservationCard({
     };
 
     const getDuration = () => {
-        const startMinutes = startTime.hours * 60 + startTime.minutes;
-        const endMinutes = endTime.hours * 60 + endTime.minutes;
-        const diffMinutes = endMinutes - startMinutes;
+        const startDate = new Date(reservation.startTime);
+        const endDate = new Date(reservation.endTime);
+        const diffMilliseconds = endDate.getTime() - startDate.getTime();
+        const diffMinutes = Math.floor(diffMilliseconds / (1000 * 60));
         
         const diffHours = Math.floor(diffMinutes / 60);
         const remainingMinutes = diffMinutes % 60;
@@ -138,20 +138,20 @@ function ReservationCard({
     // Helper function to check if reservation is in the past
     const isReservationPast = (): boolean => {
         const now = new Date();
-        const reservationDate = new Date(reservation.startTime);
-        return reservationDate < now;
+        const reservationEndDate = new Date(reservation.endTime);
+        return reservationEndDate < now;
     };
 
     // Helper function to check if a reservation is cancelled
     const isReservationCancelled = (): boolean => {
         const cancelledStatuses = ["cancelada", "cancelled", "canceled", "denied"];
-        return cancelledStatuses.includes(reservation.status.toLowerCase());
+        return cancelledStatuses.includes(reservation.status?.name?.toLowerCase() || '');
     };
 
     // Determine button logic:
     // - Show "Cancelar reserva" only if: confirmed AND future date AND not cancelled
     // - Show "Eliminar de vista" if: cancelled, denied, OR past date
-    const isActive = reservation.status === "confirmada" && 
+    const isActive = reservation.status?.name === "confirmada" && 
                      !isReservationPast() && 
                      !isReservationCancelled();
 

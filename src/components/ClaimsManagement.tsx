@@ -68,12 +68,7 @@ const priorityColors = {
   urgente: 'bg-red-100 text-red-800 border-red-200'
 };
 
-const priorityLabels = {
-  baja: 'Baja',
-  media: 'Media',
-  alta: 'Alta',
-  urgente: 'Urgente'
-};
+
 
 const statusColors = {
   pendiente: 'bg-gray-100 text-gray-800 border-gray-200',
@@ -163,8 +158,8 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
       const sortedClaims = response.claims.sort((a, b) => {
         // Priority order: 
         // 1. Finalized claims (resolved/rejected) go to the bottom
-        const aFinalized = a.status === 'resuelto' || a.status === 'rechazado';
-        const bFinalized = b.status === 'resuelto' || b.status === 'rechazado';
+        const aFinalized = a.status?.name === 'resuelto' || a.status?.name === 'rechazado';
+        const bFinalized = b.status?.name === 'resuelto' || b.status?.name === 'rechazado';
         
         if (aFinalized && !bFinalized) return 1;
         if (!aFinalized && bFinalized) return -1;
@@ -351,8 +346,8 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
             ) : (
               <div className="grid gap-4">
                 {claims.map((claim) => {
-                  const CategoryIcon = categoryIcons[claim.category];
-                  const StatusIcon = statusIcons[claim.status];
+                  const CategoryIcon = categoryIcons[claim.category?.name as keyof typeof categoryIcons] || AlertTriangle;
+                  const StatusIcon = statusIcons[claim.status?.name as keyof typeof statusIcons] || CheckCircle;
                   
                   return (
                     <motion.div
@@ -364,12 +359,12 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
                       <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
                         {/* Category Icon */}
                         <div className={`self-start p-2 rounded-xl ${
-                          claim.category === 'ascensor' ? 'bg-purple-100 text-purple-600' :
-                          claim.category === 'plomeria' ? 'bg-blue-100 text-blue-600' :
-                          claim.category === 'electricidad' ? 'bg-yellow-100 text-yellow-600' :
-                          claim.category === 'temperatura' ? 'bg-green-100 text-green-600' :
-                          claim.category === 'areas_comunes' ? 'bg-indigo-100 text-indigo-600' :
-                          claim.category === 'edificio' ? 'bg-gray-100 text-gray-600' :
+                          claim.category?.name === 'ascensor' ? 'bg-purple-100 text-purple-600' :
+                          claim.category?.name === 'plomeria' ? 'bg-blue-100 text-blue-600' :
+                          claim.category?.name === 'electricidad' ? 'bg-yellow-100 text-yellow-600' :
+                          claim.category?.name === 'temperatura' ? 'bg-green-100 text-green-600' :
+                          claim.category?.name === 'areas_comunes' ? 'bg-indigo-100 text-indigo-600' :
+                          claim.category?.name === 'edificio' ? 'bg-gray-100 text-gray-600' :
                           'bg-orange-100 text-orange-600'
                         }`}>
                           <CategoryIcon className="w-5 h-5" />
@@ -452,13 +447,13 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
 
                           {/* Tags */}
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${priorityColors[claim.priority]}`}>
-                              {priorityLabels[claim.priority]}
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${priorityColors[claim.priority?.name as keyof typeof priorityColors] || 'bg-gray-100 text-gray-600 border-gray-300'}`}>
+                              {claim.priority?.label || claim.priority?.name || 'Sin prioridad'}
                             </span>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${statusColors[claim.status]} flex items-center gap-1`}>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${statusColors[claim.status?.name as keyof typeof statusColors] || 'bg-gray-100 text-gray-600 border-gray-300'} flex items-center gap-1`}>
                               <StatusIcon className="w-3 h-3" />
-                              <span className="hidden sm:inline">{statusLabels[claim.status]}</span>
-                              <span className="sm:hidden">{statusLabels[claim.status].substring(0, 3)}</span>
+                              <span className="hidden sm:inline">{claim.status?.label || claim.status?.name || 'Sin estado'}</span>
+                              <span className="sm:hidden">{(claim.status?.label || claim.status?.name || 'Sin').substring(0, 3)}</span>
                             </span>
                             
                             {/* Adhesion counters for admin */}
@@ -585,7 +580,7 @@ interface StatusUpdateModalProps {
 }
 
 function StatusUpdateModal({ claim, isVisible, onClose, onUpdate, isLoading }: StatusUpdateModalProps) {
-  const [selectedStatus, setSelectedStatus] = useState<string>(claim.status);
+  const [selectedStatus, setSelectedStatus] = useState<string>(claim.status?.name || '');
   const [adminNotes, setAdminNotes] = useState(claim.adminNotes || '');
 
   // Update state when claim changes or modal becomes visible
@@ -593,7 +588,7 @@ function StatusUpdateModal({ claim, isVisible, onClose, onUpdate, isLoading }: S
     if (isVisible) {
       console.log('🔍 [MODAL DEBUG] Opening modal for claim:', claim.id);
       console.log('🔍 [MODAL DEBUG] Claim adminNotes:', claim.adminNotes);
-      setSelectedStatus(claim.status);
+      setSelectedStatus(claim.status?.name || '');
       setAdminNotes(claim.adminNotes || '');
     }
   }, [claim, isVisible]);
@@ -613,7 +608,7 @@ function StatusUpdateModal({ claim, isVisible, onClose, onUpdate, isLoading }: S
         
         <div className="mb-4">
           <p className="text-sm text-gray-600 mb-2">Reclamo: <strong>{claim.subject}</strong></p>
-          <p className="text-sm text-gray-500">Estado actual: {statusLabels[claim.status]}</p>
+          <p className="text-sm text-gray-500">Estado actual: {claim.status?.label || claim.status?.name || 'Sin estado'}</p>
         </div>
 
         <div className="mb-4">

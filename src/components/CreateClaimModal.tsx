@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, AlertTriangle, Wrench, Droplets, Zap, Wind, Users, Building } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import FormInput from './FormInput';
+import { type Claim } from '../api_calls/claims';
 
 interface CreateClaimModalProps {
   isVisible: boolean;
@@ -20,17 +21,7 @@ interface ClaimFormData {
   isAnonymous: boolean;
 }
 
-interface Claim {
-  id: number;
-  subject: string;
-  category: string;
-  description: string;
-  location: string;
-  priority: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-}
+
 
 const categoryOptions = [
   { value: 'ascensor', label: 'Ascensor', icon: Wrench, color: 'purple' },
@@ -65,10 +56,10 @@ function CreateClaimModal({ isVisible, onClose, onSave, editingClaim, isSaving =
     if (editingClaim) {
       setFormData({
         subject: editingClaim.subject,
-        category: editingClaim.category,
+        category: editingClaim.category?.name || '',
         description: editingClaim.description,
         location: editingClaim.location,
-        priority: editingClaim.priority,
+        priority: editingClaim.priority?.name || '',
         isAnonymous: (editingClaim as any).isAnonymous || false
       });
     } else {
