@@ -35,6 +35,16 @@ interface ManagementModalProps<T extends BaseItem> {
   customFilter?: (items: T[], searchTerm: string, filters?: any) => T[];
   emptyStateMessage?: string;
   createButtonText?: string;
+  
+  // Custom success messages
+  createSuccessMessage?: string;
+  updateSuccessMessage?: string;
+  deleteSuccessMessage?: string;
+  
+  // Custom success callbacks (if provided, these will override the default toast)
+  onCreateSuccess?: (item: T) => void;
+  onUpdateSuccess?: (item: T) => void;
+  onDeleteSuccess?: (deletedId: number) => void;
 }
 
 function ManagementModal<T extends BaseItem>({
@@ -55,7 +65,13 @@ function ManagementModal<T extends BaseItem>({
   additionalFilters,
   customFilter,
   emptyStateMessage = "No hay elementos para mostrar",
-  createButtonText = "Crear Nuevo"
+  createButtonText = "Crear Nuevo",
+  createSuccessMessage,
+  updateSuccessMessage,
+  deleteSuccessMessage,
+  onCreateSuccess,
+  onUpdateSuccess,
+  onDeleteSuccess
 }: ManagementModalProps<T>) {
   const { showToast } = useToast();
   const [items, setItems] = useState<T[]>([]);
@@ -116,11 +132,18 @@ function ManagementModal<T extends BaseItem>({
     setProcessing(true);
 
     try {
-      await createItem(token, formData);
+      const newItem = await createItem(token, formData);
       // Refresh the entire list to ensure we have complete data
       const itemsData = await loadItems(token);
       setItems(Array.isArray(itemsData) ? itemsData : []);
-      showToast(`${title} creado exitosamente`, "success");
+      
+      // Use custom callback if provided, otherwise show default toast
+      if (onCreateSuccess) {
+        onCreateSuccess(newItem);
+      } else {
+        showToast(createSuccessMessage || `${title} creado exitosamente`, "success");
+      }
+      
       setShowCreateModal(false);
       setFormData(initialFormData);
     } catch (error) {
@@ -138,10 +161,17 @@ function ManagementModal<T extends BaseItem>({
 
     try {
       const updatedItem = await updateItem(token, selectedItem.id, formData);
-      setItems(prev => prev.map(item => 
-        item.id === selectedItem.id ? updatedItem : item
-      ));
-      showToast(`${title} actualizado exitosamente`, "success");
+      // Refresh the entire list to ensure we have complete data (same as handleCreate)
+      const itemsData = await loadItems(token);
+      setItems(Array.isArray(itemsData) ? itemsData : []);
+      
+      // Use custom callback if provided, otherwise show default toast
+      if (onUpdateSuccess) {
+        onUpdateSuccess(updatedItem);
+      } else {
+        showToast(updateSuccessMessage || `${title} actualizado exitosamente`, "success");
+      }
+      
       setShowEditModal(false);
       setSelectedItem(null);
       setFormData(initialFormData);
@@ -167,7 +197,13 @@ function ManagementModal<T extends BaseItem>({
     try {
       await deleteItem(token, itemToDelete.id);
       setItems(prev => prev.filter(item => item.id !== itemToDelete.id));
-      showToast(`${title} eliminado exitosamente`, "success");
+      
+      // Use custom callback if provided, otherwise show default toast
+      if (onDeleteSuccess) {
+        onDeleteSuccess(itemToDelete.id);
+      } else {
+        showToast(deleteSuccessMessage || `${title} eliminado exitosamente`, "success");
+      }
       setShowDeleteModal(false);
       setItemToDelete(null);
     } catch (error) {

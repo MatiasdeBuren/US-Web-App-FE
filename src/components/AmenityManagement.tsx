@@ -1,8 +1,10 @@
 // Refactored AmenityManagement using ManagementModal pattern
+import { useState } from "react";
 import { Users, Clock, Edit3, Trash2, AlertTriangle } from "lucide-react";
 import ManagementModal from "./ManagementModal";
 import FormInput from "./FormInput";
 import AdminTimePicker from "./AdminTimePicker";
+import AmenitySuccessToast from "./AmenitySuccessToast";
 import { 
     getAdminAmenities, 
     createAmenity, 
@@ -28,6 +30,11 @@ const formatDuration = (minutes: number): string => {
 };
 
 function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
+    // Toast state
+    const [showSuccessToast, setShowSuccessToast] = useState(false);
+    const [toastAction, setToastAction] = useState<'created' | 'updated' | 'deleted'>('created');
+    const [toastAmenityName, setToastAmenityName] = useState<string>('');
+
     // Transform form data to proper types for API
     const transformFormDataForCreate = (formData: any) => {
         const capacity = parseInt(formData.capacity);
@@ -344,39 +351,76 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
         </div>
     );
 
+    // Custom success handlers using GenericToast
+    const handleCreateSuccess = (amenity: AdminAmenity) => {
+        setToastAction('created');
+        setToastAmenityName(amenity.name);
+        setShowSuccessToast(true);
+    };
+
+    const handleUpdateSuccess = (amenity: AdminAmenity) => {
+        setToastAction('updated');
+        setToastAmenityName(amenity.name);
+        setShowSuccessToast(true);
+    };
+
+    const handleDeleteSuccess = (deletedId: number) => {
+        console.log(`Deleted amenity with ID: ${deletedId}`);
+        setToastAction('deleted');
+        setToastAmenityName(''); // We don't have the name after deletion
+        setShowSuccessToast(true);
+    };
+
+    const handleToastComplete = () => {
+        setShowSuccessToast(false);
+        setToastAmenityName('');
+    };
+
     return (
-        <ManagementModal<AdminAmenity>
-            title="Amenities"
-            isOpen={isOpen}
-            onClose={onClose}
-            token={token}
-            loadItems={getAdminAmenities}
-            createItem={createAmenityWithTransform}
-            updateItem={updateAmenityWithTransform}
-            deleteItem={deleteAmenity}
-            renderItem={renderItem}
-            renderCreateForm={renderCreateForm}
-            renderEditForm={renderEditForm}
-            searchFields={['name']}
-            initialFormData={{ 
-                name: "", 
-                capacity: "", 
-                maxDuration: "", 
-                openTime: "", 
-                closeTime: "", 
-                isActive: true 
-            }}
-            getFormDataFromItem={(amenity) => ({
-                name: amenity.name,
-                capacity: amenity.capacity.toString(),
-                maxDuration: amenity.maxDuration.toString(),
-                openTime: amenity.openTime || "",
-                closeTime: amenity.closeTime || "",
-                isActive: amenity.isActive ?? true
-            })}
-            createButtonText="Crear Amenity"
-            emptyStateMessage="No hay amenities registrados"
-        />
+        <>
+            <AmenitySuccessToast
+                isVisible={showSuccessToast}
+                onComplete={handleToastComplete}
+                amenityName={toastAmenityName}
+                action={toastAction}
+            />
+            
+            <ManagementModal<AdminAmenity>
+                title="Amenity"
+                isOpen={isOpen}
+                onClose={onClose}
+                token={token}
+                loadItems={getAdminAmenities}
+                createItem={createAmenityWithTransform}
+                updateItem={updateAmenityWithTransform}
+                deleteItem={deleteAmenity}
+                renderItem={renderItem}
+                renderCreateForm={renderCreateForm}
+                renderEditForm={renderEditForm}
+                searchFields={['name']}
+                initialFormData={{ 
+                    name: "", 
+                    capacity: "", 
+                    maxDuration: "", 
+                    openTime: "", 
+                    closeTime: "", 
+                    isActive: true 
+                }}
+                getFormDataFromItem={(amenity) => ({
+                    name: amenity.name,
+                    capacity: amenity.capacity.toString(),
+                    maxDuration: amenity.maxDuration.toString(),
+                    openTime: amenity.openTime || "",
+                    closeTime: amenity.closeTime || "",
+                    isActive: amenity.isActive ?? true
+                })}
+                createButtonText="Crear Amenity"
+                emptyStateMessage="No hay amenities registrados"
+                onCreateSuccess={handleCreateSuccess}
+                onUpdateSuccess={handleUpdateSuccess}
+                onDeleteSuccess={handleDeleteSuccess}
+            />
+        </>
     );
 }
 
