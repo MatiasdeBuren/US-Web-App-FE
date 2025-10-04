@@ -247,12 +247,16 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div 
+        className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+        onClick={onClose}
+      >
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           className="bg-white rounded-2xl shadow-xl w-[1400px] max-w-[95vw] h-[90vh] overflow-hidden flex flex-col"
+          onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex-shrink-0 flex items-center justify-between p-6 border-b border-gray-100">
@@ -596,11 +600,15 @@ function StatusUpdateModal({ claim, isVisible, onClose, onUpdate, isLoading }: S
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-60">
+    <div 
+      className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-60"
+      onClick={onClose}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6"
+        onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Actualizar Estado del Reclamo
@@ -681,11 +689,15 @@ function DeleteConfirmationModal({ claim, isVisible, onClose, onConfirm, isLoadi
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-60">
+    <div 
+      className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-60"
+      onClick={onClose}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6"
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
