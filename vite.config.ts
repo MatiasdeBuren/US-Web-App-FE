@@ -21,14 +21,14 @@ export default defineConfig({
     },
   },
   preview: {
-    port: 3000,
+    port: 5173,
     strictPort: true,
   },
   server: {
-    port: 3000,
+    port: 5173,
     strictPort: true,
     host: true,
-    origin: "http://0.0.0.0:3000",
+    origin: "http://0.0.0.0:5173",
   },
   test: {
     globals: true,

@@ -241,8 +241,14 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl max-w-6xl w-full max-h-[95vh] overflow-hidden shadow-2xl">
+        <div 
+            className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+            onClick={onClose}
+        >
+            <div 
+                className="bg-white rounded-xl max-w-6xl w-full max-h-[95vh] overflow-hidden shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Header */}
                 <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700">
                     <div className="flex items-center justify-between">
@@ -415,12 +421,16 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                 {/* Create Modal */}
                 <AnimatePresence>
                     {showCreateModal && (
-                        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-60 p-4">
+                        <div 
+                            className="fixed inset-0 bg-black/80 flex items-center justify-center z-60 p-4"
+                            onClick={() => setShowCreateModal(false)}
+                        >
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl"
+                                onClick={(e) => e.stopPropagation()}
                             >
                                 <h3 className="text-xl font-semibold text-gray-800 mb-4">Crear Nuevo Apartamento</h3>
                                 
@@ -540,12 +550,16 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                 {/* Edit Modal */}
                 <AnimatePresence>
                     {showEditModal && selectedApartment && (
-                        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-60 p-4">
+                        <div 
+                            className="fixed inset-0 bg-black/80 flex items-center justify-center z-60 p-4"
+                            onClick={() => setShowEditModal(false)}
+                        >
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl"
+                                onClick={(e) => e.stopPropagation()}
                             >
                                 <h3 className="text-xl font-semibold text-gray-800 mb-4">
                                     Editar Apartamento {selectedApartment.unit}

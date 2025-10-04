@@ -1,20 +1,44 @@
 // API calls para la funcionalidad de reclamos/claims
 const API_URL = import.meta.env.VITE_API_URL as string;
 
-// Tipos para las respuestas de claims
+// Tipos para las respuestas de claims basadas en el nuevo schema
+export interface ClaimCategory {
+    id: number;
+    name: string;
+    label: string;
+    icon?: string;
+    color?: string;
+}
+
+export interface ClaimPriority {
+    id: number;
+    name: string;
+    label: string;
+    level: number;
+    color?: string;
+}
+
+export interface ClaimStatus {
+    id: number;
+    name: string;
+    label: string;
+    color?: string;
+}
+
 export interface Claim {
     id: number;
     subject: string;
-    category: 'ascensor' | 'plomeria' | 'electricidad' | 'temperatura' | 'areas_comunes' | 'edificio' | 'otro';
+    category: ClaimCategory;
     description: string;
     location: string;
-    priority: 'baja' | 'media' | 'alta' | 'urgente';
-    status: 'pendiente' | 'en_progreso' | 'resuelto' | 'rechazado';
+    priority: ClaimPriority;
+    status: ClaimStatus;
     createdAt: string;
     updatedAt: string;
     createdBy: string;
     userId?: number; // ID del usuario que creó el reclamo
     adminNotes?: string; // Notas administrativas agregadas por el admin
+    isAnonymous?: boolean; // Si el reclamo fue marcado como anónimo por el creador
     adhesion_counts?: {
         support: number;
         disagree: number;
@@ -24,19 +48,20 @@ export interface Claim {
 
 export interface CreateClaimData {
     subject: string;
-    category: 'ascensor' | 'plomeria' | 'electricidad' | 'temperatura' | 'areas_comunes' | 'edificio' | 'otro';
+    category: string; // Now we send the category name (e.g., 'ascensor', 'plomeria', etc.)
     description: string;
     location: string;
-    priority: 'baja' | 'media' | 'alta' | 'urgente';
+    priority: string; // Now we send the priority name (e.g., 'baja', 'media', etc.)
+    isAnonymous?: boolean; // Si el reclamo debe ser mostrado como anónimo
 }
 
 export interface UpdateClaimData {
     subject?: string;
-    category?: 'ascensor' | 'plomeria' | 'electricidad' | 'temperatura' | 'areas_comunes' | 'edificio' | 'otro';
+    category?: string; // Category name
     description?: string;
     location?: string;
-    priority?: 'baja' | 'media' | 'alta' | 'urgente';
-    status?: 'pendiente' | 'en_progreso' | 'resuelto' | 'rechazado';
+    priority?: string; // Priority name
+    status?: string; // Status name
 }
 
 export interface ClaimsListResponse {
@@ -44,6 +69,52 @@ export interface ClaimsListResponse {
     total: number;
     page: number;
     limit: number;
+}
+
+// ================================
+// FUNCIONES DE TABLAS DE CONSULTA
+// ================================
+
+// GET /claims/categories - Obtener todas las categorías
+export async function getClaimCategories(): Promise<ClaimCategory[]> {
+    try {
+        const response = await fetch(`${API_URL}/claims/categories`);
+        if (!response.ok) {
+            throw new Error(`Error al obtener categorías: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching claim categories:', error);
+        throw error;
+    }
+}
+
+// GET /claims/priorities - Obtener todas las prioridades
+export async function getClaimPriorities(): Promise<ClaimPriority[]> {
+    try {
+        const response = await fetch(`${API_URL}/claims/priorities`);
+        if (!response.ok) {
+            throw new Error(`Error al obtener prioridades: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching claim priorities:', error);
+        throw error;
+    }
+}
+
+// GET /claims/statuses - Obtener todos los estados
+export async function getClaimStatuses(): Promise<ClaimStatus[]> {
+    try {
+        const response = await fetch(`${API_URL}/claims/statuses`);
+        if (!response.ok) {
+            throw new Error(`Error al obtener estados: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching claim statuses:', error);
+        throw error;
+    }
 }
 
 // ================================
@@ -168,11 +239,16 @@ export async function createClaim(
         const result = await response.json();
         console.log('Backend response for createClaim:', result);
         
+        // Handle Promise response from backend (if mapClaimWithCreatedBy is not awaited)
+        if (result && typeof result.then === 'function') {
+            console.warn('Backend returned a Promise instead of resolved data');
+            throw new Error('Error interno del servidor: respuesta inesperada');
+        }
+        
         // Handle empty or invalid response from backend
         if (!result || typeof result !== 'object' || !result.id) {
             console.warn('Backend returned invalid claim data:', result);
-            // Return a minimal valid response so frontend doesn't crash
-            return result || {};
+            throw new Error('Error interno del servidor: datos inválidos');
         }
         
         return result;

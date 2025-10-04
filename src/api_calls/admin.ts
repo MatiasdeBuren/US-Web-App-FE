@@ -80,7 +80,11 @@ export interface AdminReservation {
     id: number;
     startTime: string;
     endTime: string;
-    status: string;
+    status: {
+        id: number;
+        name: string;
+        label: string;
+    };
     createdAt: string;
     user?: {
         id: number;

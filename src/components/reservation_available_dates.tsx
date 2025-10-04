@@ -174,8 +174,14 @@ export default function AvailabilityTimelineViewer({
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4">
-          <div className="bg-white rounded-xl shadow-2xl p-3 sm:p-6 max-w-7xl w-full max-h-[95vh] sm:max-h-[90vh] mx-2 sm:mx-4 overflow-hidden flex flex-col">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4"
+          onClick={() => setOpen(false)}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-2xl p-3 sm:p-6 max-w-7xl w-full max-h-[95vh] sm:max-h-[90vh] mx-2 sm:mx-4 overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center mb-4 sm:mb-6">
               <h2 className="text-lg sm:text-2xl font-bold text-gray-800 truncate pr-4">
                 Disponibilidad Timeline - {amenityName}
@@ -272,12 +278,10 @@ export default function AvailabilityTimelineViewer({
                           
                           if (dayReservations.length === 0) return null;
                           
-                          // Helper to parse local time to minutes
+                          // Helper to parse UTC timestamp to local time minutes
                           const parseLocalTimeToMinutes = (timestamp: string) => {
-                            const [, timePart] = timestamp.split('T');
-                            const [time] = timePart.split('.');
-                            const [hours, minutes] = time.split(':').map(Number);
-                            return hours * 60 + minutes;
+                            const utcDate = new Date(timestamp);
+                            return utcDate.getHours() * 60 + utcDate.getMinutes();
                           };
 
                           // Get all unique time boundaries (start and end times)
@@ -413,8 +417,14 @@ export default function AvailabilityTimelineViewer({
 
       {/* Detail Modal for Multiple Reservations */}
       {selectedSlot && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+        <div 
+          className="fixed inset-0 z-60 flex items-center justify-center bg-black/50"
+          onClick={() => setSelectedSlot(null)}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-800">
                 Reservas - {selectedSlot.day}
@@ -438,11 +448,13 @@ export default function AvailabilityTimelineViewer({
               {selectedSlot.reservations.map((reservation, idx) => {
                 // Parse timestamps as local time (no timezone conversion)
                 const parseLocalTimeString = (timestamp: string) => {
-                  // timestamp format: "2025-10-02T19:00:00.000Z"
-                  const [, timePart] = timestamp.split('T');
-                  const [time] = timePart.split('.');
-                  const [hours, minutes] = time.split(':').map(Number);
-                  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                  // timestamp format: "2025-10-02T19:00:00.000Z" (UTC)
+                  const utcDate = new Date(timestamp);
+                  return utcDate.toLocaleTimeString("es-ES", {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                  });
                 };
                 
                 const startTime = parseLocalTimeString(reservation.startTime);

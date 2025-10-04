@@ -17,11 +17,17 @@ export interface ReservationData {
     };
 }
 
+export interface ReservationStatus {
+    id: number;
+    name: string; // "pendiente", "confirmada", "cancelada", "finalizada"
+    label: string; // Spanish labels for display
+}
+
 export interface Reservation {
     id: number;
     startTime: string;
     endTime: string;
-    status: string;
+    status: ReservationStatus;
     amenity: {
         id: number;
         name: string;

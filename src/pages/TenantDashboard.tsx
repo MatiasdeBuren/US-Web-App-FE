@@ -163,11 +163,17 @@ function TenantDashboard() {
         setIsReserving(true);
         setTimeError(null); // Clear any previous errors
         
-        // Helper function to build timestamp from user's selected time (NO timezone conversion)
+        // Helper function to build timestamp from user's selected time (WITH proper timezone conversion)
         const buildTimestampFromUserTime = (dateStr: string, timeStr: string): string => {
             // dateStr: "2025-10-01", timeStr: "19:00"
-            const [hours, minutes] = timeStr.split(':');
-            return `${dateStr}T${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:00.000Z`;
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            
+            // Create a local date object with the user's selected date and time
+            const [year, month, day] = dateStr.split('-').map(Number);
+            const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
+            
+            // Convert to ISO string (UTC)
+            return localDate.toISOString();
         };
         
         try {
@@ -257,7 +263,7 @@ function TenantDashboard() {
                 id: reservationData.id || reservationData.reservation?.id || Date.now(),
                 startTime: buildTimestampFromUserTime(selectedDate, startStr),
                 endTime: buildTimestampFromUserTime(selectedDate, endStr),
-                status: reservationData.status || reservationData.reservation?.status || "pending",
+                status: reservationData.status || reservationData.reservation?.status || { id: 1, name: "confirmada", label: "Confirmada" },
                 amenity: {
                     id: amenity.id,
                     name: amenity.name,
@@ -304,7 +310,7 @@ function TenantDashboard() {
             await cancelReservation(token, reservationToCancel.id);
             // Update local state to mark as cancelled
             setUserReservations(prev =>
-                prev.map(r => r.id === reservationToCancel.id ? { ...r, status: "cancelled" } : r)
+                prev.map(r => r.id === reservationToCancel.id ? { ...r, status: { id: 3, name: "cancelada", label: "Cancelada" } } : r)
             );
             
             // Close modal and show toast
@@ -379,11 +385,17 @@ function TenantDashboard() {
             const [startTimeStr, endTimeStr] = timeSlot.split(" - ");
             if (!startTimeStr || !endTimeStr) return 0;
 
-            // Helper function to build timestamp from user's selected time (NO timezone conversion)
+            // Helper function to build timestamp from user's selected time (WITH proper timezone conversion)
             const buildTimestampFromUserTime = (dateStr: string, timeStr: string): string => {
                 // dateStr: "2025-10-01", timeStr: "14:00"
-                const [hours, minutes] = timeStr.split(':');
-                return `${dateStr}T${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:00.000Z`;
+                const [hours, minutes] = timeStr.split(':').map(Number);
+                
+                // Create a local date object with the user's selected date and time
+                const [year, month, day] = dateStr.split('-').map(Number);
+                const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
+                
+                // Convert to ISO string (UTC)
+                return localDate.toISOString();
             };
 
             // Convert user's selected time to UTC format (matching server format)

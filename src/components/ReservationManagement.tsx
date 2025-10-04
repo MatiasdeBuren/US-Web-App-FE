@@ -35,7 +35,7 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
         }
 
         if (filterStatus !== "all") {
-            filtered = filtered.filter(reservation => reservation.status === filterStatus);
+            filtered = filtered.filter(reservation => reservation.status?.name === filterStatus);
         }
 
         // Ordenar por fecha de creación (más recientes primero)
@@ -67,6 +67,11 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
 
     const getStatusBadgeColor = (status: string) => {
         switch (status) {
+            case "confirmada": return "bg-green-100 text-green-800 border-green-300";
+            case "pendiente": return "bg-yellow-100 text-yellow-800 border-yellow-300";
+            case "cancelada": return "bg-red-100 text-red-800 border-red-300";
+            case "finalizada": return "bg-blue-100 text-blue-800 border-blue-300";
+            // Legacy English statuses for backward compatibility
             case "confirmed": return "bg-green-100 text-green-800 border-green-300";
             case "pending": return "bg-yellow-100 text-yellow-800 border-yellow-300";
             case "cancelled": return "bg-red-100 text-red-800 border-red-300";
@@ -76,6 +81,11 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
 
     const getStatusIcon = (status: string) => {
         switch (status) {
+            case "confirmada": return "✅";
+            case "pendiente": return "⏳";
+            case "cancelada": return "❌";
+            case "finalizada": return "🏁";
+            // Legacy English statuses for backward compatibility
             case "confirmed": return "✅";
             case "pending": return "⏳";
             case "cancelled": return "❌";
@@ -84,28 +94,20 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
     };
 
     const formatDateTime = (dateString: string) => {
-        // Parse timestamps as local time (no timezone conversion)
-        const parseLocalDateTime = (timestamp: string) => {
-            const [datePart, timePart] = timestamp.split('T');
-            const [time] = timePart.split('.');
-            const [hours, minutes] = time.split(':').map(Number);
-            return {
-                datePart,
-                hours,
-                minutes
-            };
-        };
-
-        const parsed = parseLocalDateTime(dateString);
-        const date = new Date(parsed.datePart); // Only use date part for date formatting
+        // Parse UTC timestamp and convert to local time for display
+        const utcDate = new Date(dateString);
         
         return {
-            date: date.toLocaleDateString('es-ES', { 
+            date: utcDate.toLocaleDateString('es-ES', { 
                 day: '2-digit', 
                 month: '2-digit', 
                 year: 'numeric' 
             }),
-            time: `${String(parsed.hours).padStart(2, '0')}:${String(parsed.minutes).padStart(2, '0')}`
+            time: utcDate.toLocaleTimeString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            })
         };
     };
 
@@ -113,12 +115,16 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div 
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+                onClick={onClose}
+            >
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     className="bg-white rounded-2xl shadow-2xl p-8 max-w-7xl w-full max-h-[90vh] mx-4 overflow-hidden flex flex-col"
+                    onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
                     <div className="flex justify-between items-center mb-6">
@@ -156,9 +162,10 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
                                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                             >
                                 <option value="all">Todos los estados</option>
-                                <option value="confirmed">Confirmadas</option>
-                                <option value="pending">Pendientes</option>
-                                <option value="cancelled">Canceladas</option>
+                                <option value="confirmada">Confirmadas</option>
+                                <option value="pendiente">Pendientes</option>
+                                <option value="cancelada">Canceladas</option>
+                                <option value="finalizada">Finalizadas</option>
                             </select>
                         </div>
                     </div>
@@ -191,9 +198,9 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
                                                                 <h3 className="text-lg font-semibold text-gray-800">
                                                                     {reservation.amenity?.name || 'Amenidad desconocida'}
                                                                 </h3>
-                                                                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeColor(reservation.status)}`}>
-                                                                    <span>{getStatusIcon(reservation.status)}</span>
-                                                                    {reservation.status}
+                                                                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeColor(reservation.status?.name || 'unknown')}`}>
+                                                                    <span>{getStatusIcon(reservation.status?.name || 'unknown')}</span>
+                                                                    {reservation.status?.label || reservation.status?.name || 'Desconocido'}
                                                                 </div>
                                                             </div>
                                                             <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
@@ -263,15 +270,15 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
                                 <div className="text-sm text-gray-500">Total Reservas</div>
                             </div>
                             <div>
-                                <div className="text-2xl font-bold text-green-600">{Array.isArray(reservations) ? reservations.filter(r => r.status === 'confirmed').length : 0}</div>
+                                <div className="text-2xl font-bold text-green-600">{Array.isArray(reservations) ? reservations.filter(r => r.status?.name === 'confirmada').length : 0}</div>
                                 <div className="text-sm text-gray-500">Confirmadas</div>
                             </div>
                             <div>
-                                <div className="text-2xl font-bold text-yellow-600">{Array.isArray(reservations) ? reservations.filter(r => r.status === 'pending').length : 0}</div>
+                                <div className="text-2xl font-bold text-yellow-600">{Array.isArray(reservations) ? reservations.filter(r => r.status?.name === 'pendiente').length : 0}</div>
                                 <div className="text-sm text-gray-500">Pendientes</div>
                             </div>
                             <div>
-                                <div className="text-2xl font-bold text-red-600">{Array.isArray(reservations) ? reservations.filter(r => r.status === 'cancelled').length : 0}</div>
+                                <div className="text-2xl font-bold text-red-600">{Array.isArray(reservations) ? reservations.filter(r => r.status?.name === 'cancelada').length : 0}</div>
                                 <div className="text-sm text-gray-500">Canceladas</div>
                             </div>
                         </div>

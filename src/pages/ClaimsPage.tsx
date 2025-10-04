@@ -54,12 +54,7 @@ const priorityColors = {
   urgente: 'bg-red-100 text-red-800 border-red-200'
 };
 
-const priorityLabels = {
-  baja: 'Baja',
-  media: 'Media',
-  alta: 'Alta',
-  urgente: 'Urgente'
-};
+
 
 const statusColors = {
   pendiente: 'bg-gray-100 text-gray-800 border-gray-200',
@@ -211,15 +206,15 @@ function ClaimsPage() {
     const matchesSearch = claim.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          claim.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          claim.location.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || claim.category === selectedCategory;
-    const matchesStatus = selectedStatus === 'all' || claim.status === selectedStatus;
+    const matchesCategory = selectedCategory === 'all' || claim.category?.name === selectedCategory;
+    const matchesStatus = selectedStatus === 'all' || claim.status?.name === selectedStatus;
     
     return matchesSearch && matchesCategory && matchesStatus;
   }).sort((a, b) => {
     // Priority order: 
     // 1. Finalized claims (resolved/rejected) go to the bottom
-    const aFinalized = a.status === 'resuelto' || a.status === 'rechazado';
-    const bFinalized = b.status === 'resuelto' || b.status === 'rechazado';
+    const aFinalized = a.status?.name === 'resuelto' || a.status?.name === 'rechazado';
+    const bFinalized = b.status?.name === 'resuelto' || b.status?.name === 'rechazado';
     
     if (aFinalized && !bFinalized) return 1;
     if (!aFinalized && bFinalized) return -1;
@@ -567,7 +562,7 @@ function ClaimsPage() {
           </div>
         ) : (
           filteredClaims.map((claim) => {
-            const CategoryIcon = categoryIcons[claim.category];
+            const CategoryIcon = categoryIcons[claim.category?.name as keyof typeof categoryIcons] || AlertTriangle;
             
             return (
               <motion.div 
@@ -580,29 +575,29 @@ function ClaimsPage() {
                   {/* Header with icon and title */}
                   <div className="flex items-center gap-3 mb-3">
                     <div className={`p-2 rounded-xl ${
-                      claim.category === 'ascensor' ? 'bg-purple-100 text-purple-600' :
-                      claim.category === 'plomeria' ? 'bg-blue-100 text-blue-600' :
-                      claim.category === 'electricidad' ? 'bg-yellow-100 text-yellow-600' :
-                      claim.category === 'temperatura' ? 'bg-green-100 text-green-600' :
-                      claim.category === 'areas_comunes' ? 'bg-indigo-100 text-indigo-600' :
-                      claim.category === 'edificio' ? 'bg-gray-100 text-gray-600' :
+                      claim.category?.name === 'ascensor' ? 'bg-purple-100 text-purple-600' :
+                      claim.category?.name === 'plomeria' ? 'bg-blue-100 text-blue-600' :
+                      claim.category?.name === 'electricidad' ? 'bg-yellow-100 text-yellow-600' :
+                      claim.category?.name === 'temperatura' ? 'bg-green-100 text-green-600' :
+                      claim.category?.name === 'areas_comunes' ? 'bg-indigo-100 text-indigo-600' :
+                      claim.category?.name === 'edificio' ? 'bg-gray-100 text-gray-600' :
                       'bg-orange-100 text-orange-600'
                     }`}>
                       <CategoryIcon className="w-5 h-5" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg font-semibold text-gray-900 truncate">{claim.subject}</h3>
-                      <p className="text-sm text-gray-500 truncate">{categoryLabels[claim.category]} • {claim.location}</p>
+                      <p className="text-sm text-gray-500 truncate">{claim.category?.label || claim.category?.name || 'Categoría desconocida'} • {claim.location}</p>
                     </div>
                   </div>
                   
                   {/* Badges - responsive layout */}
                   <div className="flex flex-wrap gap-2 sm:justify-start justify-center">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${priorityColors[claim.priority]}`}>
-                      {priorityLabels[claim.priority]}
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${priorityColors[claim.priority?.name as keyof typeof priorityColors] || 'bg-gray-100 text-gray-600 border-gray-300'}`}>
+                      {claim.priority?.label || claim.priority?.name || 'Sin prioridad'}
                     </span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[claim.status]}`}>
-                      {statusLabels[claim.status]}
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[claim.status?.name as keyof typeof statusColors] || 'bg-gray-100 text-gray-600 border-gray-300'}`}>
+                      {claim.status?.label || claim.status?.name || 'Sin estado'}
                     </span>
                   </div>
                 </div>
@@ -636,7 +631,11 @@ function ClaimsPage() {
                   <div className="text-sm text-gray-500 space-y-1">
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4" />
-                      <span>Creado por: <span className="font-medium text-gray-700">{claim.createdBy}</span></span>
+                      <span>Creado por: <span className="font-medium text-gray-700">
+                        {claim.isAnonymous && currentUser?.role !== 'admin' 
+                          ? 'Anónimo' 
+                          : claim.createdBy}
+                      </span></span>
                     </div>
                     <div className="flex flex-col sm:flex-row sm:gap-4 gap-1">
                       <span>Creado: {formatDate(claim.createdAt)}</span>
@@ -647,7 +646,7 @@ function ClaimsPage() {
                   </div>
                   
                   {/* Adhesion Section - only show for others' claims and not finalized */}
-                  {currentUser && claim.userId !== currentUser.id && claim.status !== 'resuelto' && claim.status !== 'rechazado' && (
+                  {currentUser && claim.userId !== currentUser.id && claim.status?.name !== 'resuelto' && claim.status?.name !== 'rechazado' && (
                     <div className="pt-3 border-t border-gray-100">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         {/* Counters */}
@@ -692,7 +691,7 @@ function ClaimsPage() {
                   )}
 
                   {/* Adhesion counters - show for finalized claims (read-only) */}
-                  {claim.status === 'resuelto' || claim.status === 'rechazado' ? (
+                  {claim.status?.name === 'resuelto' || claim.status?.name === 'rechazado' ? (
                     claim.adhesion_counts && (claim.adhesion_counts.support > 0 || claim.adhesion_counts.disagree > 0) && (
                       <div className="pt-3 border-t border-gray-100">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
