@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import ResetPassword from "./pages/ResetPassword";
+import NotificationsPage from "./pages/NotificationsPage";
 
 const AppRoutes: React.FC = () => {
   return (
@@ -13,6 +14,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/admin/notifications" element={<NotificationsPage />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
         {/* Catch-all route - redirect any unknown route to login */}
         <Route path="*" element={<Navigate to="/login" replace />} />

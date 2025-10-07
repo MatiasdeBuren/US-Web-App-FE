@@ -32,6 +32,11 @@ import { updateUserName } from "../api_calls/update_user_name";
 import { updateUserPassword } from "../api_calls/update_user_password";
 import { deleteUser } from "../api_calls/delete_user";
 
+// Hooks
+import useNotifications from "../hooks/useNotifications";
+import useNotificationToasts from "../hooks/useNotificationToasts";
+import { NotificationToastContainer } from "../components/NotificationToast";
+
 // Tipos
 import type { UserData } from "../types";
 
@@ -62,6 +67,29 @@ function AdminDashboard() {
     const [isSavingName, setIsSavingName] = useState(false);
     const [isChangingPassword, setIsChangingPassword] = useState(false);
     const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
+    // Hook de notificaciones
+    const { toasts, removeToast, showNewClaimToast } = useNotificationToasts();
+    
+    const {
+        notifications,
+        markAsRead,
+        markAllAsRead
+    } = useNotifications({ 
+        token,
+        onNewNotification: (notification) => {
+            // Mostrar toast solo si la notificación es de un claim
+            if (notification.type === 'new_claim' || notification.type === 'urgent_claim') {
+                const isUrgent = notification.type === 'urgent_claim';
+                // Extraer el nombre del usuario y título del claim del mensaje
+                const match = notification.message.match(/^(.+?) creó un reclamo: "(.+)"$/);
+                if (match) {
+                    const [, userName, claimTitle] = match;
+                    showNewClaimToast(claimTitle, userName, isUrgent);
+                }
+            }
+        }
+    });
 
     useEffect(() => {
         const savedToken = localStorage.getItem("token");
@@ -195,6 +223,17 @@ function AdminDashboard() {
                 onLogout={handleLogout}
                 showClaimsTab={false}
                 showAmenitiesTab={false}
+                // Notificaciones para admin
+                showNotifications={true}
+                notifications={notifications}
+                onMarkNotificationAsRead={markAsRead}
+                onMarkAllNotificationsAsRead={markAllAsRead}
+                onNotificationClick={(notification) => {
+                    markAsRead(notification.id);
+                    if (notification.claimId) {
+                        setShowClaimsManagement(true);
+                    }
+                }}
             />
 
             {/* MAIN CONTENT */}
@@ -551,6 +590,12 @@ function AdminDashboard() {
                     setShowErrorToast(false);
                     setErrorMessage('');
                 }}
+            />
+
+            {/* Notification Toasts */}
+            <NotificationToastContainer
+                toasts={toasts}
+                onRemoveToast={removeToast}
             />
 
         </div>

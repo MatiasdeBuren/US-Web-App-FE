@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import LogoutConfirmModal from "./LogoutConfirmModal";
 import LogoutSuccessToast from "./LogoutSuccessToast";
+import NotificationBell, { type Notification } from "./NotificationBell";
 import logoUs from '../assets/Logo_Us_2.png';
 
 interface HeaderProps {
@@ -15,9 +16,31 @@ interface HeaderProps {
     activeTab?: 'dashboard' | 'reclamos';
     showClaimsTab?: boolean;
     showAmenitiesTab?: boolean;
+    // Notificaciones - solo para admins
+    notifications?: Notification[];
+    onMarkNotificationAsRead?: (notificationId: string) => void;
+    onMarkAllNotificationsAsRead?: () => void;
+    onNotificationClick?: (notification: Notification) => void;
+    showNotifications?: boolean;
 }
 
-function Header({ userName, onProfileClick, showProfileMenu = true, onLogout, onClaimsClick, onDashboardClick, activeTab = 'dashboard', showClaimsTab = true, showAmenitiesTab = true }: HeaderProps) {
+function Header({ 
+    userName, 
+    onProfileClick, 
+    showProfileMenu = true, 
+    onLogout, 
+    onClaimsClick, 
+    onDashboardClick, 
+    activeTab = 'dashboard', 
+    showClaimsTab = true, 
+    showAmenitiesTab = true,
+    // Notificaciones
+    notifications = [],
+    onMarkNotificationAsRead,
+    onMarkAllNotificationsAsRead,
+    onNotificationClick,
+    showNotifications = false
+}: HeaderProps) {
     const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -126,9 +149,21 @@ function Header({ userName, onProfileClick, showProfileMenu = true, onLogout, on
                         </button>
                     </div>
 
-                    {/* Right side - User menu */}
-                    {showProfileMenu && (
-                        <div className="relative hidden md:block" ref={menuRef}>
+                    {/* Right side - Notifications & User menu */}
+                    <div className="flex items-center space-x-4">
+                        {/* Notifications Bell - Solo para admins */}
+                        {showNotifications && (
+                            <NotificationBell
+                                notifications={notifications}
+                                onMarkAsRead={onMarkNotificationAsRead || (() => {})}
+                                onMarkAllAsRead={onMarkAllNotificationsAsRead || (() => {})}
+                                onNotificationClick={onNotificationClick || (() => {})}
+                            />
+                        )}
+
+                        {/* User menu */}
+                        {showProfileMenu && (
+                            <div className="relative hidden md:block" ref={menuRef}>
                                 <button
                                     onClick={() => setIsMenuOpen(!isMenuOpen)}
                                     className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors group cursor-pointer"
@@ -169,8 +204,9 @@ function Header({ userName, onProfileClick, showProfileMenu = true, onLogout, on
                                     </button>
                                 </div>
                             )}
-                        </div>
-                    )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
