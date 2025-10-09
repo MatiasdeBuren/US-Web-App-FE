@@ -21,6 +21,7 @@ interface HeaderProps {
     onMarkNotificationAsRead?: (notificationId: string) => void;
     onMarkAllNotificationsAsRead?: () => void;
     onNotificationClick?: (notification: Notification) => void;
+    onNotificationsClick?: () => void;
     showNotifications?: boolean;
 }
 
@@ -39,6 +40,7 @@ function Header({
     onMarkNotificationAsRead,
     onMarkAllNotificationsAsRead,
     onNotificationClick,
+    onNotificationsClick,
     showNotifications = false
 }: HeaderProps) {
     const navigate = useNavigate();
@@ -158,6 +160,7 @@ function Header({
                                 onMarkAsRead={onMarkNotificationAsRead || (() => {})}
                                 onMarkAllAsRead={onMarkAllNotificationsAsRead || (() => {})}
                                 onNotificationClick={onNotificationClick || (() => {})}
+                                onNotificationsClick={onNotificationsClick}
                             />
                         )}
 

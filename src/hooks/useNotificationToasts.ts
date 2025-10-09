@@ -31,10 +31,12 @@ export function useNotificationToasts() {
         setToasts(prev => prev.filter(toast => toast.id !== id));
     }, []);
 
-    const showNewClaimToast = useCallback((claimTitle: string, userName: string, isUrgent: boolean = false) => {
+    const showNewClaimToast = useCallback((claimTitle: string, userName: string, isUrgent: boolean = false, priority?: string) => {
+        const priorityText = priority || (isUrgent ? 'Urgente' : 'Normal');
+        
         addToast({
             type: isUrgent ? 'urgent_notification' : 'new_notification',
-            title: isUrgent ? '🚨 Reclamo Urgente' : '📝 Nuevo Reclamo',
+            title: `Reclamo de prioridad ${priorityText}`,
             message: `${userName} creó un reclamo: "${claimTitle}"`,
             duration: isUrgent ? 8000 : 5000 // Urgentes duran más tiempo
         });

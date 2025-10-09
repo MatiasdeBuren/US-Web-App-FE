@@ -25,6 +25,7 @@ import { LoadingOverlay } from "../components/LoadingSpinner";
 import LogoutSuccessToast from "../components/LogoutSuccessToast";
 import PasswordChangeSuccessToast from "../components/PasswordChangeSuccessToast";
 import ReservationErrorToast from "../components/ReservationErrorToast";
+import NotificationsModal from "../components/NotificationsModal";
 
 // API calls
 import { getAdminStats, type AdminStats as AdminStatsType } from "../api_calls/admin";
@@ -56,6 +57,7 @@ function AdminDashboard() {
     const [showApartmentManagement, setShowApartmentManagement] = useState(false);
     const [showAmenityManagement, setShowAmenityManagement] = useState(false);
     const [showClaimsManagement, setShowClaimsManagement] = useState(false);
+    const [showNotificationsModal, setShowNotificationsModal] = useState(false);
     const [showSuccessToast, setShowSuccessToast] = useState(false);
     const [showPasswordChangeToast, setShowPasswordChangeToast] = useState(false);
     const [showErrorToast, setShowErrorToast] = useState(false);
@@ -234,6 +236,7 @@ function AdminDashboard() {
                         setShowClaimsManagement(true);
                     }
                 }}
+                onNotificationsClick={() => setShowNotificationsModal(true)}
             />
 
             {/* MAIN CONTENT */}
@@ -596,6 +599,16 @@ function AdminDashboard() {
             <NotificationToastContainer
                 toasts={toasts}
                 onRemoveToast={removeToast}
+            />
+
+            {/* Notifications Modal */}
+            <NotificationsModal
+                isOpen={showNotificationsModal}
+                onClose={() => setShowNotificationsModal(false)}
+                onClaimClick={() => {
+                    setShowNotificationsModal(false);
+                    setShowClaimsManagement(true);
+                }}
             />
 
         </div>

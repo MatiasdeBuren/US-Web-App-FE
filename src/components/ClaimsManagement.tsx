@@ -349,13 +349,16 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
               </div>
             ) : (
               <div className="grid gap-4">
-                {claims.map((claim) => {
+                {claims.map((claim, index) => {
                   const CategoryIcon = categoryIcons[claim.category?.name as keyof typeof categoryIcons] || AlertTriangle;
                   const StatusIcon = statusIcons[claim.status?.name as keyof typeof statusIcons] || CheckCircle;
                   
+                  // Ensure we have a valid key - use index as fallback if claim.id is missing
+                  const claimKey = claim.id ? `claim-${claim.id}` : `claim-index-${index}`;
+                  
                   return (
                     <motion.div
-                      key={claim.id}
+                      key={claimKey}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors"
