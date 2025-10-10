@@ -93,7 +93,7 @@ export default function AvailabilityTimelineViewer({
       day.setDate(currentWeekStart.getDate() + i);
       result.push({
         date: day,
-        label: day.toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" }),
+        label: day.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }),
         key: getDayKey(day),
       });
     }

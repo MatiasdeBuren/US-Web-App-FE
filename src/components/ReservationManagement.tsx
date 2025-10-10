@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, Search, Filter, Clock, User, Building, Eye, ChevronDown, CheckCircle, XCircle, Clock as PendingIcon } from "lucide-react";
+import { Calendar, Search, Filter, Clock, User, Building, Eye, ChevronDown, CheckCircle, XCircle, Clock as PendingIcon, CalendarDays } from "lucide-react";
 import { getAdminReservations, getAdminAmenities, type AdminReservation, type AdminAmenity } from "../api_calls/admin";
 import GenericFilterModal, { type FilterOption } from "./GenericFilterModal";
+import DateFilterModal, { type DateFilterOption } from "./DateFilterModal";
 
 interface ReservationManagementProps {
     isOpen: boolean;
@@ -52,10 +53,13 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState<string>("all");
     const [filterAmenity, setFilterAmenity] = useState<string>("all");
+    const [filterDate, setFilterDate] = useState<string>("all");
+    const [dateFilterOption, setDateFilterOption] = useState<DateFilterOption | null>(null);
     
     // Modal states
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [showAmenityModal, setShowAmenityModal] = useState(false);
+    const [showDateModal, setShowDateModal] = useState(false);
 
     const loadReservations = useCallback(async () => {
         setLoading(true);
@@ -96,7 +100,7 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
     }, [isOpen, token, loadReservations, loadAmenities]);
 
     useEffect(() => {
-        // Filtrar reservas basado en búsqueda, status y amenity
+        // Filtrar reservas basado en búsqueda, status, amenity y fecha
         let filtered = reservations;
 
         if (searchTerm) {
@@ -115,11 +119,49 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
             filtered = filtered.filter(reservation => reservation.amenity?.name === filterAmenity);
         }
 
+        // Date filtering
+        if (dateFilterOption && dateFilterOption.startDate && dateFilterOption.endDate) {
+            console.log('🔍 [DATE FILTER DEBUG] Filtering reservations with date range:', {
+                filterOption: dateFilterOption.value,
+                startDate: dateFilterOption.startDate,
+                endDate: dateFilterOption.endDate
+            });
+            
+            filtered = filtered.filter(reservation => {
+                const reservationDate = new Date(reservation.startTime);
+                // Normalize to start of day for comparison
+                reservationDate.setHours(0, 0, 0, 0);
+                
+                const startDate = new Date(dateFilterOption.startDate!);
+                startDate.setHours(0, 0, 0, 0);
+                
+                const endDate = new Date(dateFilterOption.endDate!);
+                endDate.setHours(23, 59, 59, 999);
+                
+                const isInRange = reservationDate >= startDate && reservationDate <= endDate;
+                
+                if (dateFilterOption.value === 'custom') {
+                    console.log('🔍 [CUSTOM FILTER] Checking reservation:', {
+                        reservationId: reservation.id,
+                        startTime: reservation.startTime,
+                        normalizedReservationDate: reservationDate,
+                        filterStartDate: startDate,
+                        filterEndDate: endDate,
+                        isInRange
+                    });
+                }
+                
+                return isInRange;
+            });
+            
+            console.log(`🔍 [DATE FILTER DEBUG] Filtered to ${filtered.length} reservations`);
+        }
+
         // Ordenar por fecha de creación (más recientes primero)
         filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         setFilteredReservations(filtered);
-    }, [reservations, searchTerm, filterStatus, filterAmenity]);
+    }, [reservations, searchTerm, filterStatus, filterAmenity, dateFilterOption]);
 
     const getCurrentStatusLabel = () => {
         if (filterStatus === 'all') return 'Todos los estados';
@@ -136,6 +178,16 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
         if (filterAmenity === 'all') return 'Todos los amenities';
         const amenity = amenities.find(a => a.name === filterAmenity);
         return amenity?.name || 'Amenity desconocido';
+    };
+
+    const getCurrentDateLabel = () => {
+        if (!dateFilterOption || filterDate === 'all') return 'Todas las fechas';
+        return dateFilterOption.label;
+    };
+
+    const handleDateFilterSelect = (option: DateFilterOption) => {
+        setFilterDate(option.value);
+        setDateFilterOption(option);
     };
 
     // Generate amenity filter options from loaded amenities
@@ -194,7 +246,7 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
         const utcDate = new Date(dateString);
         
         return {
-            date: utcDate.toLocaleDateString('es-ES', { 
+            date: utcDate.toLocaleDateString('en-GB', { 
                 day: '2-digit', 
                 month: '2-digit', 
                 year: 'numeric' 
@@ -276,6 +328,20 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
                                     <Filter className="w-4 h-4 text-gray-400" />
                                     <span className={filterStatus === 'all' ? 'text-gray-500' : 'text-gray-900 font-medium'}>
                                         {getCurrentStatusLabel()}
+                                    </span>
+                                </div>
+                                <ChevronDown className="w-4 h-4 text-gray-400" />
+                            </button>
+
+                            {/* Date Filter Button */}
+                            <button
+                                onClick={() => setShowDateModal(true)}
+                                className="flex items-center justify-between px-4 py-2 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-left cursor-pointer min-w-[160px]"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <CalendarDays className="w-4 h-4 text-gray-400" />
+                                    <span className={filterDate === 'all' ? 'text-gray-500' : 'text-gray-900 font-medium'}>
+                                        {getCurrentDateLabel()}
                                     </span>
                                 </div>
                                 <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -428,6 +494,15 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
                 headerIcon={Building}
                 headerIconColor="text-orange-600"
                 maxWidth="lg"
+            />
+
+            <DateFilterModal
+                isVisible={showDateModal}
+                onClose={() => setShowDateModal(false)}
+                onDateFilterSelect={handleDateFilterSelect}
+                selectedValue={filterDate}
+                title="Filtrar por Fecha"
+                subtitle="Selecciona un rango de fechas para filtrar las reservas"
             />
         </AnimatePresence>
     );

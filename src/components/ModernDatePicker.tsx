@@ -50,7 +50,7 @@ function ModernDatePicker({
         if (!selectedDate) return "Seleccionar fecha";
         
         const date = new Date(selectedDate + "T00:00:00");
-        return date.toLocaleDateString("es-ES", {
+        return date.toLocaleDateString("en-GB", {
             weekday: "long",
             year: "numeric",
             month: "long",

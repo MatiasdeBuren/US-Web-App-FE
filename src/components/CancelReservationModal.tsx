@@ -24,7 +24,7 @@ function CancelReservationModal({
     const startDate = new Date(reservation.startTime);
     const endDate = new Date(reservation.endTime);
     
-    const dateStr = startDate.toLocaleDateString('es-ES', { 
+    const dateStr = startDate.toLocaleDateString('en-GB', { 
         weekday: 'long', 
         year: 'numeric', 
         month: 'long', 

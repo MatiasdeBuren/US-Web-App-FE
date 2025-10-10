@@ -7,7 +7,8 @@ import {
     Settings,  
     Shield,
     Home,
-    Clock
+    Clock,
+    BarChart3
 } from "lucide-react";
 
 // Componentes reutilizables
@@ -443,7 +444,6 @@ function AdminDashboard() {
                     </motion.div>
 
                     {/* Analytics */}
-                    {/*
                     <motion.div 
                         className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
                         whileHover={{ scale: 1.02 }}
@@ -456,7 +456,7 @@ function AdminDashboard() {
                             <h3 className="text-xl font-bold text-gray-800">Análisis y Reportes</h3>
                         </div>
                         <p className="text-gray-600 mb-4">
-                            Visualiza estadísticas y genera reportes detallados
+                            Visualiza estadísticas
                         </p>
                         <div className="text-sm text-gray-500">
                             • Reportes de uso<br />
@@ -464,7 +464,6 @@ function AdminDashboard() {
                             • Análisis de tendencias
                         </div>
                     </motion.div>
-                    */}
 
                     {/* System Settings */}
                     
