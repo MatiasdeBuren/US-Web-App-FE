@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Search, Crown, Home, AlertTriangle } from "lucide-react";
+import { Users, Search, Crown, Home, AlertTriangle, ChevronDown, UserCheck, User } from "lucide-react";
 import { getAdminUsers, updateUserRole, type AdminUser } from "../api_calls/admin";
 import ClaimSuccessToast from './ClaimSuccessToast';
 import ClaimErrorToast from './ClaimErrorToast';
+import GenericFilterModal, { type FilterOption } from "./GenericFilterModal";
 
 // Helper function to safely get reservation count from user object
 const getReservationCount = (user: AdminUser): number => {
@@ -25,11 +26,42 @@ function UserManagement({ isOpen, onClose, token, currentUserEmail }: UserManage
     const [filterRole, setFilterRole] = useState<string>("all");
     const [updatingUserId, setUpdatingUserId] = useState<number | null>(null);
     
+    // Modal states
+    const [showRoleFilter, setShowRoleFilter] = useState(false);
+    
     // Toast states
     const [showSuccessToast, setShowSuccessToast] = useState(false);
     const [showErrorToast, setShowErrorToast] = useState(false);
     const [toastMessage, setToastMessage] = useState<string>('');
     const [errorMessage, setErrorMessage] = useState<string>('');
+
+    // Filter options
+    const roleFilterOptions: FilterOption[] = [
+        {
+            value: "all",
+            label: "Todos los roles",
+            description: "Mostrar usuarios con todos los roles",
+            icon: Users
+        },
+        {
+            value: "admin",
+            label: "Administradores",
+            description: "Usuarios con permisos de administración",
+            icon: UserCheck
+        },
+        {
+            value: "owner",
+            label: "Propietarios",
+            description: "Usuarios propietarios de apartamentos",
+            icon: Crown
+        },
+        {
+            value: "tenant",
+            label: "Inquilinos",
+            description: "Usuarios inquilinos de apartamentos",
+            icon: User
+        }
+    ];
 
     useEffect(() => {
         if (isOpen && token) {
@@ -158,16 +190,15 @@ function UserManagement({ isOpen, onClose, token, currentUserEmail }: UserManage
                                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                         </div>
-                        <select
-                            value={filterRole}
-                            onChange={(e) => setFilterRole(e.target.value)}
-                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        
+                        {/* Role Filter Button */}
+                        <button
+                            onClick={() => setShowRoleFilter(true)}
+                            className="px-4 py-2 border border-gray-300 rounded-lg hover:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors flex items-center gap-2 bg-white"
                         >
-                            <option value="all">Todos los roles</option>
-                            <option value="admin">Administradores</option>
-                            <option value="owner">Propietarios</option>
-                            <option value="tenant">Inquilinos</option>
-                        </select>
+                            {roleFilterOptions.find(option => option.value === filterRole)?.label || 'Todos los roles'}
+                            <ChevronDown className="w-4 h-4 text-gray-500" />
+                        </button>
                     </div>
 
                     {/* Users List */}
@@ -269,6 +300,19 @@ function UserManagement({ isOpen, onClose, token, currentUserEmail }: UserManage
                     </div>
                 </motion.div>
             </div>
+
+            {/* Role Filter Modal */}
+            <GenericFilterModal
+                isVisible={showRoleFilter}
+                onClose={() => setShowRoleFilter(false)}
+                title="Filtrar por Rol"
+                options={roleFilterOptions}
+                selectedValue={filterRole}
+                onValueSelect={(value: string) => {
+                    setFilterRole(value);
+                    setShowRoleFilter(false);
+                }}
+            />
 
             {/* Success Toast */}
             <ClaimSuccessToast

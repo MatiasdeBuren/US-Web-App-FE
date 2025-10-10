@@ -511,6 +511,32 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
                 </button>
               </div>
             )}
+
+            {/* Stats Footer */}
+            <div className="border-t border-gray-200 pt-4 mt-6">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+                <div>
+                  <div className="text-2xl font-bold text-orange-600">{Array.isArray(claims) ? claims.length : 0}</div>
+                  <div className="text-sm text-gray-500">Total Reclamos</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-gray-600">{Array.isArray(claims) ? claims.filter(c => c.status?.name === 'pendiente').length : 0}</div>
+                  <div className="text-sm text-gray-500">Pendientes</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-blue-600">{Array.isArray(claims) ? claims.filter(c => c.status?.name === 'en_progreso').length : 0}</div>
+                  <div className="text-sm text-gray-500">En Progreso</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-green-600">{Array.isArray(claims) ? claims.filter(c => c.status?.name === 'resuelto').length : 0}</div>
+                  <div className="text-sm text-gray-500">Resueltos</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-red-600">{Array.isArray(claims) ? claims.filter(c => c.status?.name === 'rechazado').length : 0}</div>
+                  <div className="text-sm text-gray-500">Rechazados</div>
+                </div>
+              </div>
+            </div>
           </div>
         </motion.div>
 

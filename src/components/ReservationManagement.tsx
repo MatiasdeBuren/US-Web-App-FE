@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, Search, Filter, Clock, User, Building, Eye } from "lucide-react";
-import { getAdminReservations, type AdminReservation } from "../api_calls/admin";
+import { Calendar, Search, Filter, Clock, User, Building, Eye, ChevronDown, CheckCircle, XCircle, Clock as PendingIcon } from "lucide-react";
+import { getAdminReservations, getAdminAmenities, type AdminReservation, type AdminAmenity } from "../api_calls/admin";
+import GenericFilterModal, { type FilterOption } from "./GenericFilterModal";
 
 interface ReservationManagementProps {
     isOpen: boolean;
@@ -9,42 +10,54 @@ interface ReservationManagementProps {
     token: string;
 }
 
+// Filter options for status
+const statusOptions: FilterOption[] = [
+  { 
+    value: 'all', 
+    label: 'Todos los Estados', 
+    icon: Filter,
+    description: 'Ver todas las reservas sin filtro'
+  },
+  { 
+    value: 'confirmada', 
+    label: 'Confirmadas', 
+    icon: CheckCircle,
+    description: 'Reservas que han sido confirmadas'
+  },
+  { 
+    value: 'pendiente', 
+    label: 'Pendientes', 
+    icon: PendingIcon,
+    description: 'Reservas que están esperando confirmación'
+  },
+  { 
+    value: 'cancelada', 
+    label: 'Canceladas', 
+    icon: XCircle,
+    description: 'Reservas que han sido canceladas'
+  },
+  { 
+    value: 'finalizada', 
+    label: 'Finalizadas', 
+    icon: Clock,
+    description: 'Reservas que han sido completadas'
+  }
+];
+
 function ReservationManagement({ isOpen, onClose, token }: ReservationManagementProps) {
     const [reservations, setReservations] = useState<AdminReservation[]>([]);
     const [filteredReservations, setFilteredReservations] = useState<AdminReservation[]>([]);
+    const [amenities, setAmenities] = useState<AdminAmenity[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState<string>("all");
+    const [filterAmenity, setFilterAmenity] = useState<string>("all");
+    
+    // Modal states
+    const [showStatusModal, setShowStatusModal] = useState(false);
+    const [showAmenityModal, setShowAmenityModal] = useState(false);
 
-    useEffect(() => {
-        if (isOpen && token) {
-            loadReservations();
-        }
-    }, [isOpen, token]);
-
-    useEffect(() => {
-        // Filtrar reservas basado en búsqueda y status
-        let filtered = reservations;
-
-        if (searchTerm) {
-            filtered = filtered.filter(reservation => 
-                reservation.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                reservation.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                reservation.amenity?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-        }
-
-        if (filterStatus !== "all") {
-            filtered = filtered.filter(reservation => reservation.status?.name === filterStatus);
-        }
-
-        // Ordenar por fecha de creación (más recientes primero)
-        filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-        setFilteredReservations(filtered);
-    }, [reservations, searchTerm, filterStatus]);
-
-    const loadReservations = async () => {
+    const loadReservations = useCallback(async () => {
         setLoading(true);
         try {
             const reservationsData = await getAdminReservations(token, { limit: 100 });
@@ -63,6 +76,89 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
         } finally {
             setLoading(false);
         }
+    }, [token]);
+
+    const loadAmenities = useCallback(async () => {
+        try {
+            const amenitiesData = await getAdminAmenities(token);
+            setAmenities(amenitiesData);
+        } catch (error) {
+            console.error("Error loading amenities:", error);
+            setAmenities([]);
+        }
+    }, [token]);
+
+    useEffect(() => {
+        if (isOpen && token) {
+            loadReservations();
+            loadAmenities();
+        }
+    }, [isOpen, token, loadReservations, loadAmenities]);
+
+    useEffect(() => {
+        // Filtrar reservas basado en búsqueda, status y amenity
+        let filtered = reservations;
+
+        if (searchTerm) {
+            filtered = filtered.filter(reservation => 
+                reservation.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                reservation.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                reservation.amenity?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
+        if (filterStatus !== "all") {
+            filtered = filtered.filter(reservation => reservation.status?.name === filterStatus);
+        }
+
+        if (filterAmenity !== "all") {
+            filtered = filtered.filter(reservation => reservation.amenity?.name === filterAmenity);
+        }
+
+        // Ordenar por fecha de creación (más recientes primero)
+        filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        setFilteredReservations(filtered);
+    }, [reservations, searchTerm, filterStatus, filterAmenity]);
+
+    const getCurrentStatusLabel = () => {
+        if (filterStatus === 'all') return 'Todos los estados';
+        switch (filterStatus) {
+            case 'confirmada': return 'Confirmadas';
+            case 'pendiente': return 'Pendientes'; 
+            case 'cancelada': return 'Canceladas';
+            case 'finalizada': return 'Finalizadas';
+            default: return 'Estado desconocido';
+        }
+    };
+
+    const getCurrentAmenityLabel = () => {
+        if (filterAmenity === 'all') return 'Todos los amenities';
+        const amenity = amenities.find(a => a.name === filterAmenity);
+        return amenity?.name || 'Amenity desconocido';
+    };
+
+    // Generate amenity filter options from loaded amenities
+    const getAmenityOptions = (): FilterOption[] => {
+        const options: FilterOption[] = [
+            { 
+                value: 'all', 
+                label: 'Todos los Amenities', 
+                icon: Filter,
+                description: 'Ver todas las reservas sin filtro por amenity'
+            }
+        ];
+        
+        amenities.forEach(amenity => {
+            options.push({
+                value: amenity.name,
+                label: amenity.name,
+                icon: Building,
+                description: `Reservas para ${amenity.name}`
+            });
+        });
+        
+        return options;
     };
 
     const getStatusBadgeColor = (status: string) => {
@@ -142,7 +238,7 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
                         </button>
                     </div>
 
-                    {/* Filters */}
+                    {/* Search and Filters */}
                     <div className="flex flex-col sm:flex-row gap-4 mb-6">
                         <div className="flex-1 relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -151,22 +247,39 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
                                 placeholder="Buscar por usuario, email o amenity..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                             />
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Filter className="w-4 h-4 text-gray-400" />
-                            <select
-                                value={filterStatus}
-                                onChange={(e) => setFilterStatus(e.target.value)}
-                                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        
+                        {/* Filter Buttons */}
+                        <div className="flex gap-2">
+                            {/* Amenity Filter Button */}
+                            <button
+                                onClick={() => setShowAmenityModal(true)}
+                                className="flex items-center justify-between px-4 py-2 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-left cursor-pointer min-w-[180px]"
                             >
-                                <option value="all">Todos los estados</option>
-                                <option value="confirmada">Confirmadas</option>
-                                <option value="pendiente">Pendientes</option>
-                                <option value="cancelada">Canceladas</option>
-                                <option value="finalizada">Finalizadas</option>
-                            </select>
+                                <div className="flex items-center gap-2">
+                                    <Filter className="w-4 h-4 text-gray-400" />
+                                    <span className={filterAmenity === 'all' ? 'text-gray-500' : 'text-gray-900 font-medium'}>
+                                        {getCurrentAmenityLabel()}
+                                    </span>
+                                </div>
+                                <ChevronDown className="w-4 h-4 text-gray-400" />
+                            </button>
+
+                            {/* Status Filter Button */}
+                            <button
+                                onClick={() => setShowStatusModal(true)}
+                                className="flex items-center justify-between px-4 py-2 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-left cursor-pointer min-w-[160px]"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Filter className="w-4 h-4 text-gray-400" />
+                                    <span className={filterStatus === 'all' ? 'text-gray-500' : 'text-gray-900 font-medium'}>
+                                        {getCurrentStatusLabel()}
+                                    </span>
+                                </div>
+                                <ChevronDown className="w-4 h-4 text-gray-400" />
+                            </button>
                         </div>
                     </div>
 
@@ -264,7 +377,7 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
 
                     {/* Stats Footer */}
                     <div className="border-t border-gray-200 pt-4 mt-6">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
                             <div>
                                 <div className="text-2xl font-bold text-orange-600">{Array.isArray(reservations) ? reservations.length : 0}</div>
                                 <div className="text-sm text-gray-500">Total Reservas</div>
@@ -281,10 +394,41 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
                                 <div className="text-2xl font-bold text-red-600">{Array.isArray(reservations) ? reservations.filter(r => r.status?.name === 'cancelada').length : 0}</div>
                                 <div className="text-sm text-gray-500">Canceladas</div>
                             </div>
+                            <div>
+                                <div className="text-2xl font-bold text-blue-600">{Array.isArray(reservations) ? reservations.filter(r => r.status?.name === 'finalizada').length : 0}</div>
+                                <div className="text-sm text-gray-500">Finalizadas</div>
+                            </div>
                         </div>
                     </div>
                 </motion.div>
             </div>
+
+            {/* Filter Modals */}
+            <GenericFilterModal
+                isVisible={showStatusModal}
+                onClose={() => setShowStatusModal(false)}
+                selectedValue={filterStatus}
+                onValueSelect={setFilterStatus}
+                options={statusOptions}
+                title="Filtrar por Estado"
+                subtitle="Selecciona un estado para filtrar las reservas"
+                headerIcon={Filter}
+                headerIconColor="text-orange-600"
+                maxWidth="lg"
+            />
+
+            <GenericFilterModal
+                isVisible={showAmenityModal}
+                onClose={() => setShowAmenityModal(false)}
+                selectedValue={filterAmenity}
+                onValueSelect={setFilterAmenity}
+                options={getAmenityOptions()}
+                title="Filtrar por Amenity"
+                subtitle="Selecciona un amenity para filtrar las reservas"
+                headerIcon={Building}
+                headerIconColor="text-orange-600"
+                maxWidth="lg"
+            />
         </AnimatePresence>
     );
 }
