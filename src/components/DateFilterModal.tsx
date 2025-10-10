@@ -234,6 +234,15 @@ const DateFilterModal = ({
                   onChange={(e) => setCustomStartDate(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                {customStartDate && (
+                  <div className="text-xs text-green-600 mt-1 font-medium">
+                    ✓ {new Date(customStartDate + 'T00:00:00').toLocaleDateString('en-GB', { 
+                      day: '2-digit', 
+                      month: '2-digit', 
+                      year: 'numeric' 
+                    })}
+                  </div>
+                )}
               </div>
               
               <div>
@@ -247,6 +256,15 @@ const DateFilterModal = ({
                   min={customStartDate}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                {customEndDate && (
+                  <div className="text-xs text-green-600 mt-1 font-medium">
+                    ✓ {new Date(customEndDate + 'T00:00:00').toLocaleDateString('en-GB', { 
+                      day: '2-digit', 
+                      month: '2-digit', 
+                      year: 'numeric' 
+                    })}
+                  </div>
+                )}
                 <p className="text-xs text-gray-500 mt-1">
                   Si no seleccionas fecha de fin, se filtrará solo el día de inicio
                 </p>
