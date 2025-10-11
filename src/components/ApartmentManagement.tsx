@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Building, Search, Plus, Edit3, Trash2, User, Users, Home, X } from "lucide-react";
+import { Building, Search, Plus, Edit3, Trash2, User, Users, Home, X, ChevronDown, Layers, UserCheck } from "lucide-react";
 import { useToast } from "./Toast";
 import { 
     getAdminApartments, 
@@ -11,6 +11,7 @@ import {
     type AdminApartment,
     type AdminUser
 } from "../api_calls/admin";
+import GenericFilterModal, { type FilterOption } from "./GenericFilterModal";
 
 // Helper function to safely get user/reservation count
 const getUserCount = (apartment: AdminApartment): number => {
@@ -42,6 +43,10 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedApartment, setSelectedApartment] = useState<AdminApartment | null>(null);
     const [processing, setProcessing] = useState(false);
+    
+    // Filter modal states
+    const [showFloorFilter, setShowFloorFilter] = useState(false);
+    const [showOccupancyFilter, setShowOccupancyFilter] = useState(false);
 
     // Form states
     const [formData, setFormData] = useState({
@@ -238,6 +243,44 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
         return floors;
     };
 
+    // Dynamic floor filter options
+    const floorFilterOptions: FilterOption[] = [
+        {
+            value: "all",
+            label: "Todos los pisos",
+            description: "Mostrar apartamentos de todos los pisos",
+            icon: Layers
+        },
+        ...getFloorOptions().map(floor => ({
+            value: floor.toString(),
+            label: `Piso ${floor}`,
+            description: `Mostrar solo apartamentos del piso ${floor}`,
+            icon: Building
+        }))
+    ];
+
+    // Static occupancy filter options
+    const occupancyFilterOptions: FilterOption[] = [
+        {
+            value: "all",
+            label: "Todos",
+            description: "Mostrar apartamentos ocupados y disponibles",
+            icon: Home
+        },
+        {
+            value: "occupied",
+            label: "Ocupados",
+            description: "Apartamentos con inquilinos asignados",
+            icon: UserCheck
+        },
+        {
+            value: "vacant",
+            label: "Disponibles",
+            description: "Apartamentos sin inquilinos asignados",
+            icon: Building
+        }
+    ];
+
     if (!isOpen) return null;
 
     return (
@@ -286,26 +329,23 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
 
                             {/* Filters */}
                             <div className="flex gap-3">
-                                <select
-                                    value={filterFloor}
-                                    onChange={(e) => setFilterFloor(e.target.value)}
-                                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                {/* Floor Filter Button */}
+                                <button
+                                    onClick={() => setShowFloorFilter(true)}
+                                    className="px-3 py-2 border border-gray-300 rounded-lg hover:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors flex items-center gap-2 bg-white"
                                 >
-                                    <option value="all">Todos los pisos</option>
-                                    {getFloorOptions().map(floor => (
-                                        <option key={floor} value={floor.toString()}>Piso {floor}</option>
-                                    ))}
-                                </select>
+                                    {floorFilterOptions.find(option => option.value === filterFloor)?.label || 'Todos los pisos'}
+                                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                                </button>
 
-                                <select
-                                    value={filterOccupancy}
-                                    onChange={(e) => setFilterOccupancy(e.target.value)}
-                                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                {/* Occupancy Filter Button */}
+                                <button
+                                    onClick={() => setShowOccupancyFilter(true)}
+                                    className="px-3 py-2 border border-gray-300 rounded-lg hover:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors flex items-center gap-2 bg-white"
                                 >
-                                    <option value="all">Todos</option>
-                                    <option value="occupied">Ocupados</option>
-                                    <option value="vacant">Disponibles</option>
-                                </select>
+                                    {occupancyFilterOptions.find(option => option.value === filterOccupancy)?.label || 'Todos'}
+                                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                                </button>
                             </div>
                         </div>
 
@@ -676,6 +716,32 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                         </div>
                     )}
                 </AnimatePresence>
+
+                {/* Floor Filter Modal */}
+                <GenericFilterModal
+                    isVisible={showFloorFilter}
+                    onClose={() => setShowFloorFilter(false)}
+                    title="Filtrar por Piso"
+                    options={floorFilterOptions}
+                    selectedValue={filterFloor}
+                    onValueSelect={(value: string) => {
+                        setFilterFloor(value);
+                        setShowFloorFilter(false);
+                    }}
+                />
+
+                {/* Occupancy Filter Modal */}
+                <GenericFilterModal
+                    isVisible={showOccupancyFilter}
+                    onClose={() => setShowOccupancyFilter(false)}
+                    title="Filtrar por Ocupación"
+                    options={occupancyFilterOptions}
+                    selectedValue={filterOccupancy}
+                    onValueSelect={(value: string) => {
+                        setFilterOccupancy(value);
+                        setShowOccupancyFilter(false);
+                    }}
+                />
             </div>
         </div>
     );

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bell, X } from 'lucide-react';
+import { Bell, X, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
@@ -12,6 +12,7 @@ export interface Notification {
     isRead: boolean;
     claimId?: string;
     priority?: 'low' | 'medium' | 'high' | 'urgent';
+    category?: string;
 }
 
 interface NotificationBellProps {
@@ -19,13 +20,15 @@ interface NotificationBellProps {
     onMarkAsRead: (notificationId: string) => void;
     onMarkAllAsRead: () => void;
     onNotificationClick: (notification: Notification) => void;
+    onNotificationsClick?: () => void;
 }
 
 function NotificationBell({ 
     notifications, 
     onMarkAsRead, 
     onMarkAllAsRead, 
-    onNotificationClick 
+    onNotificationClick,
+    onNotificationsClick
 }: NotificationBellProps) {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -52,7 +55,7 @@ function NotificationBell({
             case 'new_claim':
                 return '📝';
             case 'urgent_claim':
-                return '🚨';
+                return <AlertTriangle className="w-5 h-5 text-red-600" />;
             case 'claim_resolved':
                 return '✅';
             default:
@@ -60,16 +63,20 @@ function NotificationBell({
         }
     };
     
-    const getPriorityColor = (priority?: string) => {
-        switch (priority) {
-            case 'urgent':
-                return 'bg-red-100 border-red-300 text-red-800';
-            case 'high':
-                return 'bg-orange-100 border-orange-300 text-orange-800';
-            case 'medium':
-                return 'bg-yellow-100 border-yellow-300 text-yellow-800';
-            case 'low':
+    const getCategoryColor = (category?: string) => {
+        switch (category?.toLowerCase()) {
+            case 'mantenimiento':
                 return 'bg-blue-100 border-blue-300 text-blue-800';
+            case 'seguridad':
+                return 'bg-red-100 border-red-300 text-red-800';
+            case 'limpieza':
+                return 'bg-green-100 border-green-300 text-green-800';
+            case 'ruido':
+                return 'bg-orange-100 border-orange-300 text-orange-800';
+            case 'administracion':
+                return 'bg-purple-100 border-purple-300 text-purple-800';
+            case 'convivencia':
+                return 'bg-yellow-100 border-yellow-300 text-yellow-800';
             default:
                 return 'bg-gray-100 border-gray-300 text-gray-800';
         }
@@ -176,7 +183,7 @@ function NotificationBell({
                                     >
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="flex items-start gap-3 flex-1">
-                                                <div className="text-2xl">
+                                                <div className={`${typeof getNotificationIcon(notification.type) === 'string' ? 'text-2xl' : 'flex items-center justify-center w-8 h-8'}`}>
                                                     {getNotificationIcon(notification.type)}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
@@ -186,11 +193,11 @@ function NotificationBell({
                                                         }`}>
                                                             {notification.title}
                                                         </h4>
-                                                        {notification.priority && (
+                                                        {notification.category && (
                                                             <span className={`px-2 py-1 text-xs font-medium rounded-full border ${
-                                                                getPriorityColor(notification.priority)
+                                                                getCategoryColor(notification.category)
                                                             }`}>
-                                                                {notification.priority.toUpperCase()}
+                                                                {notification.category}
                                                             </span>
                                                         )}
                                                     </div>
@@ -233,7 +240,11 @@ function NotificationBell({
                                 <button
                                     onClick={() => {
                                         setIsOpen(false);
-                                        navigate('/admin/notifications');
+                                        if (onNotificationsClick) {
+                                            onNotificationsClick();
+                                        } else {
+                                            navigate('/admin/notifications');
+                                        }
                                     }}
                                     className="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
                                 >

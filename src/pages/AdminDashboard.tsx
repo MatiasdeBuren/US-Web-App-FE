@@ -7,7 +7,8 @@ import {
     Settings,  
     Shield,
     Home,
-    Clock
+    Clock,
+    BarChart3
 } from "lucide-react";
 
 // Componentes reutilizables
@@ -21,10 +22,12 @@ import ReservationManagement from "../components/ReservationManagement";
 import ApartmentManagement from "../components/ApartmentManagement";
 import AmenityManagement from "../components/AmenityManagement";
 import ClaimsManagement from "../components/ClaimsManagement";
+import AnalyticsReports from "../components/AnalyticsReports";
 import { LoadingOverlay } from "../components/LoadingSpinner";
 import LogoutSuccessToast from "../components/LogoutSuccessToast";
 import PasswordChangeSuccessToast from "../components/PasswordChangeSuccessToast";
 import ReservationErrorToast from "../components/ReservationErrorToast";
+import NotificationsModal from "../components/NotificationsModal";
 
 // API calls
 import { getAdminStats, type AdminStats as AdminStatsType } from "../api_calls/admin";
@@ -56,6 +59,8 @@ function AdminDashboard() {
     const [showApartmentManagement, setShowApartmentManagement] = useState(false);
     const [showAmenityManagement, setShowAmenityManagement] = useState(false);
     const [showClaimsManagement, setShowClaimsManagement] = useState(false);
+    const [showAnalyticsReports, setShowAnalyticsReports] = useState(false);
+    const [showNotificationsModal, setShowNotificationsModal] = useState(false);
     const [showSuccessToast, setShowSuccessToast] = useState(false);
     const [showPasswordChangeToast, setShowPasswordChangeToast] = useState(false);
     const [showErrorToast, setShowErrorToast] = useState(false);
@@ -234,6 +239,7 @@ function AdminDashboard() {
                         setShowClaimsManagement(true);
                     }
                 }}
+                onNotificationsClick={() => setShowNotificationsModal(true)}
             />
 
             {/* MAIN CONTENT */}
@@ -440,11 +446,11 @@ function AdminDashboard() {
                     </motion.div>
 
                     {/* Analytics */}
-                    {/*
                     <motion.div 
                         className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
+                        onClick={() => setShowAnalyticsReports(true)}
                     >
                         <div className="flex items-center gap-4 mb-6">
                             <div className="w-12 h-12 bg-gradient-to-r from-pink-500 to-rose-600 rounded-xl flex items-center justify-center">
@@ -453,7 +459,7 @@ function AdminDashboard() {
                             <h3 className="text-xl font-bold text-gray-800">Análisis y Reportes</h3>
                         </div>
                         <p className="text-gray-600 mb-4">
-                            Visualiza estadísticas y genera reportes detallados
+                            Visualiza estadísticas
                         </p>
                         <div className="text-sm text-gray-500">
                             • Reportes de uso<br />
@@ -461,7 +467,6 @@ function AdminDashboard() {
                             • Análisis de tendencias
                         </div>
                     </motion.div>
-                    */}
 
                     {/* System Settings */}
                     
@@ -596,6 +601,23 @@ function AdminDashboard() {
             <NotificationToastContainer
                 toasts={toasts}
                 onRemoveToast={removeToast}
+            />
+
+            {/* Notifications Modal */}
+            <NotificationsModal
+                isOpen={showNotificationsModal}
+                onClose={() => setShowNotificationsModal(false)}
+                onClaimClick={() => {
+                    setShowNotificationsModal(false);
+                    setShowClaimsManagement(true);
+                }}
+            />
+
+            {/* Analytics Reports Modal */}
+            <AnalyticsReports
+                isOpen={showAnalyticsReports}
+                onClose={() => setShowAnalyticsReports(false)}
+                token={token || ''}
             />
 
         </div>

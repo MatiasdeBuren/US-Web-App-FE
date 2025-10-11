@@ -18,6 +18,7 @@ interface BackendNotification {
         id: string;
         title: string;
         priority: string;
+        category?: string; // May be added in future
         user: {
             name: string;
         };
@@ -39,15 +40,18 @@ export function useNotifications({ token, pollInterval = 30000, onNewNotificatio
     // Convertir notificación del backend al formato del frontend
     const convertBackendNotification = useCallback((backendNotif: BackendNotification): Notification => {
         const isUrgent = backendNotif.type === 'urgent_claim';
+        const priority = backendNotif.claim.priority || (isUrgent ? 'Urgente' : 'Normal');
+        const category = backendNotif.claim.category || 'General';
         
         return {
             id: backendNotif.id,
             type: backendNotif.type,
-            title: isUrgent ? '🚨 Reclamo Urgente' : '📝 Nuevo Reclamo',
+            title: `Reclamo de prioridad ${priority}`,
             message: `${backendNotif.claim.user.name} creó un reclamo: "${backendNotif.claim.title}"`,
             createdAt: backendNotif.createdAt,
             isRead: backendNotif.isRead,
             claimId: backendNotif.claim.id,
+            category: category,
             priority: backendNotif.claim.priority as 'low' | 'medium' | 'high' | 'urgent'
         };
     }, []);

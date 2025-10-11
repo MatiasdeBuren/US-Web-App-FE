@@ -18,6 +18,7 @@ import {
   XCircle,
   User,
   Calendar,
+  CalendarDays,
   Filter,
   ChevronDown,
   MessageSquare,
@@ -34,6 +35,7 @@ import ClaimSuccessToast from './ClaimSuccessToast';
 import ClaimErrorToast from './ClaimErrorToast';
 import CategoryFilterModal from './CategoryFilterModal';
 import StatusFilterModal from './StatusFilterModal';
+import DateFilterModal, { type DateFilterOption } from './DateFilterModal';
 
 interface ClaimsManagementProps {
   isOpen: boolean;
@@ -94,10 +96,13 @@ const statusIcons = {
 function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
   // Main data state
   const [claims, setClaims] = useState<Claim[]>([]);
+  const [filteredClaims, setFilteredClaims] = useState<Claim[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [filterDate, setFilterDate] = useState<string>('all');
+  const [dateFilterOption, setDateFilterOption] = useState<DateFilterOption | null>(null);
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -110,6 +115,7 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showStatusFilterModal, setShowStatusFilterModal] = useState(false);
+  const [showDateFilterModal, setShowDateFilterModal] = useState(false);
   const [claimToUpdateStatus, setClaimToUpdateStatus] = useState<Claim | null>(null);
   
   // Loading states
@@ -132,6 +138,16 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
   const getCurrentStatusLabel = () => {
     if (selectedStatus === 'all') return 'Todos los estados';
     return statusLabels[selectedStatus as keyof typeof statusLabels];
+  };
+
+  const getCurrentDateLabel = () => {
+    if (!dateFilterOption || filterDate === 'all') return 'Todas las fechas';
+    return dateFilterOption.label;
+  };
+
+  const handleDateFilterSelect = (option: DateFilterOption) => {
+    setFilterDate(option.value);
+    setDateFilterOption(option);
   };
 
   // Load claims
@@ -194,6 +210,114 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
       loadClaims();
     }
   }, [isOpen, loadClaims]);
+
+  // Filter claims by date when claims change or date filter changes
+  useEffect(() => {
+    if (claims.length === 0) {
+      setFilteredClaims([]);
+      return;
+    }
+
+    let filtered = claims;
+
+    // Apply date filtering
+    if (dateFilterOption && dateFilterOption.value !== 'all') {
+      const now = new Date();
+      let startDate: Date | null = null;
+      let endDate: Date | null = null;
+
+      switch (dateFilterOption.value) {
+        case 'today': {
+          startDate = new Date(now.setHours(0, 0, 0, 0));
+          endDate = new Date(now.setHours(23, 59, 59, 999));
+          break;
+        }
+        case 'yesterday': {
+          const yesterday = new Date(now);
+          yesterday.setDate(yesterday.getDate() - 1);
+          startDate = new Date(yesterday.setHours(0, 0, 0, 0));
+          endDate = new Date(yesterday.setHours(23, 59, 59, 999));
+          break;
+        }
+        case 'this-week': {
+          const startOfWeek = new Date(now);
+          startOfWeek.setDate(now.getDate() - now.getDay());
+          startDate = new Date(startOfWeek.setHours(0, 0, 0, 0));
+          endDate = new Date(now.setHours(23, 59, 59, 999));
+          break;
+        }
+        case 'last-7-days': {
+          startDate = new Date(now);
+          startDate.setDate(startDate.getDate() - 7);
+          startDate.setHours(0, 0, 0, 0);
+          endDate = new Date(now.setHours(23, 59, 59, 999));
+          break;
+        }
+        case 'this-month': {
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+          break;
+        }
+        case 'last-30-days': {
+          startDate = new Date(now);
+          startDate.setDate(startDate.getDate() - 30);
+          startDate.setHours(0, 0, 0, 0);
+          endDate = new Date(now.setHours(23, 59, 59, 999));
+          break;
+        }
+        case 'custom': {
+          // For custom dates, we'll use the startDate and endDate from the dateFilterOption
+          if (dateFilterOption.startDate && dateFilterOption.endDate) {
+            startDate = new Date(dateFilterOption.startDate);
+            endDate = new Date(dateFilterOption.endDate);
+            endDate.setHours(23, 59, 59, 999);
+          }
+          break;
+        }
+        default:
+          break;
+      }
+
+      if (startDate && endDate) {
+        console.log('🔍 [CLAIMS DATE FILTER DEBUG] Filtering claims with date range:', {
+          filterOption: dateFilterOption.value,
+          startDate,
+          endDate
+        });
+        
+        filtered = filtered.filter(claim => {
+          const claimDate = new Date(claim.createdAt);
+          // Normalize to start of day for comparison
+          claimDate.setHours(0, 0, 0, 0);
+          
+          const normalizedStartDate = new Date(startDate!);
+          normalizedStartDate.setHours(0, 0, 0, 0);
+          
+          const normalizedEndDate = new Date(endDate!);
+          normalizedEndDate.setHours(23, 59, 59, 999);
+          
+          const isInRange = claimDate >= normalizedStartDate && claimDate <= normalizedEndDate;
+          
+          if (dateFilterOption.value === 'custom') {
+            console.log('🔍 [CUSTOM CLAIMS FILTER] Checking claim:', {
+              claimId: claim.id,
+              createdAt: claim.createdAt,
+              normalizedClaimDate: claimDate,
+              filterStartDate: normalizedStartDate,
+              filterEndDate: normalizedEndDate,
+              isInRange
+            });
+          }
+          
+          return isInRange;
+        });
+        
+        console.log(`🔍 [CLAIMS DATE FILTER DEBUG] Filtered to ${filtered.length} claims`);
+      }
+    }
+
+    setFilteredClaims(filtered);
+  }, [claims, dateFilterOption]);
 
   // Handle status update
   const handleStatusUpdate = async (claim: Claim, newStatus: string, adminNotes?: string) => {
@@ -325,6 +449,20 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
                   </div>
                   <ChevronDown className="w-4 h-4 text-gray-400" />
                 </button>
+
+                {/* Date Filter Button */}
+                <button
+                  onClick={() => setShowDateFilterModal(true)}
+                  className="flex items-center justify-between px-4 py-2 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors text-left cursor-pointer min-w-[180px]"
+                >
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="w-4 h-4 text-gray-400" />
+                    <span className={!dateFilterOption || dateFilterOption.value === 'all' ? 'text-gray-500' : 'text-gray-900 font-medium'}>
+                      {getCurrentDateLabel()}
+                    </span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                </button>
               </div>
 
 
@@ -337,7 +475,7 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
               </div>
-            ) : claims.length === 0 ? (
+            ) : filteredClaims.length === 0 ? (
               <div className="text-center py-12">
                 <AlertTriangle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -349,13 +487,16 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
               </div>
             ) : (
               <div className="grid gap-4">
-                {claims.map((claim) => {
+                {filteredClaims.map((claim, index) => {
                   const CategoryIcon = categoryIcons[claim.category?.name as keyof typeof categoryIcons] || AlertTriangle;
                   const StatusIcon = statusIcons[claim.status?.name as keyof typeof statusIcons] || CheckCircle;
                   
+                  // Ensure we have a valid key - use index as fallback if claim.id is missing
+                  const claimKey = claim.id ? `claim-${claim.id}` : `claim-index-${index}`;
+                  
                   return (
                     <motion.div
-                      key={claim.id}
+                      key={claimKey}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors"
@@ -419,7 +560,7 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <Calendar className="w-3 h-3 flex-shrink-0" />
-                                  <span className="whitespace-nowrap">{new Date(claim.createdAt).toLocaleDateString()}</span>
+                                  <span className="whitespace-nowrap">{new Date(claim.createdAt).toLocaleDateString('en-GB')}</span>
                                 </span>
                               </div>
                             </div>
@@ -508,6 +649,32 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
                 </button>
               </div>
             )}
+
+            {/* Stats Footer */}
+            <div className="border-t border-gray-200 pt-4 mt-6">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+                <div>
+                  <div className="text-2xl font-bold text-orange-600">{Array.isArray(claims) ? claims.length : 0}</div>
+                  <div className="text-sm text-gray-500">Total Reclamos</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-gray-600">{Array.isArray(claims) ? claims.filter(c => c.status?.name === 'pendiente').length : 0}</div>
+                  <div className="text-sm text-gray-500">Pendientes</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-blue-600">{Array.isArray(claims) ? claims.filter(c => c.status?.name === 'en_progreso').length : 0}</div>
+                  <div className="text-sm text-gray-500">En Progreso</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-green-600">{Array.isArray(claims) ? claims.filter(c => c.status?.name === 'resuelto').length : 0}</div>
+                  <div className="text-sm text-gray-500">Resueltos</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-red-600">{Array.isArray(claims) ? claims.filter(c => c.status?.name === 'rechazado').length : 0}</div>
+                  <div className="text-sm text-gray-500">Rechazados</div>
+                </div>
+              </div>
+            </div>
           </div>
         </motion.div>
 
@@ -569,6 +736,16 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
         onClose={() => setShowStatusFilterModal(false)}
         selectedStatus={selectedStatus}
         onStatusSelect={setSelectedStatus}
+      />
+
+      {/* Date Filter Modal */}
+      <DateFilterModal
+        isVisible={showDateFilterModal}
+        onClose={() => setShowDateFilterModal(false)}
+        selectedValue={dateFilterOption?.value || 'all'}
+        onDateFilterSelect={handleDateFilterSelect}
+        title="Filtrar por Fecha"
+        subtitle="Selecciona el rango de fechas para filtrar los reclamos"
       />
     </AnimatePresence>
   );
