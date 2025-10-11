@@ -22,6 +22,7 @@ import ReservationManagement from "../components/ReservationManagement";
 import ApartmentManagement from "../components/ApartmentManagement";
 import AmenityManagement from "../components/AmenityManagement";
 import ClaimsManagement from "../components/ClaimsManagement";
+import AnalyticsReports from "../components/AnalyticsReports";
 import { LoadingOverlay } from "../components/LoadingSpinner";
 import LogoutSuccessToast from "../components/LogoutSuccessToast";
 import PasswordChangeSuccessToast from "../components/PasswordChangeSuccessToast";
@@ -58,6 +59,7 @@ function AdminDashboard() {
     const [showApartmentManagement, setShowApartmentManagement] = useState(false);
     const [showAmenityManagement, setShowAmenityManagement] = useState(false);
     const [showClaimsManagement, setShowClaimsManagement] = useState(false);
+    const [showAnalyticsReports, setShowAnalyticsReports] = useState(false);
     const [showNotificationsModal, setShowNotificationsModal] = useState(false);
     const [showSuccessToast, setShowSuccessToast] = useState(false);
     const [showPasswordChangeToast, setShowPasswordChangeToast] = useState(false);
@@ -448,6 +450,7 @@ function AdminDashboard() {
                         className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
+                        onClick={() => setShowAnalyticsReports(true)}
                     >
                         <div className="flex items-center gap-4 mb-6">
                             <div className="w-12 h-12 bg-gradient-to-r from-pink-500 to-rose-600 rounded-xl flex items-center justify-center">
@@ -608,6 +611,13 @@ function AdminDashboard() {
                     setShowNotificationsModal(false);
                     setShowClaimsManagement(true);
                 }}
+            />
+
+            {/* Analytics Reports Modal */}
+            <AnalyticsReports
+                isOpen={showAnalyticsReports}
+                onClose={() => setShowAnalyticsReports(false)}
+                token={token || ''}
             />
 
         </div>
