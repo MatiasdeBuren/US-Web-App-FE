@@ -149,9 +149,9 @@ function ReservationCard({
     };
 
     // Determine button logic:
-    // - Show "Cancelar reserva" only if: confirmed AND future date AND not cancelled
+    // - Show "Cancelar reserva" if: (confirmed OR pending) AND future date AND not cancelled
     // - Show "Eliminar de vista" if: cancelled, denied, OR past date
-    const isActive = reservation.status?.name === "confirmada" && 
+    const isActive = (reservation.status?.name === "confirmada" || reservation.status?.name === "pendiente") && 
                      !isReservationPast() && 
                      !isReservationCancelled();
 
@@ -212,7 +212,7 @@ function ReservationCard({
                             loadingText="Cancelando..."
                         >
                             <X className="w-4 h-4" />
-                            Cancelar reserva
+                            {reservation.status?.name === "pendiente" ? "Cancelar solicitud" : "Cancelar reserva"}
                         </LoadingButton>
                     ) : (
                         <LoadingButton

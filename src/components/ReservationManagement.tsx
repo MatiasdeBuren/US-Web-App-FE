@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, Search, Filter, Clock, User, Building, Eye, ChevronDown, CheckCircle, XCircle, Clock as PendingIcon, CalendarDays } from "lucide-react";
-import { getAdminReservations, getAdminAmenities, type AdminReservation, type AdminAmenity } from "../api_calls/admin";
+import { Calendar, Search, Filter, Clock, User, Building, Eye, ChevronDown, CheckCircle, XCircle, Clock as PendingIcon, CalendarDays, ThumbsUp, ThumbsDown } from "lucide-react";
+import { getAdminReservations, getAdminAmenities, approveReservation, rejectReservation, cancelReservationAsAdmin, type AdminReservation, type AdminAmenity } from "../api_calls/admin";
 import GenericFilterModal, { type FilterOption } from "./GenericFilterModal";
 import DateFilterModal, { type DateFilterOption } from "./DateFilterModal";
 
@@ -55,11 +55,68 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
     const [filterAmenity, setFilterAmenity] = useState<string>("all");
     const [filterDate, setFilterDate] = useState<string>("all");
     const [dateFilterOption, setDateFilterOption] = useState<DateFilterOption | null>(null);
+    const [processingReservationId, setProcessingReservationId] = useState<number | null>(null);
+    const [rejectingReservationId, setRejectingReservationId] = useState<number | null>(null);
+    const [cancellingReservationId, setCancellingReservationId] = useState<number | null>(null);
+    const [rejectReason, setRejectReason] = useState<string>("");
+    const [cancelReason, setCancelReason] = useState<string>("");
     
     // Modal states
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [showAmenityModal, setShowAmenityModal] = useState(false);
     const [showDateModal, setShowDateModal] = useState(false);
+
+    const handleApprove = async (reservationId: number) => {
+        if (processingReservationId) return;
+        
+        setProcessingReservationId(reservationId);
+        try {
+            await approveReservation(token, reservationId);
+            // Refresh reservations list
+            await loadReservations();
+        } catch (error) {
+            console.error("Error approving reservation:", error);
+            alert(error instanceof Error ? error.message : "Error al aprobar la reserva");
+        } finally {
+            setProcessingReservationId(null);
+        }
+    };
+
+    const handleReject = async (reservationId: number) => {
+        if (processingReservationId) return;
+        
+        setProcessingReservationId(reservationId);
+        try {
+            await rejectReservation(token, reservationId, rejectReason || undefined);
+            // Refresh reservations list
+            await loadReservations();
+            setRejectingReservationId(null);
+            setRejectReason("");
+        } catch (error) {
+            console.error("Error rejecting reservation:", error);
+            alert(error instanceof Error ? error.message : "Error al rechazar la reserva");
+        } finally {
+            setProcessingReservationId(null);
+        }
+    };
+
+    const handleCancel = async (reservationId: number) => {
+        if (processingReservationId) return;
+        
+        setProcessingReservationId(reservationId);
+        try {
+            await cancelReservationAsAdmin(token, reservationId, cancelReason || undefined);
+            // Refresh reservations list
+            await loadReservations();
+            setCancellingReservationId(null);
+            setCancelReason("");
+        } catch (error) {
+            console.error("Error cancelling reservation:", error);
+            alert(error instanceof Error ? error.message : "Error al cancelar la reserva");
+        } finally {
+            setProcessingReservationId(null);
+        }
+    };
 
     const loadReservations = useCallback(async () => {
         setLoading(true);
@@ -424,6 +481,133 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
                                                             </div>
                                                         </div>
                                                     </div>
+
+                                                    {/* Approve/Reject buttons for pending reservations */}
+                                                    {reservation.status?.name === 'pendiente' && (
+                                                        <div className="mt-4 pt-4 border-t border-gray-200">
+                                                            {rejectingReservationId === reservation.id ? (
+                                                                <div className="space-y-3">
+                                                                    <textarea
+                                                                        value={rejectReason}
+                                                                        onChange={(e) => setRejectReason(e.target.value)}
+                                                                        placeholder="Razón del rechazo (opcional)..."
+                                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                                                                        rows={2}
+                                                                    />
+                                                                    <div className="flex gap-2">
+                                                                        <button
+                                                                            onClick={() => handleReject(reservation.id)}
+                                                                            disabled={processingReservationId === reservation.id}
+                                                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                        >
+                                                                            {processingReservationId === reservation.id ? (
+                                                                                <>
+                                                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                                                    <span>Rechazando...</span>
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <ThumbsDown className="w-4 h-4" />
+                                                                                    <span>Confirmar Rechazo</span>
+                                                                                </>
+                                                                            )}
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setRejectingReservationId(null);
+                                                                                setRejectReason("");
+                                                                            }}
+                                                                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                                                                        >
+                                                                            Cancelar
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex gap-2">
+                                                                    <button
+                                                                        onClick={() => handleApprove(reservation.id)}
+                                                                        disabled={processingReservationId === reservation.id}
+                                                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    >
+                                                                        {processingReservationId === reservation.id ? (
+                                                                            <>
+                                                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                                                <span>Aprobando...</span>
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <ThumbsUp className="w-4 h-4" />
+                                                                                <span>Aprobar</span>
+                                                                            </>
+                                                                        )}
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setRejectingReservationId(reservation.id)}
+                                                                        disabled={processingReservationId === reservation.id}
+                                                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    >
+                                                                        <ThumbsDown className="w-4 h-4" />
+                                                                        <span>Rechazar</span>
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Cancel button for confirmed reservations (admin can cancel any reservation) */}
+                                                    {reservation.status?.name === 'confirmada' && (
+                                                        <div className="mt-4 pt-4 border-t border-gray-200">
+                                                            {cancellingReservationId === reservation.id ? (
+                                                                <div className="space-y-3">
+                                                                    <textarea
+                                                                        value={cancelReason}
+                                                                        onChange={(e) => setCancelReason(e.target.value)}
+                                                                        placeholder="Razón de la cancelación (opcional)..."
+                                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+                                                                        rows={2}
+                                                                    />
+                                                                    <div className="flex gap-2">
+                                                                        <button
+                                                                            onClick={() => handleCancel(reservation.id)}
+                                                                            disabled={processingReservationId === reservation.id}
+                                                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                        >
+                                                                            {processingReservationId === reservation.id ? (
+                                                                                <>
+                                                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                                                    <span>Cancelando...</span>
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <XCircle className="w-4 h-4" />
+                                                                                    <span>Confirmar Cancelación</span>
+                                                                                </>
+                                                                            )}
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setCancellingReservationId(null);
+                                                                                setCancelReason("");
+                                                                            }}
+                                                                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                                                                        >
+                                                                            Cancelar
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => setCancellingReservationId(reservation.id)}
+                                                                    disabled={processingReservationId === reservation.id}
+                                                                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                >
+                                                                    <XCircle className="w-4 h-4" />
+                                                                    <span>Cancelar Reserva (Admin)</span>
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </motion.div>

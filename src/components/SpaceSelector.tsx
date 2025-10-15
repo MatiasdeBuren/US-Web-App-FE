@@ -99,8 +99,22 @@ function SpaceSelector({
                         onClick={() => onSpaceSelect(space.name)}
                     >
                         <div className="flex items-center justify-between">
-                            <div>
-                                <h3 className="text-xl font-bold mb-2">{space.name}</h3>
+                            <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <h3 className="text-xl font-bold">{space.name}</h3>
+                                    {space.requiresApproval && (
+                                        <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${
+                                            selectedSpace === space.name 
+                                                ? 'bg-amber-500 text-white' 
+                                                : 'bg-amber-100 text-amber-800 border border-amber-300'
+                                        }`}>
+                                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                                            </svg>
+                                            Requiere aprobación
+                                        </div>
+                                    )}
+                                </div>
                                 <div className="space-y-2">
                                     <p className={`text-sm font-medium ${
                                         selectedSpace === space.name ? 'text-gray-300' : 'text-gray-600'

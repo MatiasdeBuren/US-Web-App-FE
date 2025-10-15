@@ -42,10 +42,10 @@ function ReservationList({
     };
 
     // Separate active and inactive reservations
-    // Active: confirmed status AND not in the past AND not cancelled
+    // Active: (confirmed OR pending) status AND not in the past AND not cancelled
     // Inactive: cancelled, denied, OR in the past
     const activeReservations = reservations.filter(r => 
-        r.status?.name === "confirmada" && 
+        (r.status?.name === "confirmada" || r.status?.name === "pendiente") && 
         !isReservationPast(r) &&
         !isReservationCancelled(r)
     );

@@ -42,4 +42,5 @@ export interface Amenity {
     openTime?: string;  // Format: "HH:mm"
     closeTime?: string; // Format: "HH:mm"
     isActive: boolean;
+    requiresApproval?: boolean; // Whether this amenity requires admin approval for reservations
 }

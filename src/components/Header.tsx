@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import LogoutConfirmModal from "./LogoutConfirmModal";
 import LogoutSuccessToast from "./LogoutSuccessToast";
 import NotificationBell, { type Notification } from "./NotificationBell";
+import UserNotificationBell from "./UserNotificationBell";
+import type { UserNotification } from "../hooks/useUserNotifications";
 import logoUs from '../assets/Logo_Us_2.png';
 
 interface HeaderProps {
@@ -23,6 +25,13 @@ interface HeaderProps {
     onNotificationClick?: (notification: Notification) => void;
     onNotificationsClick?: () => void;
     showNotifications?: boolean;
+    // Notificaciones de usuarios
+    userNotifications?: UserNotification[];
+    userUnreadCount?: number;
+    onMarkUserNotificationAsRead?: (notificationId: string) => void;
+    onMarkAllUserNotificationsAsRead?: () => void;
+    onDeleteUserNotification?: (notificationId: string) => void;
+    onUserNotificationClick?: (notification: UserNotification) => void;
 }
 
 function Header({ 
@@ -35,13 +44,20 @@ function Header({
     activeTab = 'dashboard', 
     showClaimsTab = true, 
     showAmenitiesTab = true,
-    // Notificaciones
+    // Notificaciones admin
     notifications = [],
     onMarkNotificationAsRead,
     onMarkAllNotificationsAsRead,
     onNotificationClick,
     onNotificationsClick,
-    showNotifications = false
+    showNotifications = false,
+    // Notificaciones usuario
+    userNotifications = [],
+    userUnreadCount = 0,
+    onMarkUserNotificationAsRead,
+    onMarkAllUserNotificationsAsRead,
+    onDeleteUserNotification,
+    onUserNotificationClick
 }: HeaderProps) {
     const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -153,7 +169,7 @@ function Header({
 
                     {/* Right side - Notifications & User menu */}
                     <div className="flex items-center space-x-4">
-                        {/* Notifications Bell - Solo para admins */}
+                        {/* Notifications Bell - Para admins */}
                         {showNotifications && (
                             <NotificationBell
                                 notifications={notifications}
@@ -163,6 +179,18 @@ function Header({
                                 onNotificationsClick={onNotificationsClick}
                             />
                         )}
+
+                        {/* User Notifications Bell - Para usuarios tenant */}
+                        {userNotifications.length > 0 || userUnreadCount > 0 ? (
+                            <UserNotificationBell
+                                notifications={userNotifications}
+                                unreadCount={userUnreadCount}
+                                onMarkAsRead={onMarkUserNotificationAsRead || (() => {})}
+                                onMarkAllAsRead={onMarkAllUserNotificationsAsRead || (() => {})}
+                                onDeleteNotification={onDeleteUserNotification || (() => {})}
+                                onNotificationClick={onUserNotificationClick || (() => {})}
+                            />
+                        ) : null}
 
                         {/* User menu */}
                         {showProfileMenu && (

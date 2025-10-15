@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Navigate } from "react-router-dom";
 import { createReservation } from "../api_calls/post_reservation";
 
@@ -28,6 +28,9 @@ import ReservationHiddenToast from "../components/ReservationHiddenToast";
 import ReservationSuccessToast from "../components/ReservationSuccessToast";
 import ReservationErrorToast from "../components/ReservationErrorToast";
 import ClaimsPage from "./ClaimsPage";
+import useUserNotifications from "../hooks/useUserNotifications";
+import useNotificationToasts from "../hooks/useNotificationToasts";
+import { NotificationToastContainer } from "../components/NotificationToast";
 
 // Tipos
 import type { UserData, ReservationData, Reservation, Amenity } from "../types";
@@ -78,11 +81,130 @@ function TenantDashboard() {
     // Error toast state
     const [showErrorToast, setShowErrorToast] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+
     const [successReservationData, setSuccessReservationData] = useState<{ amenityName: string; timeSlot: string } | null>(null);
     
     // Error reservation toast state
     const [showReservationErrorToast, setShowReservationErrorToast] = useState(false);
     const [reservationErrorMessage, setReservationErrorMessage] = useState<string | null>(null);
+
+    // Hooks de notificaciones - MUST be called unconditionally before any returns
+    const { toasts, removeToast, addToast } = useNotificationToasts();
+    
+    const {
+        notifications: userNotifications,
+        unreadCount: userUnreadCount,
+        markAsRead: markUserNotificationAsRead,
+        markAllAsRead: markAllUserNotificationsAsRead,
+        deleteNotification: deleteUserNotification,
+        refresh: refreshUserNotifications
+    } = useUserNotifications({ 
+        token: token || null,
+        onNewNotification: (notification) => {
+            // Mostrar toast para nuevas notificaciones de reservas
+            const getToastType = (notifType: string) => {
+                switch (notifType) {
+                    case 'reservation_confirmed':
+                        return 'new_notification' as const;
+                    case 'reservation_reminder':
+                        return 'new_notification' as const;
+                    case 'reservation_cancelled':
+                        return 'urgent_notification' as const;
+                    case 'reservation_modified':
+                        return 'urgent_notification' as const;
+                    default:
+                        return 'new_notification' as const;
+                }
+            };
+
+            addToast({
+                type: getToastType(notification.type),
+                title: notification.title,
+                message: notification.message,
+                duration: 5000
+            });
+        }
+    });
+
+    // Memoizar fetchReservations para evitar re-renders infinitos
+    const fetchReservations = useCallback(async (id: number) => {
+        if (!token) return [];
+        return getReservationsByAmenity(token, id);
+    }, [token]);
+
+    // Function to get current reservation count for a specific time slot
+    const getCurrentReservationCount = useCallback(async (amenityName: string, date: string, timeSlot: string): Promise<number> => {
+        if (!token) return 0;
+        
+        const amenity = amenities.find(a => a.name === amenityName);
+        if (!amenity) return 0;
+
+        try {
+            // Parse the time slot (e.g., "14:00 - 15:00")
+            const [startTimeStr, endTimeStr] = timeSlot.split(" - ");
+            if (!startTimeStr || !endTimeStr) return 0;
+
+            // Helper function to build timestamp from user's selected time (WITH proper timezone conversion)
+            const buildTimestampFromUserTime = (dateStr: string, timeStr: string): string => {
+                // dateStr: "2025-10-01", timeStr: "14:00"
+                const [hours, minutes] = timeStr.split(':').map(Number);
+                
+                // Create a local date object with the user's selected date and time
+                const [year, month, day] = dateStr.split('-').map(Number);
+                const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
+                
+                // Convert to ISO string (UTC)
+                return localDate.toISOString();
+            };
+
+            // Convert user's selected time to UTC format (matching server format)
+            const utcSlotStart = new Date(buildTimestampFromUserTime(date, startTimeStr));
+            const utcSlotEnd = new Date(buildTimestampFromUserTime(date, endTimeStr));
+
+            // Get reservations for the specific date
+            const reservations = await getReservationsByAmenity(token, amenity.id, date, date);
+            
+            if (reservations.length === 0) {
+                return 0;
+            }
+            
+            // Count overlapping reservations
+            let count = 0;
+            reservations.forEach(reservation => {
+                const resStart = new Date(reservation.startTime); // UTC from backend
+                const resEnd = new Date(reservation.endTime);     // UTC from backend
+
+                // Check if there's any overlap (all times now in UTC for consistent comparison)
+                const hasOverlap = resStart < utcSlotEnd && resEnd > utcSlotStart;
+                
+                if (hasOverlap) {
+                    count++;
+                }
+            });
+
+            return count;
+        } catch (error) {
+            console.error('Error calculating reservation count:', error);
+            return 0;
+        }
+    }, [token, amenities]);
+
+    // Function to calculate occupancy percentage for an amenity at a specific date/time
+    const getAmenityOccupancy = useCallback(async (amenityName: string, date: string, timeSlot: string): Promise<number> => {
+        if (!token) return 0;
+        
+        const amenity = amenities.find(a => a.name === amenityName);
+        if (!amenity) return 0;
+
+        try {
+            const currentReservations = await getCurrentReservationCount(amenityName, date, timeSlot);
+            const occupancyPercentage = (currentReservations / amenity.capacity) * 100;
+            return Math.min(100, occupancyPercentage); // Cap at 100%
+        } catch (error) {
+            console.error('Error calculating amenity occupancy:', error);
+            return 0;
+        }
+    }, [amenities, getCurrentReservationCount]);
 
     useEffect(() => {
         const savedToken = localStorage.getItem("token");
@@ -106,11 +228,20 @@ function TenantDashboard() {
             }).then((res) => res.json())
         ])
         .then(([dashboardData, amenitiesData]) => {
-            setUserData(dashboardData);
-            setNewName(dashboardData.user.name);
-            setAmenities(amenitiesData);
+            if (dashboardData && dashboardData.user) {
+                setUserData(dashboardData);
+                setNewName(dashboardData.user.name);
+            }
+            if (Array.isArray(amenitiesData)) {
+                setAmenities(amenitiesData);
+            }
         })
-        .catch(console.error)
+        .catch((error) => {
+            console.error('Error loading dashboard data:', error);
+            // Si hay error, mostrar algo al usuario pero no crashear
+            setUserData(null);
+            setAmenities([]);
+        })
         .finally(() => {
             setIsInitialLoading(false);
         });
@@ -263,7 +394,7 @@ function TenantDashboard() {
                 id: reservationData.id || reservationData.reservation?.id || Date.now(),
                 startTime: buildTimestampFromUserTime(selectedDate, startStr),
                 endTime: buildTimestampFromUserTime(selectedDate, endStr),
-                status: reservationData.status || reservationData.reservation?.status || { id: 1, name: "confirmada", label: "Confirmada" },
+                status: reservationData.status || reservationData.reservation?.status,
                 amenity: {
                     id: amenity.id,
                     name: amenity.name,
@@ -275,13 +406,18 @@ function TenantDashboard() {
 
             setTimeError(null);
             
-            // Show success toast with reservation details
-            setSuccessReservationData({
-                amenityName: selectedSpace,
-                timeSlot: selectedTime
-            });
-            setShowReservationToast(true);
+            // Show success toast ONLY if reservation is confirmed, not if it's pending
+            // (Pending reservations will show notification in the notification list)
+            if (newReservation.status.name !== 'pendiente') {
+                setSuccessReservationData({
+                    amenityName: selectedSpace,
+                    timeSlot: selectedTime
+                });
+                setShowReservationToast(true);
+            }
 
+            // Refrescar notificaciones después de crear reserva
+            refreshUserNotifications();
 
         } catch (err: any) {
             // Show error toast instead of inline error
@@ -316,6 +452,9 @@ function TenantDashboard() {
             // Close modal and show toast
             setShowCancelModal(false);
             setShowCancelToast(true);
+
+            // Refrescar notificaciones después de cancelar reserva
+            refreshUserNotifications();
         } catch (err: any) {
             console.error(err);
             setErrorMessage("Error canceling reservation: " + err.message);
@@ -371,80 +510,6 @@ function TenantDashboard() {
         await updateUserPassword(token, { currentPassword, newPassword });
         setShowPasswordPopup(false);
         setShowPasswordChangeToast(true);
-    };
-
-    // Function to get current reservation count for a specific time slot
-    const getCurrentReservationCount = async (amenityName: string, date: string, timeSlot: string): Promise<number> => {
-        if (!token) return 0;
-        
-        const amenity = amenities.find(a => a.name === amenityName);
-        if (!amenity) return 0;
-
-        try {
-            // Parse the time slot (e.g., "14:00 - 15:00")
-            const [startTimeStr, endTimeStr] = timeSlot.split(" - ");
-            if (!startTimeStr || !endTimeStr) return 0;
-
-            // Helper function to build timestamp from user's selected time (WITH proper timezone conversion)
-            const buildTimestampFromUserTime = (dateStr: string, timeStr: string): string => {
-                // dateStr: "2025-10-01", timeStr: "14:00"
-                const [hours, minutes] = timeStr.split(':').map(Number);
-                
-                // Create a local date object with the user's selected date and time
-                const [year, month, day] = dateStr.split('-').map(Number);
-                const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
-                
-                // Convert to ISO string (UTC)
-                return localDate.toISOString();
-            };
-
-            // Convert user's selected time to UTC format (matching server format)
-            const utcSlotStart = new Date(buildTimestampFromUserTime(date, startTimeStr));
-            const utcSlotEnd = new Date(buildTimestampFromUserTime(date, endTimeStr));
-
-            // Get reservations for the specific date
-            const reservations = await getReservationsByAmenity(token, amenity.id, date, date);
-            
-            if (reservations.length === 0) {
-                return 0;
-            }
-            
-            // Count overlapping reservations
-            let count = 0;
-            reservations.forEach(reservation => {
-                const resStart = new Date(reservation.startTime); // UTC from backend
-                const resEnd = new Date(reservation.endTime);     // UTC from backend
-
-                // Check if there's any overlap (all times now in UTC for consistent comparison)
-                const hasOverlap = resStart < utcSlotEnd && resEnd > utcSlotStart;
-                
-                if (hasOverlap) {
-                    count++;
-                }
-            });
-
-            return count;
-        } catch (error) {
-            console.error('Error calculating reservation count:', error);
-            return 0;
-        }
-    };
-
-    // Function to calculate occupancy percentage for an amenity at a specific date/time
-    const getAmenityOccupancy = async (amenityName: string, date: string, timeSlot: string): Promise<number> => {
-        if (!token) return 0;
-        
-        const amenity = amenities.find(a => a.name === amenityName);
-        if (!amenity) return 0;
-
-        try {
-            const currentReservations = await getCurrentReservationCount(amenityName, date, timeSlot);
-            const occupancyPercentage = (currentReservations / amenity.capacity) * 100;
-            return Math.min(100, occupancyPercentage); // Cap at 100%
-        } catch (error) {
-            console.error('Error calculating amenity occupancy:', error);
-            return 0;
-        }
     };
 
     const handleLogout = () => {
@@ -503,6 +568,16 @@ function TenantDashboard() {
                 onClaimsClick={() => setActiveTab("reclamos")}
                 onDashboardClick={() => setActiveTab("dashboard")}
                 activeTab={activeTab}
+                // Props de notificaciones para usuarios
+                userNotifications={userNotifications}
+                userUnreadCount={userUnreadCount}
+                onMarkUserNotificationAsRead={markUserNotificationAsRead}
+                onMarkAllUserNotificationsAsRead={markAllUserNotificationsAsRead}
+                onDeleteUserNotification={deleteUserNotification}
+                onUserNotificationClick={(notification) => {
+                    // Por ahora no hacemos nada especial, pero podrías navegar a detalles
+                    console.log('Notificación clickeada:', notification);
+                }}
             />
 
             {/* MAIN CONTENT CONTAINER */}
@@ -588,10 +663,7 @@ function TenantDashboard() {
                             selectedTime={selectedTime}
                             getAmenityOccupancy={getAmenityOccupancy}
                             token={token}
-                            fetchReservations={async (id) => {
-                                if (!token) return [];
-                                return getReservationsByAmenity(token, id);
-                            }}
+                            fetchReservations={fetchReservations}
                         />
 
                         {/* Columna derecha - Selector de horario */}
@@ -740,6 +812,12 @@ function TenantDashboard() {
                     setShowErrorToast(false);
                     setErrorMessage('');
                 }}
+            />
+
+            {/* Notification Toasts */}
+            <NotificationToastContainer
+                toasts={toasts}
+                onRemoveToast={removeToast}
             />
 
         </div>

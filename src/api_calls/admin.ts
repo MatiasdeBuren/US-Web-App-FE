@@ -38,6 +38,7 @@ export interface AdminAmenity {
     openTime?: string;  // Format: "HH:mm"
     closeTime?: string; // Format: "HH:mm"
     isActive: boolean;
+    requiresApproval?: boolean; // Whether this amenity requires admin approval for reservations
     createdAt: string;
     updatedAt: string;
     _count?: {
@@ -624,6 +625,166 @@ export async function getAmenityReservations(
         };
     } catch (error) {
         console.error('Error in getAmenityReservations:', error);
+        throw error;
+    }
+}
+
+// ================================
+// RESERVATION APPROVAL FUNCTIONS
+// ================================
+
+// GET /admin/reservations/pending - Obtener reservas pendientes de aprobación
+export async function getPendingReservations(token: string): Promise<AdminReservation[]> {
+    try {
+        const response = await fetch(`${API_URL}/admin/reservations/pending`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 403) {
+                throw new Error('Acceso denegado. Se requieren permisos de administrador.');
+            }
+            if (response.status === 401) {
+                throw new Error('Token de autenticación inválido.');
+            }
+            throw new Error(`Error del servidor: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (data && Array.isArray(data.reservations)) {
+            return data.reservations;
+        } else if (Array.isArray(data)) {
+            return data;
+        } else {
+            console.error('API did not return expected reservations structure:', data);
+            return [];
+        }
+    } catch (error) {
+        console.error('Error in getPendingReservations:', error);
+        throw error;
+    }
+}
+
+// PUT /admin/reservations/:id/approve - Aprobar una reserva pendiente
+export async function approveReservation(token: string, reservationId: number): Promise<AdminReservation> {
+    try {
+        const response = await fetch(`${API_URL}/admin/reservations/${reservationId}/approve`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 403) {
+                throw new Error('Acceso denegado. Se requieren permisos de administrador.');
+            }
+            if (response.status === 401) {
+                throw new Error('Token de autenticación inválido.');
+            }
+            if (response.status === 404) {
+                throw new Error('Reserva no encontrada.');
+            }
+            if (response.status === 400) {
+                const error = await response.json();
+                throw new Error(error.message || 'No se puede aprobar esta reserva.');
+            }
+            const error = await response.json();
+            throw new Error(error.message || `Error al aprobar reserva: ${response.status}`);
+        }
+
+        return response.json();
+    } catch (error) {
+        console.error('Error in approveReservation:', error);
+        throw error;
+    }
+}
+
+// PUT /admin/reservations/:id/reject - Rechazar una reserva pendiente
+export async function rejectReservation(
+    token: string, 
+    reservationId: number,
+    reason?: string
+): Promise<AdminReservation> {
+    try {
+        const response = await fetch(`${API_URL}/admin/reservations/${reservationId}/reject`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ reason })
+        });
+
+        if (!response.ok) {
+            if (response.status === 403) {
+                throw new Error('Acceso denegado. Se requieren permisos de administrador.');
+            }
+            if (response.status === 401) {
+                throw new Error('Token de autenticación inválido.');
+            }
+            if (response.status === 404) {
+                throw new Error('Reserva no encontrada.');
+            }
+            if (response.status === 400) {
+                const error = await response.json();
+                throw new Error(error.message || 'No se puede rechazar esta reserva.');
+            }
+            const error = await response.json();
+            throw new Error(error.message || `Error al rechazar reserva: ${response.status}`);
+        }
+
+        return response.json();
+    } catch (error) {
+        console.error('Error in rejectReservation:', error);
+        throw error;
+    }
+}
+
+/**
+ * Cancelar cualquier reserva como admin (confirmada, pendiente, o incluso pasada)
+ */
+export async function cancelReservationAsAdmin(
+    token: string, 
+    reservationId: number,
+    reason?: string
+): Promise<AdminReservation> {
+    try {
+        const response = await fetch(`${API_URL}/admin/reservations/${reservationId}/cancel`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ reason })
+        });
+
+        if (!response.ok) {
+            if (response.status === 403) {
+                throw new Error('Acceso denegado. Se requieren permisos de administrador.');
+            }
+            if (response.status === 401) {
+                throw new Error('Token de autenticación inválido.');
+            }
+            if (response.status === 404) {
+                throw new Error('Reserva no encontrada.');
+            }
+            if (response.status === 400) {
+                const error = await response.json();
+                throw new Error(error.message || 'No se puede cancelar esta reserva.');
+            }
+            const error = await response.json();
+            throw new Error(error.message || `Error al cancelar reserva: ${response.status}`);
+        }
+
+        return response.json();
+    } catch (error) {
+        console.error('Error in cancelReservationAsAdmin:', error);
         throw error;
     }
 }

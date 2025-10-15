@@ -143,6 +143,28 @@ function TimeSelector({
                     </div>
                 )}
 
+                {/* Requires Approval Info */}
+                {selectedAmenity && isAmenityActive && selectedAmenity.requiresApproval && (
+                    <div className="bg-amber-50 border-2 border-amber-300 p-5 rounded-xl">
+                        <div className="flex items-start gap-3">
+                            <div className="bg-amber-100 p-2 rounded-lg flex-shrink-0">
+                                <svg className="w-5 h-5 text-amber-700" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-bold text-amber-900 text-lg">Requiere Aprobación del Administrador</span>
+                                </div>
+                                <p className="text-amber-800 text-sm leading-relaxed">
+                                    Tu solicitud de reserva quedará en estado <span className="font-semibold">Pendiente</span> hasta que un administrador la apruebe. 
+                                    Recibirás una notificación cuando sea revisada.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Modern Date Picker */}
                 <ModernDatePicker
                     selectedDate={selectedDate}
@@ -221,7 +243,14 @@ function TimeSelector({
                     >
                         <span className="flex items-center justify-center gap-2">
                             <Calendar className="w-5 h-5" />
-                            {!isAmenityActive ? 'Amenity no disponible' : !isTimeValid ? 'Horario no válido' : `Reservar ${selectedSpace}`}
+                            {!isAmenityActive 
+                                ? 'Amenity no disponible' 
+                                : !isTimeValid 
+                                    ? 'Horario no válido' 
+                                    : selectedAmenity?.requiresApproval 
+                                        ? `Solicitar Reserva de ${selectedSpace}`
+                                        : `Reservar ${selectedSpace}`
+                            }
                         </span>
                     </LoadingButton>
                 </div>

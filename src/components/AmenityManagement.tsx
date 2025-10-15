@@ -57,7 +57,8 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
             maxDuration: maxDuration,
             openTime: formData.openTime || undefined,
             closeTime: formData.closeTime || undefined,
-            isActive: formData.isActive
+            isActive: formData.isActive,
+            requiresApproval: formData.requiresApproval || false
         };
     };
 
@@ -82,7 +83,8 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
             maxDuration: maxDuration,
             openTime: formData.openTime || undefined,
             closeTime: formData.closeTime || undefined,
-            isActive: formData.isActive
+            isActive: formData.isActive,
+            requiresApproval: formData.requiresApproval || false
         };
     };
 
@@ -114,6 +116,11 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                             }`}>
                                 {amenity.isActive ? 'Activo' : 'Inactivo'}
                             </span>
+                            {amenity.requiresApproval && (
+                                <span className="px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-800">
+                                    Requiere Aprobación
+                                </span>
+                            )}
                         </div>
                         <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
                             <div className="flex items-center gap-2">
@@ -249,6 +256,23 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                     </label>
                 </div>
 
+                <div className="flex items-center gap-3">
+                    <input
+                        type="checkbox"
+                        id="requiresApproval-create"
+                        checked={formData.requiresApproval || false}
+                        onChange={(e) => setFormData({...formData, requiresApproval: e.target.checked})}
+                        className="w-4 h-4 text-amber-600 border-2 border-gray-300 rounded focus:ring-amber-500 focus:ring-2"
+                        disabled={processing}
+                    />
+                    <label htmlFor="requiresApproval-create" className="text-sm font-medium text-gray-700">
+                        Requiere aprobación del administrador
+                        <span className="block text-xs text-gray-500 mt-1">
+                            Si está marcado, las reservas necesitarán ser aprobadas por un admin antes de confirmarse
+                        </span>
+                    </label>
+                </div>
+
                 <div className="flex justify-end gap-4 pt-4">
                     <button
                         type="submit"
@@ -338,6 +362,23 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                     </label>
                 </div>
 
+                <div className="flex items-center gap-3">
+                    <input
+                        type="checkbox"
+                        id="requiresApproval-edit"
+                        checked={formData.requiresApproval || false}
+                        onChange={(e) => setFormData({...formData, requiresApproval: e.target.checked})}
+                        className="w-4 h-4 text-amber-600 border-2 border-gray-300 rounded focus:ring-amber-500 focus:ring-2"
+                        disabled={processing}
+                    />
+                    <label htmlFor="requiresApproval-edit" className="text-sm font-medium text-gray-700">
+                        Requiere aprobación del administrador
+                        <span className="block text-xs text-gray-500 mt-1">
+                            Si está marcado, las reservas necesitarán ser aprobadas por un admin antes de confirmarse
+                        </span>
+                    </label>
+                </div>
+
                 <div className="flex justify-end gap-4 pt-4">
                     <button
                         type="submit"
@@ -404,7 +445,8 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                     maxDuration: "", 
                     openTime: "", 
                     closeTime: "", 
-                    isActive: true 
+                    isActive: true,
+                    requiresApproval: false
                 }}
                 getFormDataFromItem={(amenity) => ({
                     name: amenity.name,
@@ -412,7 +454,8 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                     maxDuration: amenity.maxDuration.toString(),
                     openTime: amenity.openTime || "",
                     closeTime: amenity.closeTime || "",
-                    isActive: amenity.isActive ?? true
+                    isActive: amenity.isActive ?? true,
+                    requiresApproval: amenity.requiresApproval ?? false
                 })}
                 createButtonText="Crear Amenity"
                 emptyStateMessage="No hay amenities registrados"

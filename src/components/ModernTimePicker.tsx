@@ -210,6 +210,10 @@ function ModernTimePicker({
         { label: "1 hora", duration: 60 },
         { label: "1.5 horas", duration: 90 },
         { label: "2 horas", duration: 120 },
+        { label: "2.5 horas", duration: 150 },
+        { label: "3 horas", duration: 180 },
+        { label: "3.5 horas", duration: 210 },
+        { label: "4 horas", duration: 240 },
     ].filter(preset => preset.duration <= maxDuration);
 
     const handleQuickPreset = (duration: number) => {
@@ -411,7 +415,7 @@ function ModernTimePicker({
                 {currentStart && (
                     <div>
                         <h4 className="text-sm font-semibold text-gray-700 mb-3">Duración</h4>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                             {quickPresets.map(preset => (
                                 <button
                                     key={preset.duration}
