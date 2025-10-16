@@ -557,21 +557,21 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
 
                                                     {/* Cancel button for confirmed reservations (admin can cancel any reservation) */}
                                                     {reservation.status?.name === 'confirmada' && (
-                                                        <div className="mt-4 pt-4 border-t border-gray-200">
+                                                        <div className="mt-4 pt-4 border-t border-gray-100">
                                                             {cancellingReservationId === reservation.id ? (
                                                                 <div className="space-y-3">
                                                                     <textarea
                                                                         value={cancelReason}
                                                                         onChange={(e) => setCancelReason(e.target.value)}
                                                                         placeholder="Razón de la cancelación (opcional)..."
-                                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+                                                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent resize-none text-sm"
                                                                         rows={2}
                                                                     />
                                                                     <div className="flex gap-2">
                                                                         <button
                                                                             onClick={() => handleCancel(reservation.id)}
                                                                             disabled={processingReservationId === reservation.id}
-                                                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                            className="flex-1 flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-rose-500 to-red-600 text-white rounded-xl hover:from-rose-600 hover:to-red-700 transition-all duration-200 shadow-lg shadow-rose-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none font-medium"
                                                                         >
                                                                             {processingReservationId === reservation.id ? (
                                                                                 <>
@@ -590,7 +590,7 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
                                                                                 setCancellingReservationId(null);
                                                                                 setCancelReason("");
                                                                             }}
-                                                                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                                                                            className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
                                                                         >
                                                                             Cancelar
                                                                         </button>
@@ -600,9 +600,9 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
                                                                 <button
                                                                     onClick={() => setCancellingReservationId(reservation.id)}
                                                                     disabled={processingReservationId === reservation.id}
-                                                                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    className="w-full flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-rose-500 to-red-600 text-white rounded-xl hover:from-rose-600 hover:to-red-700 transition-all duration-200 shadow-md hover:shadow-lg shadow-rose-500/20 hover:shadow-rose-500/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none font-medium group"
                                                                 >
-                                                                    <XCircle className="w-4 h-4" />
+                                                                    <XCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
                                                                     <span>Cancelar Reserva (Admin)</span>
                                                                 </button>
                                                             )}
