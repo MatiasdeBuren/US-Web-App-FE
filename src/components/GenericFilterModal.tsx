@@ -53,7 +53,7 @@ function GenericFilterModal<T extends string = string>({
   return (
     <AnimatePresence>
       <div 
-        className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+        className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-[60]"
         onClick={onClose}
       >
         <motion.div

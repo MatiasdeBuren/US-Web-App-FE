@@ -122,7 +122,15 @@ export default function AvailabilityTimelineViewer({
   useEffect(() => {
     setReservations([]);
     setSelectedSlot(null);
+    setWeekOffset(0); // Reset to current week when amenity changes
   }, [amenityId]);
+
+  // Reset week offset when modal closes
+  useEffect(() => {
+    if (!open) {
+      setWeekOffset(0);
+    }
+  }, [open]);
 
   const reservationsByDay = useMemo(() => {
     const result: Record<string, Reservation[]> = {};
