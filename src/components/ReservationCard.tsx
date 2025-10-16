@@ -87,7 +87,7 @@ function ReservationCard({
         
         return {
             formatDate: () => {
-                return utcDate.toLocaleDateString("en-GB", {
+                return utcDate.toLocaleDateString("es-ES", {
                     weekday: "long",
                     year: "numeric", 
                     month: "long",

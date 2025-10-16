@@ -8,7 +8,6 @@ import {
   TrendingUp, 
   Activity,
   PieChart,
-  Download,
   RefreshCw,
   Filter,
   ChevronDown,
@@ -288,8 +287,8 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
       case 'this-year': return 'Este año';
       case 'custom': 
         if (dateFilterOption.startDate && dateFilterOption.endDate) {
-          const start = new Date(dateFilterOption.startDate).toLocaleDateString('en-GB');
-          const end = new Date(dateFilterOption.endDate).toLocaleDateString('en-GB');
+          const start = new Date(dateFilterOption.startDate).toLocaleDateString('es-ES');
+          const end = new Date(dateFilterOption.endDate).toLocaleDateString('es-ES');
           return `${start} - ${end}`;
         }
         return 'Rango personalizado';
@@ -300,11 +299,6 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
   const getCurrentAmenityLabel = () => {
     if (selectedAmenity === 'all') return 'Todas las amenities';
     return availableAmenities.find(a => a.name === selectedAmenity)?.name || selectedAmenity;
-  };
-
-  const exportData = () => {
-    console.log('📊 [ANALYTICS] Exporting analytics data...');
-    // Here you could implement CSV export or other export functionality
   };
 
   if (!isOpen) return null;
@@ -341,13 +335,6 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                 className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
               >
                 <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-              </button>
-              
-              <button
-                onClick={exportData}
-                className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-              >
-                <Download className="w-5 h-5" />
               </button>
               
               <button

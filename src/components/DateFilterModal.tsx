@@ -147,8 +147,8 @@ const DateFilterModal = ({
     const customOption: DateFilterOption = {
       value: 'custom',
       label: customEndDate ? 
-        `${startDate.toLocaleDateString('en-GB')} - ${endDate.toLocaleDateString('en-GB')}` : 
-        startDate.toLocaleDateString('en-GB'),
+        `${startDate.toLocaleDateString('es-ES')} - ${endDate.toLocaleDateString('es-ES')}` : 
+        startDate.toLocaleDateString('es-ES'),
       description: 'Rango de fechas personalizado',
       startDate: startDate,
       endDate: endDate
@@ -168,7 +168,7 @@ const DateFilterModal = ({
 
   const formatDate = (date: Date | null): string => {
     if (!date) return '';
-    return date.toLocaleDateString('en-GB', { 
+    return date.toLocaleDateString('es-ES', { 
       day: 'numeric', 
       month: 'short', 
       year: 'numeric' 
@@ -206,6 +206,10 @@ const DateFilterModal = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 max-h-[80vh] overflow-hidden"
+          style={{
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none'
+          }}
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -236,7 +240,7 @@ const DateFilterModal = ({
                 />
                 {customStartDate && (
                   <div className="text-xs text-green-600 mt-1 font-medium">
-                    ✓ {new Date(customStartDate + 'T00:00:00').toLocaleDateString('en-GB', { 
+                    ✓ {new Date(customStartDate + 'T00:00:00').toLocaleDateString('es-ES', { 
                       day: '2-digit', 
                       month: '2-digit', 
                       year: 'numeric' 
@@ -258,7 +262,7 @@ const DateFilterModal = ({
                 />
                 {customEndDate && (
                   <div className="text-xs text-green-600 mt-1 font-medium">
-                    ✓ {new Date(customEndDate + 'T00:00:00').toLocaleDateString('en-GB', { 
+                    ✓ {new Date(customEndDate + 'T00:00:00').toLocaleDateString('es-ES', { 
                       day: '2-digit', 
                       month: '2-digit', 
                       year: 'numeric' 
@@ -292,7 +296,7 @@ const DateFilterModal = ({
             </div>
           ) : (
             /* Date Options List */
-            <div className="space-y-2 max-h-96 overflow-y-auto">
+            <div className="space-y-2 max-h-96 overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {dateOptions.map((option) => {
                 const IconComponent = getIcon(option.value);
                 const isSelected = selectedValue === option.value;

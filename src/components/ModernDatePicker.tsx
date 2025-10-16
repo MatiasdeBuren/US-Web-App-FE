@@ -33,9 +33,19 @@ function ModernDatePicker({
     // Parse the selected date or use today as default
     const selected = selectedDate ? new Date(selectedDate + "T00:00:00") : null;
     
+    // Reset to current month/year when calendar closes
+    useEffect(() => {
+        if (!isOpen) {
+            const now = new Date();
+            setCurrentMonth(now.getMonth());
+            setCurrentYear(now.getFullYear());
+            setHasInitialized(false);
+        }
+    }, [isOpen]);
+    
     // Only initialize the month/year from selected date on first mount or when selected date changes from empty to having a value
     useEffect(() => {
-        if (selected && !hasInitialized) {
+        if (selected && !hasInitialized && isOpen) {
             setCurrentMonth(selected.getMonth());
             setCurrentYear(selected.getFullYear());
             setHasInitialized(true);
@@ -43,14 +53,14 @@ function ModernDatePicker({
             // Reset flag when date is cleared
             setHasInitialized(false);
         }
-    }, [selected, hasInitialized]);
+    }, [selected, hasInitialized, isOpen]);
 
     // Get formatted date string for display
     const getDisplayDate = () => {
         if (!selectedDate) return "Seleccionar fecha";
         
         const date = new Date(selectedDate + "T00:00:00");
-        return date.toLocaleDateString("en-GB", {
+        return date.toLocaleDateString("es-ES", {
             weekday: "long",
             year: "numeric",
             month: "long",

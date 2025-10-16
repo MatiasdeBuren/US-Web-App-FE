@@ -560,7 +560,7 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <Calendar className="w-3 h-3 flex-shrink-0" />
-                                  <span className="whitespace-nowrap">{new Date(claim.createdAt).toLocaleDateString('en-GB')}</span>
+                                  <span className="whitespace-nowrap">{new Date(claim.createdAt).toLocaleDateString('es-ES')}</span>
                                 </span>
                               </div>
                             </div>

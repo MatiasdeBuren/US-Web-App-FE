@@ -60,8 +60,12 @@ function GenericFilterModal<T extends string = string>({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className={`bg-white rounded-2xl shadow-xl ${maxWidthClasses[maxWidth]} w-full max-h-[80vh] overflow-y-auto`}
+          className={`bg-white rounded-2xl shadow-xl ${maxWidthClasses[maxWidth]} w-full max-h-[80vh] overflow-y-auto scrollbar-hide`}
           onClick={(e) => e.stopPropagation()}
+          style={{
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none'
+          }}
         >
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-100">
