@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import useUserNotifications, { type UserNotification } from '../hooks/useUserNotifications';
 
 type FilterType = 'all' | 'unread' | 'read';
-type NotificationTypeFilter = 'all' | 'reservation_confirmed' | 'reservation_cancelled' | 'reservation_modified' | 'reservation_reminder';
+type NotificationTypeFilter = 'all' | 'reservation_confirmed' | 'pending_reservation' | 'reservation_cancelled' | 'reservation_modified' | 'reservation_reminder';
 
 const UserNotificationsPage = () => {
     const navigate = useNavigate();
@@ -69,6 +69,8 @@ const UserNotificationsPage = () => {
         switch (type) {
             case 'reservation_confirmed':
                 return '✅';
+            case 'pending_reservation':
+                return '🔔';
             case 'reservation_cancelled':
                 return '❌';
             case 'reservation_modified':
@@ -85,6 +87,8 @@ const UserNotificationsPage = () => {
         switch (type) {
             case 'reservation_confirmed':
                 return 'bg-green-100 text-green-800 border-green-200';
+            case 'pending_reservation':
+                return 'bg-yellow-100 text-yellow-800 border-yellow-200';
             case 'reservation_cancelled':
                 return 'bg-red-100 text-red-800 border-red-200';
             case 'reservation_modified':
@@ -101,6 +105,8 @@ const UserNotificationsPage = () => {
         switch (type) {
             case 'reservation_confirmed':
                 return 'Confirmada';
+            case 'pending_reservation':
+                return 'Pendiente de Aprobación';
             case 'reservation_cancelled':
                 return 'Cancelada';
             case 'reservation_modified':

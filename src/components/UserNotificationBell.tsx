@@ -68,6 +68,8 @@ function UserNotificationBell({
         switch (type) {
             case 'reservation_confirmed':
                 return '✅';
+            case 'pending_reservation':
+                return '🔔';
             case 'reservation_cancelled':
                 return '❌';
             case 'reservation_modified':
