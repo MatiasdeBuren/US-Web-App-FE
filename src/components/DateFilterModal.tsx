@@ -206,6 +206,7 @@ const DateFilterModal = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 max-h-[80vh] overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
           style={{
             scrollbarWidth: 'none',
             msOverflowStyle: 'none'
