@@ -39,14 +39,14 @@ const UserNotificationsPage = () => {
         });
     }, [notifications, filter, typeFilter]);
 
-    // Paginación
+
     const totalPages = Math.ceil(filteredNotifications.length / itemsPerPage);
     const paginatedNotifications = useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
         return filteredNotifications.slice(startIndex, startIndex + itemsPerPage);
     }, [filteredNotifications, currentPage, itemsPerPage]);
 
-    // Formatear tiempo relativo
+
     const formatTimeRelative = (createdAt: string) => {
         const now = new Date();
         const created = new Date(createdAt);
@@ -64,7 +64,7 @@ const UserNotificationsPage = () => {
         return created.toLocaleDateString();
     };
 
-    // Obtener ícono de notificación
+
     const getNotificationIcon = (type: string) => {
         switch (type) {
             case 'reservation_confirmed':
@@ -118,25 +118,23 @@ const UserNotificationsPage = () => {
         }
     };
 
-    // Manejar click en notificación
+
     const handleNotificationClick = async (notification: UserNotification) => {
         if (!notification.isRead) {
             await markAsRead(notification.id);
         }
-        
-        // Por ahora solo navegamos al dashboard, puedes cambiar esto
-        // para navegar a detalles específicos de la reserva
+
         navigate('/dashboard');
     };
 
-    // Manejar marcar como leída
+
     const handleMarkAsRead = async (notification: UserNotification) => {
         if (!notification.isRead) {
             await markAsRead(notification.id);
         }
     };
 
-    // Manejar eliminación
+
     const handleDelete = async (e: React.MouseEvent, notificationId: string) => {
         e.stopPropagation();
         await deleteNotification(notificationId);
@@ -144,7 +142,7 @@ const UserNotificationsPage = () => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header */}
+
             <div className="bg-white shadow-sm border-b">
                 <div className="max-w-6xl mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
@@ -189,7 +187,7 @@ const UserNotificationsPage = () => {
                 </div>
             </div>
 
-            {/* Filtros */}
+
             <div className="bg-white border-b">
                 <div className="max-w-6xl mx-auto px-4 py-4">
                     <div className="flex items-center gap-6">
@@ -215,7 +213,7 @@ const UserNotificationsPage = () => {
                             </select>
                         </div>
                         
-                        {/* Filtro por tipo */}
+  
                         <div className="flex items-center gap-2">
                             <span className="text-sm text-gray-600">Tipo:</span>
                             <select

@@ -17,7 +17,7 @@ function Login() {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); // <--- prevent page reload
+    e.preventDefault();
     
     if (isLoggingIn) return; // Prevent spam clicking
     
@@ -52,7 +52,7 @@ function Login() {
         </div>
 
         <form onSubmit={handleLogin} className="space-y-5">
-          {/* Email */}
+          
           <FormInput
             type="email"
             placeholder="Correo electrónico"
@@ -63,7 +63,7 @@ function Login() {
             disabled={isLoggingIn}
           />
 
-          {/* Password */}
+          
           <FormInput
             type="password"
             placeholder="Contraseña"
@@ -75,7 +75,7 @@ function Login() {
             disabled={isLoggingIn}
           />
 
-          {/* Forgot Password Link */}
+
           <div className="text-right">
             <button
               type="button"
@@ -86,7 +86,7 @@ function Login() {
             </button>
           </div>
 
-          {/* Login button */}
+          
           <button
             type="submit"
             disabled={isLoggingIn}
@@ -100,7 +100,7 @@ function Login() {
           </button>
         </form>
 
-        {/* Footer */}
+        
         <p className="text-center text-gray-600 mt-6">
           ¿No tenés cuenta?{' '}
           <span
@@ -111,7 +111,6 @@ function Login() {
           </span>
         </p>
 
-        {/* Forgot Password Modal */}
         <ForgotPasswordModal
           isVisible={showForgotPassword}
           onClose={() => setShowForgotPassword(false)}
