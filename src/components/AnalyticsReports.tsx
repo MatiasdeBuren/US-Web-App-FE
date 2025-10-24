@@ -49,28 +49,21 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
   const [amenityStats, setAmenityStats] = useState<AmenityStats[]>([]);
   const [hourlyData, setHourlyData] = useState<HourlyData[]>([]);
   const [allReservations, setAllReservations] = useState<any[]>([]);
-  
-  // Filter states
   const [selectedAmenity, setSelectedAmenity] = useState<string>('all');
   const [dateFilterOption, setDateFilterOption] = useState<DateFilterOption | null>(null);
   const [showDateFilterModal, setShowDateFilterModal] = useState(false);
   const [showAmenityFilterModal, setShowAmenityFilterModal] = useState(false);
-  
-  // Available amenities for filtering
   const [availableAmenities, setAvailableAmenities] = useState<Array<{id: number, name: string}>>([]);
 
   const processAndSetData = React.useCallback((reservations: any[]) => {
-    // Apply filters to reservations
     let filteredReservations = [...reservations];
     
-    // Apply amenity filter
     if (selectedAmenity !== 'all') {
       filteredReservations = filteredReservations.filter(r => 
         r.amenity?.name === selectedAmenity
       );
     }
     
-    // Apply date filter
     if (dateFilterOption && dateFilterOption.value !== 'all') {
       const now = new Date();
       let startDate: Date | null = null;
@@ -135,7 +128,6 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
     
     console.log('📊 [ANALYTICS] Filtered to', filteredReservations.length, 'reservations');
     
-    // Process data for analytics
     const processedStats = processReservationData(filteredReservations);
     const processedHourly = processHourlyData(filteredReservations);
     
@@ -152,10 +144,8 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
       
       console.log('📊 [ANALYTICS] Processing', reservations.length, 'reservations');
 
-      // Store all reservations for filtering
       setAllReservations(reservations);
       
-      // Extract available amenities
       const uniqueAmenities = Array.from(
         new Set(reservations.map(r => r.amenity?.id).filter(Boolean))
       ).map(id => {
@@ -167,7 +157,6 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
       });
       setAvailableAmenities(uniqueAmenities);
 
-      // Process data for analytics with current filters
       processAndSetData(reservations);
     } catch (error) {
       console.error('❌ [ANALYTICS] Error loading data:', error);
@@ -182,7 +171,6 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
     }
   }, [isOpen, loadAnalyticsData]);
 
-  // Reprocess data when filters change
   useEffect(() => {
     if (allReservations.length > 0) {
       processAndSetData(allReservations);
@@ -217,9 +205,7 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
       stats.reservations.push(reservation);
     });
     
-    // Convert to final format
     const result: AmenityStats[] = Array.from(amenityMap.values()).map(stats => {
-      // Find peak hours (top 3)
       const hourlyWithIndex = stats.hourlyCount.map((count: number, hour: number) => ({ hour, count }));
       const peakHours = hourlyWithIndex
         .sort((a: { hour: number; count: number }, b: { hour: number; count: number }) => b.count - a.count)
@@ -230,7 +216,7 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
           label: `${h.hour.toString().padStart(2, '0')}:00`
         }));
       
-      const utilizationRate = stats.totalReservations > 0 ? Math.min((stats.totalReservations / 30) * 100, 100) : 0; // Rough calculation
+      const utilizationRate = stats.totalReservations > 0 ? Math.min((stats.totalReservations / 30) * 100, 100) : 0;
       const averageDuration = stats.totalReservations > 0 ? stats.totalDuration / stats.totalReservations : 0;
       
       return {
@@ -239,7 +225,7 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
         totalReservations: stats.totalReservations,
         peakHours,
         utilizationRate: Math.round(utilizationRate),
-        averageDuration: Math.round(averageDuration * 10) / 10 // Round to 1 decimal
+        averageDuration: Math.round(averageDuration * 10) / 10
       };
     });
     
@@ -249,7 +235,6 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
   const processHourlyData = (reservations: any[]): HourlyData[] => {
     const hourlyMap = new Map<number, any>();
     
-    // Initialize all hours
     for (let hour = 0; hour < 24; hour++) {
       hourlyMap.set(hour, {
         hour: `${hour.toString().padStart(2, '0')}:00`,
@@ -484,9 +469,12 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                       <div>
                         <p className="text-orange-600 font-medium">Hora Pico</p>
                         <p className="text-3xl font-bold text-orange-900">
-                          {hourlyData.length > 0 
-                            ? hourlyData.reduce((max, curr) => curr.count > max.count ? curr : max, hourlyData[0])?.hour || '--'
-                            : '--'}
+                          {(() => {
+                            if (hourlyData.length === 0) return '--';
+                            const maxCount = Math.max(...hourlyData.map(h => h.count));
+                            const peakHour = hourlyData.find(h => h.count === maxCount);
+                            return peakHour?.hour || '--';
+                          })()}
                         </p>
                       </div>
                       <Clock className="w-8 h-8 text-orange-600" />

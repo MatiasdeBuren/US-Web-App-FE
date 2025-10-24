@@ -23,11 +23,9 @@ function SpaceSelector({
     getAmenityOccupancy,
     fetchReservations
 }: SpaceSelectorProps) {
-    // State to store occupancy percentages for each amenity
     const [occupancyData, setOccupancyData] = useState<{ [amenityName: string]: number }>({});
     const [loadingOccupancy, setLoadingOccupancy] = useState(false);
 
-    // Update occupancy data when date or time changes
     useEffect(() => {
         const updateOccupancyData = async () => {
             if (!selectedDate || !selectedTime) return;
@@ -36,7 +34,6 @@ function SpaceSelector({
             const newOccupancyData: { [amenityName: string]: number } = {};
 
             try {
-                // Calculate occupancy for each amenity
                 for (const space of spaces) {
                     const occupancy = await getAmenityOccupancy(space.name, selectedDate, selectedTime);
                     newOccupancyData[space.name] = occupancy;
