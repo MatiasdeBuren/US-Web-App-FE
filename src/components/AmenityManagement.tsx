@@ -1,4 +1,3 @@
-// Refactored AmenityManagement using ManagementModal pattern
 import { useState } from "react";
 import { Users, Clock, Edit3, Trash2, AlertTriangle } from "lucide-react";
 import ManagementModal from "./ManagementModal";
@@ -40,7 +39,6 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
         const capacity = parseInt(formData.capacity);
         const maxDuration = parseInt(formData.maxDuration);
         
-        // Validate required fields
         if (!formData.name?.trim()) {
             throw new Error("El nombre es obligatorio");
         }
@@ -66,7 +64,6 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
         const capacity = parseInt(formData.capacity);
         const maxDuration = parseInt(formData.maxDuration);
         
-        // Validate required fields
         if (!formData.name?.trim()) {
             throw new Error("El nombre es obligatorio");
         }
@@ -88,7 +85,6 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
         };
     };
 
-    // Wrapper functions that transform data before calling API
     const createAmenityWithTransform = async (token: string, formData: any) => {
         const transformedData = transformFormDataForCreate(formData);
         return await createAmenity(token, transformedData);
@@ -141,7 +137,6 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
                             </div>
                         )}
                         
-                        {/* Reservation information */}
                         {(amenity.activeReservationCount ?? amenity._count?.activeReservations ?? 0) > 0 && (
                             <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-2 py-1 rounded-lg">
                                 <AlertTriangle className="w-4 h-4" />
@@ -391,8 +386,7 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
             </form>
         </div>
     );
-
-    // Custom success handlers using GenericToast
+    
     const handleCreateSuccess = (amenity: AdminAmenity) => {
         setToastAction('created');
         setToastAmenityName(amenity.name);
@@ -408,7 +402,7 @@ function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
     const handleDeleteSuccess = (deletedId: number) => {
         console.log(`Deleted amenity with ID: ${deletedId}`);
         setToastAction('deleted');
-        setToastAmenityName(''); // We don't have the name after deletion
+        setToastAmenityName('');
         setShowSuccessToast(true);
     };
 
