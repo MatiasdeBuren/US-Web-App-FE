@@ -47,7 +47,6 @@ interface TimeSelectorProps {
     onDateChange: (newDate: string) => void;
     onReserve: () => void;
     isReserving?: boolean;
-    // New prop to get real-time reservation count
     getCurrentReservationCount?: (amenityName: string, date: string, timeSlot: string) => Promise<number>;
 }
 
@@ -69,11 +68,9 @@ function TimeSelector({
     const selectedAmenity = amenities.find(a => a.name === selectedSpace);
     const maxDuration = selectedAmenity?.maxDuration || 60;
     
-    // Check if current time selection is valid
     const isTimeValid = !selectedTime || !selectedAmenity || isTimeWithinOperatingHours(selectedTime, selectedAmenity.openTime, selectedAmenity.closeTime);
     const isAmenityActive = selectedAmenity?.isActive !== false;
     
-    // Update reservation count when date, time, or space changes
     useEffect(() => {
         const updateReservationCount = async () => {
             if (getCurrentReservationCount && selectedSpace && selectedDate && selectedTime) {

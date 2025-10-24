@@ -80,7 +80,6 @@ function TenantDashboard() {
     } = useUserNotifications({ 
         token: token || null,
         onNewNotification: (notification) => {
-            // Mostrar toast para nuevas notificaciones de reservas
             const getToastType = (notifType: string) => {
                 switch (notifType) {
                     case 'reservation_confirmed':
@@ -105,13 +104,11 @@ function TenantDashboard() {
         }
     });
 
-    // Memoizar fetchReservations para evitar re-renders infinitos
     const fetchReservations = useCallback(async (id: number) => {
         if (!token) return [];
         return getReservationsByAmenity(token, id);
     }, [token]);
 
-    // Function to get current reservation count for a specific time slot
     const getCurrentReservationCount = useCallback(async (amenityName: string, date: string, timeSlot: string): Promise<number> => {
         if (!token) return 0;
         
@@ -119,41 +116,32 @@ function TenantDashboard() {
         if (!amenity) return 0;
 
         try {
-            // Parse the time slot (e.g., "14:00 - 15:00")
             const [startTimeStr, endTimeStr] = timeSlot.split(" - ");
             if (!startTimeStr || !endTimeStr) return 0;
 
-            // Helper function to build timestamp from user's selected time (WITH proper timezone conversion)
             const buildTimestampFromUserTime = (dateStr: string, timeStr: string): string => {
-                // dateStr: "2025-10-01", timeStr: "14:00"
                 const [hours, minutes] = timeStr.split(':').map(Number);
                 
-                // Create a local date object with the user's selected date and time
                 const [year, month, day] = dateStr.split('-').map(Number);
                 const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
                 
-                // Convert to ISO string (UTC)
                 return localDate.toISOString();
             };
 
-            // Convert user's selected time to UTC format (matching server format)
             const utcSlotStart = new Date(buildTimestampFromUserTime(date, startTimeStr));
             const utcSlotEnd = new Date(buildTimestampFromUserTime(date, endTimeStr));
 
-            // Get reservations for the specific date
             const reservations = await getReservationsByAmenity(token, amenity.id, date, date);
             
             if (reservations.length === 0) {
                 return 0;
             }
             
-            // Count overlapping reservations
             let count = 0;
             reservations.forEach(reservation => {
-                const resStart = new Date(reservation.startTime); // UTC from backend
-                const resEnd = new Date(reservation.endTime);     // UTC from backend
+                const resStart = new Date(reservation.startTime);
+                const resEnd = new Date(reservation.endTime);
 
-                // Check if there's any overlap (all times now in UTC for consistent comparison)
                 const hasOverlap = resStart < utcSlotEnd && resEnd > utcSlotStart;
                 
                 if (hasOverlap) {
@@ -168,7 +156,6 @@ function TenantDashboard() {
         }
     }, [token, amenities]);
 
-    // Function to calculate occupancy percentage for an amenity at a specific date/time
     const getAmenityOccupancy = useCallback(async (amenityName: string, date: string, timeSlot: string): Promise<number> => {
         if (!token) return 0;
         
@@ -178,7 +165,7 @@ function TenantDashboard() {
         try {
             const currentReservations = await getCurrentReservationCount(amenityName, date, timeSlot);
             const occupancyPercentage = (currentReservations / amenity.capacity) * 100;
-            return Math.min(100, occupancyPercentage); // Cap at 100%
+            return Math.min(100, occupancyPercentage);
         } catch (error) {
             console.error('Error calculating amenity occupancy:', error);
             return 0;
@@ -217,7 +204,6 @@ function TenantDashboard() {
         })
         .catch((error) => {
             console.error('Error loading dashboard data:', error);
-            // Si hay error, mostrar algo al usuario pero no crashear
             setUserData(null);
             setAmenities([]);
         })
@@ -230,10 +216,9 @@ function TenantDashboard() {
         if (amenities.length > 0) {
             setSelectedSpace(amenities[0].name);
             
-            // Initialize date to today if not set
             if (!selectedDate) {
                 const today = new Date();
-                const formattedDate = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+                const formattedDate = today.toISOString().split('T')[0];
                 setSelectedDate(formattedDate);
             }
             
@@ -271,25 +256,20 @@ function TenantDashboard() {
 
     const handleReserve = async () => {
         setIsReserving(true);
-        setTimeError(null); // Clear any previous errors
+        setTimeError(null);
         
-        // Helper function to build timestamp from user's selected time (WITH proper timezone conversion)
         const buildTimestampFromUserTime = (dateStr: string, timeStr: string): string => {
-            // dateStr: "2025-10-01", timeStr: "19:00"
             const [hours, minutes] = timeStr.split(':').map(Number);
             
-            // Create a local date object with the user's selected date and time
             const [year, month, day] = dateStr.split('-').map(Number);
             const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
             
-            // Convert to ISO string (UTC)
             return localDate.toISOString();
         };
         
         try {
             const [startStr, endStr] = selectedTime.split(" - ");
             
-            // Get selected amenity for validation
             const selectedAmenity = amenities.find((a) => a.name === selectedSpace);
             if (!selectedAmenity) {
                 setTimeError("❌ Amenity no encontrado");
@@ -297,14 +277,12 @@ function TenantDashboard() {
                 return;
             }
 
-            // Check if amenity is active
             if (selectedAmenity.isActive === false) {
                 setTimeError("❌ Este amenity no está disponible actualmente");
                 setIsReserving(false);
                 return;
             }
 
-            // Validation: Check operating hours
             if (selectedAmenity.openTime && selectedAmenity.closeTime) {
                 const [openHour, openMin] = selectedAmenity.openTime.split(":").map(Number);
                 const [closeHour, closeMin] = selectedAmenity.closeTime.split(":").map(Number);
@@ -323,9 +301,8 @@ function TenantDashboard() {
                 }
             }
             
-            // Crear fecha en zona horaria local, no UTC
             const [year, month, day] = selectedDate.split('-').map(Number);
-            const baseDate = new Date(year, month - 1, day); // month es 0-indexado
+            const baseDate = new Date(year, month - 1, day);
             const startDateTime = new Date(baseDate);
             const endDateTime = new Date(baseDate);
 
@@ -334,7 +311,6 @@ function TenantDashboard() {
             startDateTime.setHours(sh, sm, 0, 0);
             endDateTime.setHours(eh, em, 0, 0);
 
-            // Validation: Check if the reservation time is in the past
             const currentTime = new Date();
             if (startDateTime < currentTime) {
                 setTimeError("❌ No puedes hacer una reserva para una hora que ya ha pasado");
@@ -342,7 +318,6 @@ function TenantDashboard() {
                 return;
             }
 
-            // Additional validation: Check if reservation is less than 5 minutes from now
             const fiveMinutesFromNow = new Date(currentTime.getTime() + 5 * 60 * 1000);
             if (startDateTime < fiveMinutesFromNow) {
                 setTimeError("❌ Las reservas deben hacerse con al menos 5 minutos de anticipación");
@@ -359,7 +334,6 @@ function TenantDashboard() {
                 endTime: buildTimestampFromUserTime(selectedDate, endStr),
             });
 
-            // Actualizar contador de reservas
             setReservations((prev) => ({
                 ...prev,
                 [selectedSpace]: {
@@ -368,7 +342,6 @@ function TenantDashboard() {
                 },
             }));
 
-            // Crear la nueva reserva para añadir a la lista
             const newReservation: Reservation = {
                 id: reservationData.id || reservationData.reservation?.id || Date.now(),
                 startTime: buildTimestampFromUserTime(selectedDate, startStr),
@@ -380,13 +353,10 @@ function TenantDashboard() {
                 }
             };
 
-            // Añadir la nueva reserva al principio de la lista (más reciente primero)
             setUserReservations((prev) => [newReservation, ...prev]);
 
             setTimeError(null);
             
-            // Show success toast ONLY if reservation is confirmed, not if it's pending
-            // (Pending reservations will show notification in the notification list)
             if (newReservation.status.name !== 'pendiente') {
                 setSuccessReservationData({
                     amenityName: selectedSpace,
@@ -395,21 +365,17 @@ function TenantDashboard() {
                 setShowReservationToast(true);
             }
 
-            // Refrescar notificaciones después de crear reserva
             refreshUserNotifications();
 
         } catch (err: any) {
-            // Show error toast instead of inline error
             setReservationErrorMessage(err.message || "Error al procesar la reserva");
             setShowReservationErrorToast(true);
-            // Clear any existing time error since we're showing toast instead
             setTimeError(null);
         } finally {
             setIsReserving(false);
         }
     };
     const handleCancelReservation = (reservationId: number) => {
-        // Find the reservation to cancel
         const reservation = userReservations.find(r => r.id === reservationId);
         if (reservation) {
             setReservationToCancel(reservation);
@@ -423,16 +389,13 @@ function TenantDashboard() {
         setIsCancelling(reservationToCancel.id);
         try {
             await cancelReservation(token, reservationToCancel.id);
-            // Update local state to mark as cancelled
             setUserReservations(prev =>
                 prev.map(r => r.id === reservationToCancel.id ? { ...r, status: { id: 3, name: "cancelada", label: "Cancelada" } } : r)
             );
             
-            // Close modal and show toast
             setShowCancelModal(false);
             setShowCancelToast(true);
 
-            // Refrescar notificaciones después de cancelar reserva
             refreshUserNotifications();
         } catch (err: any) {
             console.error(err);
@@ -448,15 +411,12 @@ function TenantDashboard() {
         if (!token) return;
         setIsHiding(reservationId);
         try {
-            // Llamar a la API para marcar como hidden_from_user = true
             await hideReservationFromUser(token, reservationId);
             
-            // Remove the reservation from the local state (hide from view)
             setUserReservations(prev =>
                 prev.filter(r => r.id !== reservationId)
             );
             
-            // Show success toast
             setShowHiddenToast(true);
         } catch (err: any) {
             console.error(err);
@@ -492,7 +452,7 @@ function TenantDashboard() {
     };
 
     const handleLogout = () => {
-        setShowProfile(false); // Close the profile panel first
+        setShowProfile(false);
         setShowSuccessToast(true);
     };
 
@@ -518,13 +478,11 @@ function TenantDashboard() {
         setIsDeletingAccount(true);
         try {
             await deleteUser(token);
-            // Clear localStorage and redirect to login
             localStorage.removeItem("token");
             setShowDeleteConfirm(false);
             setShowProfile(false);
             setShowSuccessToast(true);
             
-            // Redirect to login after a short delay to show success message
             setTimeout(() => {
                 window.location.replace("/#/login");
             }, 2000);
@@ -547,14 +505,12 @@ function TenantDashboard() {
                 onClaimsClick={() => setActiveTab("reclamos")}
                 onDashboardClick={() => setActiveTab("dashboard")}
                 activeTab={activeTab}
-                // Props de notificaciones para usuarios
                 userNotifications={userNotifications}
                 userUnreadCount={userUnreadCount}
                 onMarkUserNotificationAsRead={markUserNotificationAsRead}
                 onMarkAllUserNotificationsAsRead={markAllUserNotificationsAsRead}
                 onDeleteUserNotification={deleteUserNotification}
                 onUserNotificationClick={(notification) => {
-                    // Por ahora no hacemos nada especial, pero podrías navegar a detalles
                     console.log('Notificación clickeada:', notification);
                 }}
             />
