@@ -8,9 +8,6 @@ import { updateUserPassword } from "../api_calls/update_user_password";
 import { deleteUser } from "../api_calls/delete_user";
 import { cancelReservation } from "../api_calls/cancel_reservation";
 import { hideReservationFromUser } from "../api_calls/hide_reservation";
-
-
-// Componentes reutilizables
 import Header from "../components/Header";
 import ProfilePanel from "../components/ProfilePanel";
 import EditProfileModal from "../components/EditProfileModal";
@@ -31,8 +28,6 @@ import ClaimsPage from "./ClaimsPage";
 import useUserNotifications from "../hooks/useUserNotifications";
 import useNotificationToasts from "../hooks/useNotificationToasts";
 import { NotificationToastContainer } from "../components/NotificationToast";
-
-// Tipos
 import type { UserData, ReservationData, Reservation, Amenity } from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL as string;
@@ -55,40 +50,24 @@ function TenantDashboard() {
     const [showSuccessToast, setShowSuccessToast] = useState(false);
     const [showPasswordChangeToast, setShowPasswordChangeToast] = useState(false);
     const [newName, setNewName] = useState("");
-    
-    // Tab navigation state
     const [activeTab, setActiveTab] = useState<"dashboard" | "reclamos">("dashboard");
-
-    // Loading states
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [isReserving, setIsReserving] = useState(false);
     const [isCancelling, setIsCancelling] = useState<number | null>(null);
     const [isHiding, setIsHiding] = useState<number | null>(null);
     const [isSavingName, setIsSavingName] = useState(false);
     const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-
-    // Cancel reservation modal and toast states
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [reservationToCancel, setReservationToCancel] = useState<Reservation | null>(null);
     const [showCancelToast, setShowCancelToast] = useState(false);
-    
-    // Hidden reservation toast state
     const [showHiddenToast, setShowHiddenToast] = useState(false);
-    
-    // Success reservation toast state
     const [showReservationToast, setShowReservationToast] = useState(false);
-    
-    // Error toast state
     const [showErrorToast, setShowErrorToast] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
-
     const [successReservationData, setSuccessReservationData] = useState<{ amenityName: string; timeSlot: string } | null>(null);
-    
-    // Error reservation toast state
     const [showReservationErrorToast, setShowReservationErrorToast] = useState(false);
     const [reservationErrorMessage, setReservationErrorMessage] = useState<string | null>(null);
 
-    // Hooks de notificaciones - MUST be called unconditionally before any returns
     const { toasts, removeToast, addToast } = useNotificationToasts();
     
     const {

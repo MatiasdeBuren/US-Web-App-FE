@@ -11,7 +11,6 @@ import {
     BarChart3
 } from "lucide-react";
 
-// Componentes reutilizables
 import Header from "../components/Header";
 import ProfilePanel from "../components/ProfilePanel";
 import EditProfileModal from "../components/EditProfileModal";
@@ -28,19 +27,13 @@ import LogoutSuccessToast from "../components/LogoutSuccessToast";
 import PasswordChangeSuccessToast from "../components/PasswordChangeSuccessToast";
 import ReservationErrorToast from "../components/ReservationErrorToast";
 import NotificationsModal from "../components/NotificationsModal";
-
-// API calls
 import { getAdminStats, type AdminStats as AdminStatsType } from "../api_calls/admin";
 import { updateUserName } from "../api_calls/update_user_name";
 import { updateUserPassword } from "../api_calls/update_user_password";
 import { deleteUser } from "../api_calls/delete_user";
-
-// Hooks
 import useNotifications from "../hooks/useNotifications";
 import useNotificationToasts from "../hooks/useNotificationToasts";
 import { NotificationToastContainer } from "../components/NotificationToast";
-
-// Tipos
 import type { UserData } from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL as string;
@@ -73,7 +66,6 @@ function AdminDashboard() {
     const [isChangingPassword, setIsChangingPassword] = useState(false);
     const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
-    // Hook de notificaciones
     const { toasts, removeToast, showNewClaimToast } = useNotificationToasts();
     
     const {
@@ -83,10 +75,8 @@ function AdminDashboard() {
     } = useNotifications({ 
         token,
         onNewNotification: (notification) => {
-            // Mostrar toast solo si la notificación es de un claim
             if (notification.type === 'new_claim' || notification.type === 'urgent_claim') {
                 const isUrgent = notification.type === 'urgent_claim';
-                // Extraer el nombre del usuario y título del claim del mensaje
                 const match = notification.message.match(/^(.+?) creó un reclamo: "(.+)"$/);
                 if (match) {
                     const [, userName, claimTitle] = match;
@@ -105,7 +95,6 @@ function AdminDashboard() {
         }
         setToken(savedToken);
 
-        // Fetch admin data
         Promise.all([
             fetch(`${API_URL}/dashboard`, {
                 headers: {
@@ -114,7 +103,6 @@ function AdminDashboard() {
                 },
             }).then((res) => res.json()),
             
-            // Fetch admin stats
             getAdminStats(savedToken).catch(() => ({
                 totalUsers: 0,
                 totalApartments: 0,
@@ -221,14 +209,12 @@ function AdminDashboard() {
 
     return (
         <div className={`min-h-screen bg-gray-100 ${(showSuccessToast || showPasswordChangeToast) ? 'pointer-events-none' : ''}`}>
-            {/* HEADER */}
             <Header
                 userName={userData?.user.name || ""}
                 onProfileClick={() => setShowProfile((prev) => !prev)}
                 onLogout={handleLogout}
                 showClaimsTab={false}
                 showAmenitiesTab={false}
-                // Notificaciones para admin
                 showNotifications={true}
                 notifications={notifications}
                 onMarkNotificationAsRead={markAsRead}
@@ -242,12 +228,9 @@ function AdminDashboard() {
                 onNotificationsClick={() => setShowNotificationsModal(true)}
             />
 
-            {/* MAIN CONTENT */}
             <div className="relative p-8">
-                {/* ADMIN WELCOME SECTION */}
                 <div className="mb-12 relative overflow-hidden">
                     <div className="bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-800 rounded-3xl p-8 shadow-2xl border border-blue-200">
-                        {/* Decorative background elements */}
                         <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/10 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
                         <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-white/5 to-transparent rounded-full translate-y-12 -translate-x-12"></div>
                         
@@ -266,9 +249,13 @@ function AdminDashboard() {
                                 </div>
                             </div>
                             
-                            {/* Admin Stats Cards */}
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
-                                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                                <motion.div 
+                                    className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 cursor-pointer hover:bg-white/15 transition-all"
+                                    whileHover={{ scale: 1.05, y: -4 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => setShowUserManagement(true)}
+                                >
                                     <div className="flex items-center gap-3 mb-3">
                                         <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
                                             <Users className="w-5 h-5 text-white" />
@@ -278,9 +265,14 @@ function AdminDashboard() {
                                             <p className="text-2xl font-bold text-white">{adminStats?.totalUsers || 0}</p>
                                         </div>
                                     </div>
-                                </div>
+                                </motion.div>
                                 
-                                 <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                                <motion.div 
+                                    className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 cursor-pointer hover:bg-white/15 transition-all"
+                                    whileHover={{ scale: 1.05, y: -4 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => setShowApartmentManagement(true)}
+                                >
                                     <div className="flex items-center gap-3 mb-3">
                                         <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
                                             <Building className="w-5 h-5 text-white" />
@@ -290,9 +282,14 @@ function AdminDashboard() {
                                             <p className="text-2xl font-bold text-white">{adminStats?.totalApartments || 0}</p>
                                         </div>
                                     </div>
-                                </div> 
+                                </motion.div>
                                 
-                                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                                <motion.div 
+                                    className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 cursor-pointer hover:bg-white/15 transition-all"
+                                    whileHover={{ scale: 1.05, y: -4 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => setShowReservationManagement(true)}
+                                >
                                     <div className="flex items-center gap-3 mb-3">
                                         <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
                                             <Calendar className="w-5 h-5 text-white" />
@@ -302,9 +299,14 @@ function AdminDashboard() {
                                             <p className="text-2xl font-bold text-white">{adminStats?.totalReservations || 0}</p>
                                         </div>
                                     </div>
-                                </div>
+                                </motion.div>
                                 
-                                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                                <motion.div 
+                                    className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 cursor-pointer hover:bg-white/15 transition-all"
+                                    whileHover={{ scale: 1.05, y: -4 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => setShowReservationManagement(true)}
+                                >
                                     <div className="flex items-center gap-3 mb-3">
                                         <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
                                             <Clock className="w-5 h-5 text-white" />
@@ -314,17 +316,13 @@ function AdminDashboard() {
                                             <p className="text-2xl font-bold text-white">{adminStats?.activeReservations || 0}</p>
                                         </div>
                                     </div>
-                                </div>
+                                </motion.div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* ADMIN FEATURES GRID */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                
-                    {/* Users Management */}
-                    
                     <motion.div 
                         className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
                         whileHover={{ scale: 1.02 }}
@@ -346,10 +344,7 @@ function AdminDashboard() {
                             • Activar/desactivar cuentas
                         </div>
                     </motion.div>
-                    
 
-                    {/* Apartments Management */}
-                    
                     <motion.div 
                         className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
                         whileHover={{ scale: 1.02 }}
@@ -371,10 +366,7 @@ function AdminDashboard() {
                             • Ver ocupación
                         </div>
                     </motion.div>
-                    
 
-                    {/* Amenities Management */}
-                    
                     <motion.div 
                         className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
                         whileHover={{ scale: 1.02 }}
@@ -396,9 +388,7 @@ function AdminDashboard() {
                             • Establecer horarios
                         </div>
                     </motion.div>
-                    
 
-                    {/* Reservations Management */}
                     <motion.div 
                         className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
                         whileHover={{ scale: 1.02 }}
@@ -421,7 +411,6 @@ function AdminDashboard() {
                         </div>
                     </motion.div>
 
-                    {/* Claims Management */}
                     <motion.div 
                         className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
                         whileHover={{ scale: 1.02 }}
@@ -445,7 +434,6 @@ function AdminDashboard() {
                         </div>
                     </motion.div>
 
-                    {/* Analytics */}
                     <motion.div 
                         className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
                         whileHover={{ scale: 1.02 }}
@@ -468,8 +456,6 @@ function AdminDashboard() {
                         </div>
                     </motion.div>
 
-                    {/* System Settings */}
-                    
                     <motion.div 
                         className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
                         whileHover={{ scale: 1.02 }}
@@ -490,11 +476,9 @@ function AdminDashboard() {
                             • Mantenimiento del sistema
                         </div>
                     </motion.div>
-                    
                 </div>
             </div>
 
-            {/* PROFILE PANEL */}
             <ProfilePanel
                 isVisible={showProfile}
                 onClose={() => setShowProfile(false)}
@@ -505,7 +489,6 @@ function AdminDashboard() {
                 onLogout={handleLogout}
             />
 
-            {/* MODALS */}
             <EditProfileModal
                 isVisible={showEditPopup}
                 onClose={() => setShowEditPopup(false)}
@@ -529,7 +512,6 @@ function AdminDashboard() {
                 isDeleting={isDeletingAccount}
             />
 
-            {/* USER MANAGEMENT MODAL */}
             {token && (
                 <UserManagement
                     isOpen={showUserManagement}
@@ -539,7 +521,6 @@ function AdminDashboard() {
                 />
             )}
 
-            {/* RESERVATION MANAGEMENT MODAL */}
             {token && (
                 <ReservationManagement
                     isOpen={showReservationManagement}
@@ -548,7 +529,6 @@ function AdminDashboard() {
                 />
             )}
 
-            {/* APARTMENT MANAGEMENT MODAL */}
             {token && (
                 <ApartmentManagement
                     isOpen={showApartmentManagement}
@@ -557,7 +537,6 @@ function AdminDashboard() {
                 />
             )}
 
-            {/* AMENITY MANAGEMENT MODAL */}
             {token && (
                 <AmenityManagement
                     isOpen={showAmenityManagement}
@@ -566,7 +545,6 @@ function AdminDashboard() {
                 />
             )}
 
-            {/* CLAIMS MANAGEMENT MODAL */}
             {token && (
                 <ClaimsManagement
                     isOpen={showClaimsManagement}
@@ -575,19 +553,16 @@ function AdminDashboard() {
                 />
             )}
 
-            {/* Logout Success Toast */}
             <LogoutSuccessToast
                 isVisible={showSuccessToast}
                 onComplete={handleLogoutComplete}
             />
 
-            {/* Password Change Success Toast */}
             <PasswordChangeSuccessToast
                 isVisible={showPasswordChangeToast}
                 onComplete={handlePasswordChangeComplete}
             />
             
-            {/* Error Toast */}
             <ReservationErrorToast
                 isVisible={showErrorToast}
                 errorMessage={errorMessage}
@@ -597,13 +572,11 @@ function AdminDashboard() {
                 }}
             />
 
-            {/* Notification Toasts */}
             <NotificationToastContainer
                 toasts={toasts}
                 onRemoveToast={removeToast}
             />
 
-            {/* Notifications Modal */}
             <NotificationsModal
                 isOpen={showNotificationsModal}
                 onClose={() => setShowNotificationsModal(false)}
@@ -613,13 +586,11 @@ function AdminDashboard() {
                 }}
             />
 
-            {/* Analytics Reports Modal */}
             <AnalyticsReports
                 isOpen={showAnalyticsReports}
                 onClose={() => setShowAnalyticsReports(false)}
                 token={token || ''}
             />
-
         </div>
     );
 }

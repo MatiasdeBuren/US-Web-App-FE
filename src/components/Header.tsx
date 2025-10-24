@@ -18,14 +18,12 @@ interface HeaderProps {
     activeTab?: 'dashboard' | 'reclamos';
     showClaimsTab?: boolean;
     showAmenitiesTab?: boolean;
-    // Notificaciones - solo para admins
     notifications?: Notification[];
     onMarkNotificationAsRead?: (notificationId: string) => void;
     onMarkAllNotificationsAsRead?: () => void;
     onNotificationClick?: (notification: Notification) => void;
     onNotificationsClick?: () => void;
     showNotifications?: boolean;
-    // Notificaciones de usuarios
     userNotifications?: UserNotification[];
     userUnreadCount?: number;
     onMarkUserNotificationAsRead?: (notificationId: string) => void;
@@ -44,14 +42,12 @@ function Header({
     activeTab = 'dashboard', 
     showClaimsTab = true, 
     showAmenitiesTab = true,
-    // Notificaciones admin
     notifications = [],
     onMarkNotificationAsRead,
     onMarkAllNotificationsAsRead,
     onNotificationClick,
     onNotificationsClick,
     showNotifications = false,
-    // Notificaciones usuario
     userNotifications = [],
     userUnreadCount = 0,
     onMarkUserNotificationAsRead,
@@ -67,7 +63,6 @@ function Header({
     const menuRef = useRef<HTMLDivElement>(null);
     const mobileMenuRef = useRef<HTMLDivElement>(null);
 
-    // Close menus when clicking outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -90,12 +85,10 @@ function Header({
     const handleConfirmLogout = () => {
         setShowLogoutModal(false);
         
-        // Clear storage
         localStorage.removeItem('token');
         localStorage.removeItem('userData');
         if (onLogout) onLogout();
         
-        // Show success toast
         setShowSuccessToast(true);
     };
 
@@ -112,7 +105,6 @@ function Header({
         <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
-                    {/* Logo and App Name */}
                     <div className="flex items-center space-x-3">
                         <img
                             src={logoUs}
@@ -125,7 +117,6 @@ function Header({
                         </div>
                     </div>
 
-                    {/* Center - Navigation */}
                     <nav className="hidden md:flex items-center space-x-8">
                         <button 
                             onClick={onDashboardClick}
@@ -152,7 +143,6 @@ function Header({
                     
                     </nav>
 
-                    {/* Mobile menu button */}
                     <div className="md:hidden flex items-center space-x-2">
                         <button
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -167,9 +157,7 @@ function Header({
                         </button>
                     </div>
 
-                    {/* Right side - Notifications & User menu */}
                     <div className="flex items-center space-x-4">
-                        {/* Notifications Bell - Para admins */}
                         {showNotifications && (
                             <NotificationBell
                                 notifications={notifications}
@@ -180,7 +168,6 @@ function Header({
                             />
                         )}
 
-                        {/* User Notifications Bell - Para usuarios tenant */}
                         {userNotifications.length > 0 || userUnreadCount > 0 ? (
                             <UserNotificationBell
                                 notifications={userNotifications}
@@ -192,7 +179,6 @@ function Header({
                             />
                         ) : null}
 
-                        {/* User menu */}
                         {showProfileMenu && (
                             <div className="relative hidden md:block" ref={menuRef}>
                                 <button
