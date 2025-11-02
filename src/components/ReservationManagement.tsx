@@ -11,7 +11,6 @@ interface ReservationManagementProps {
     token: string;
 }
 
-// Filter options for status
 const statusOptions: FilterOption[] = [
   { 
     value: 'all', 
@@ -61,7 +60,6 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
     const [rejectReason, setRejectReason] = useState<string>("");
     const [cancelReason, setCancelReason] = useState<string>("");
     
-    // Modal states
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [showAmenityModal, setShowAmenityModal] = useState(false);
     const [showDateModal, setShowDateModal] = useState(false);

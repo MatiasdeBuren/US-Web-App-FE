@@ -109,7 +109,6 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
   const [totalPages, setTotalPages] = useState(1);
   const [totalClaims, setTotalClaims] = useState(0);
   
-  // Modals
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [claimToDelete, setClaimToDelete] = useState<Claim | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -118,11 +117,9 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
   const [showDateFilterModal, setShowDateFilterModal] = useState(false);
   const [claimToUpdateStatus, setClaimToUpdateStatus] = useState<Claim | null>(null);
   
-  // Loading states
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   
-  // Toast states
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showErrorToast, setShowErrorToast] = useState(false);
   const [toastAction, setToastAction] = useState<'created' | 'updated' | 'deleted'>('created');

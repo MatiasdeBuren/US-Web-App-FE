@@ -20,7 +20,6 @@ function ReservationList({
     cancellingId,
     hidingId
 }: ReservationListProps) {
-    // Debug: Log reservations to help identify the issue
     console.log('ReservationList - All reservations:', reservations.map(r => ({
         id: r.id,
         status: r.status,
@@ -28,22 +27,17 @@ function ReservationList({
         amenityName: r.amenity?.name
     })));
 
-    // Helper function to check if a reservation is in the past
     const isReservationPast = (reservation: Reservation): boolean => {
         const now = new Date();
         const reservationEndDate = new Date(reservation.endTime);
         return reservationEndDate < now;
     };
 
-    // Helper function to check if a reservation is cancelled
     const isReservationCancelled = (reservation: Reservation): boolean => {
         const cancelledStatuses = ["cancelada", "cancelled", "canceled", "denied"];
         return cancelledStatuses.includes(reservation.status?.name?.toLowerCase() || '');
     };
 
-    // Separate active and inactive reservations
-    // Active: (confirmed OR pending) status AND not in the past AND not cancelled
-    // Inactive: cancelled, denied, OR in the past
     const activeReservations = reservations.filter(r => 
         (r.status?.name === "confirmada" || r.status?.name === "pendiente") && 
         !isReservationPast(r) &&

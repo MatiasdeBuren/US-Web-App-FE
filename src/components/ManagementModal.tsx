@@ -20,7 +20,6 @@ interface ManagementModalProps<T extends BaseItem> {
   updateItem: (token: string, id: number, data: any) => Promise<T>;
   deleteItem: (token: string, id: number) => Promise<void>;
   
-  // Render functions
   renderItem: (item: T, onEdit: (item: T) => void, onDelete: (id: number) => void) => React.ReactNode;
   renderCreateForm: (formData: any, setFormData: (data: any) => void, onSubmit: (e: React.FormEvent) => void, processing: boolean) => React.ReactNode;
   renderEditForm: (item: T, formData: any, setFormData: (data: any) => void, onSubmit: (e: React.FormEvent) => void, processing: boolean) => React.ReactNode;
@@ -79,7 +78,6 @@ function ManagementModal<T extends BaseItem>({
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   
-  // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -87,7 +85,6 @@ function ManagementModal<T extends BaseItem>({
   const [itemToDelete, setItemToDelete] = useState<T | null>(null);
   const [processing, setProcessing] = useState(false);
   
-  // Form states
   const [formData, setFormData] = useState(initialFormData);
 
   useEffect(() => {
@@ -111,7 +108,6 @@ function ManagementModal<T extends BaseItem>({
   }, [isOpen, token, loadItems, showToast, title]);
 
   useEffect(() => {
-    // Filter items
     let filtered = items;
 
     if (customFilter) {

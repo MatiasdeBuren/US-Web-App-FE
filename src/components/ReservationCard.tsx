@@ -80,9 +80,7 @@ function ReservationCard({
 
     const statusConfig = getStatusConfig(reservation.status?.name || 'unknown');
 
-    // Helper to parse UTC timestamp and convert to local time for display
     const parseLocalTime = (timestamp: string) => {
-        // timestamp format: "2025-10-02T19:00:00.000Z" (UTC)
         const utcDate = new Date(timestamp);
         
         return {
@@ -135,22 +133,17 @@ function ReservationCard({
         onCancel(reservation.id);
     };
 
-    // Helper function to check if reservation is in the past
     const isReservationPast = (): boolean => {
         const now = new Date();
         const reservationEndDate = new Date(reservation.endTime);
         return reservationEndDate < now;
     };
 
-    // Helper function to check if a reservation is cancelled
     const isReservationCancelled = (): boolean => {
         const cancelledStatuses = ["cancelada", "cancelled", "canceled", "denied"];
         return cancelledStatuses.includes(reservation.status?.name?.toLowerCase() || '');
     };
 
-    // Determine button logic:
-    // - Show "Cancelar reserva" if: (confirmed OR pending) AND future date AND not cancelled
-    // - Show "Eliminar de vista" if: cancelled, denied, OR past date
     const isActive = (reservation.status?.name === "confirmada" || reservation.status?.name === "pendiente") && 
                      !isReservationPast() && 
                      !isReservationCancelled();

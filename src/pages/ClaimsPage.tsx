@@ -87,24 +87,20 @@ function ClaimsPage() {
   const [selectedOwnership, setSelectedOwnership] = useState<'all' | 'mine' | 'others'>('all');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Delete modal and toast states
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [claimToDelete, setClaimToDelete] = useState<Claim | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  // Filter modal states
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showOwnershipModal, setShowOwnershipModal] = useState(false);
   
-  // Toast states
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showErrorToast, setShowErrorToast] = useState(false);
   const [toastAction, setToastAction] = useState<'created' | 'updated' | 'deleted'>('created');
   const [toastClaimSubject, setToastClaimSubject] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
-  // Load claims function - stable function that always gets all data and lets React handle filtering
   const loadClaimsData = useCallback(async (authToken: string, includeAll: boolean = false) => {
     try {
       const response = await getClaims(authToken, {

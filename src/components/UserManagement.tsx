@@ -6,7 +6,6 @@ import ClaimSuccessToast from './ClaimSuccessToast';
 import ClaimErrorToast from './ClaimErrorToast';
 import GenericFilterModal, { type FilterOption } from "./GenericFilterModal";
 
-// Helper function to safely get reservation count from user object
 const getReservationCount = (user: AdminUser): number => {
     return user._count?.reservations ?? user.reservationCount ?? 0;
 };
@@ -26,16 +25,13 @@ function UserManagement({ isOpen, onClose, token, currentUserEmail }: UserManage
     const [filterRole, setFilterRole] = useState<string>("all");
     const [updatingUserId, setUpdatingUserId] = useState<number | null>(null);
     
-    // Modal states
     const [showRoleFilter, setShowRoleFilter] = useState(false);
     
-    // Toast states
     const [showSuccessToast, setShowSuccessToast] = useState(false);
     const [showErrorToast, setShowErrorToast] = useState(false);
     const [toastMessage, setToastMessage] = useState<string>('');
     const [errorMessage, setErrorMessage] = useState<string>('');
 
-    // Filter options
     const roleFilterOptions: FilterOption[] = [
         {
             value: "all",
