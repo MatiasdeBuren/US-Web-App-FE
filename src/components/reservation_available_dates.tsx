@@ -286,13 +286,11 @@ export default function AvailabilityTimelineViewer({
                           
                           if (dayReservations.length === 0) return null;
                           
-                          // Helper to parse UTC timestamp to local time minutes
                           const parseLocalTimeToMinutes = (timestamp: string) => {
                             const utcDate = new Date(timestamp);
                             return utcDate.getHours() * 60 + utcDate.getMinutes();
                           };
 
-                          // Get all unique time boundaries (start and end times)
                           const boundaries = new Set<number>();
                           dayReservations.forEach(res => {
                             const startMinutes = parseLocalTimeToMinutes(res.startTime);
@@ -301,7 +299,6 @@ export default function AvailabilityTimelineViewer({
                             boundaries.add(endMinutes);
                           });
                           
-                          // Sort boundaries and create segments
                           const sortedBoundaries = Array.from(boundaries).sort((a, b) => a - b);
                           const segments = [];
                           
@@ -309,7 +306,6 @@ export default function AvailabilityTimelineViewer({
                             const segmentStart = sortedBoundaries[i];
                             const segmentEnd = sortedBoundaries[i + 1];
                             
-                            // Find all reservations that overlap with this segment
                             const overlappingReservations = dayReservations.filter(res => {
                               const resStart = parseLocalTimeToMinutes(res.startTime);
                               const resEnd = parseLocalTimeToMinutes(res.endTime);
@@ -326,22 +322,17 @@ export default function AvailabilityTimelineViewer({
                             }
                           }
                           
-                          // Create cards for each segment
                           return segments.map((segment) => {
-                            // Clamp to visible range
                             const clampedStart = Math.max(segment.start, VISIBLE_START_HOUR * 60);
                             const clampedEnd = Math.min(segment.end, VISIBLE_END_HOUR * 60);
                             
-                            // Skip if not in visible range
                             if (clampedStart >= clampedEnd) return null;
                             
-                            // Calculate position
                             const startRelative = clampedStart - VISIBLE_START_HOUR * 60;
                             const endRelative = clampedEnd - VISIBLE_START_HOUR * 60;
                             const topPct = (startRelative / TOTAL_MINUTES) * 100;
                             const heightPct = ((endRelative - startRelative) / TOTAL_MINUTES) * 100;
                             
-                            // Create time strings directly from minutes
                             const formatTimeFromMinutes = (totalMinutes: number) => {
                               const hours = Math.floor(totalMinutes / 60);
                               const minutes = totalMinutes % 60;

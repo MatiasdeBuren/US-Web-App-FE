@@ -13,7 +13,6 @@ import {
 } from "../api_calls/admin";
 import GenericFilterModal, { type FilterOption } from "./GenericFilterModal";
 
-// Helper function to safely get user/reservation count
 const getUserCount = (apartment: AdminApartment): number => {
     return apartment._count?.users ?? apartment.userCount ?? 0;
 };
@@ -38,13 +37,11 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
     const [filterFloor, setFilterFloor] = useState<string>("all");
     const [filterOccupancy, setFilterOccupancy] = useState<string>("all");
     
-    // Modal states
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedApartment, setSelectedApartment] = useState<AdminApartment | null>(null);
     const [processing, setProcessing] = useState(false);
     
-    // Filter modal states
     const [showFloorFilter, setShowFloorFilter] = useState(false);
     const [showOccupancyFilter, setShowOccupancyFilter] = useState(false);
 

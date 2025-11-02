@@ -472,8 +472,9 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                           {(() => {
                             if (hourlyData.length === 0) return '--';
                             const maxCount = Math.max(...hourlyData.map(h => h.count));
-                            const peakHour = hourlyData.find(h => h.count === maxCount);
-                            return peakHour?.hour || '--';
+                            const peakHours = hourlyData.filter(h => h.count === maxCount);
+                            if (peakHours.length === 1) return peakHours[0].hour;
+                            return peakHours.map(h => h.hour).join(', ');
                           })()}
                         </p>
                       </div>

@@ -5,9 +5,8 @@ import { Calendar, Users, Clock, AlertCircle } from "lucide-react";
 import ModernDatePicker from "./ModernDatePicker";
 import ModernTimePicker from "./ModernTimePicker";
 
-// Helper function to check if time is within operating hours
 function isTimeWithinOperatingHours(timeSlot: string, openTime?: string, closeTime?: string): boolean {
-    if (!openTime || !closeTime) return true; // No restrictions if no hours set
+    if (!openTime || !closeTime) return true;
     
     const [startTime, endTime] = timeSlot.split(" - ");
     const [openHour, openMin] = openTime.split(":").map(Number);
@@ -23,11 +22,9 @@ function isTimeWithinOperatingHours(timeSlot: string, openTime?: string, closeTi
     return startMinutes >= openMinutes && endMinutes <= closeMinutes;
 }
 
-// Helper function to format operating hours for display
 function formatOperatingHours(openTime?: string, closeTime?: string): string {
     if (!openTime || !closeTime) return "";
     
-    // Normalize time format to ensure consistent display (e.g., "8:00" -> "08:00")
     const normalizeTime = (time: string) => {
         const [hour, minute] = time.split(':');
         return `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;

@@ -60,7 +60,6 @@ function AdminDashboard() {
     const [errorMessage, setErrorMessage] = useState('');
     const [newName, setNewName] = useState("");
     
-    // Loading states
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [isSavingName, setIsSavingName] = useState(false);
     const [isChangingPassword, setIsChangingPassword] = useState(false);

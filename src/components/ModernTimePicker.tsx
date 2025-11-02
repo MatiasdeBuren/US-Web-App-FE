@@ -1,11 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Clock, ChevronDown } from "lucide-react";
 
-// Helper function to format operating hours for display
 function formatOperatingHours(openTime?: string, closeTime?: string): string {
     if (!openTime || !closeTime) return "";
     
-    // Normalize time format to ensure consistent display (e.g., "8:00" -> "08:00")
     const normalizeTime = (time: string) => {
         const [hour, minute] = time.split(':');
         return `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
