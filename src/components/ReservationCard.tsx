@@ -17,9 +17,8 @@ function ReservationCard({
     isCancelling = false,
     isHiding = false
 }: ReservationCardProps) {
-    // Status configuration - Neutral color scheme with subtle accent colors
-    const getStatusConfig = (status: string) => {
-        switch (status) {
+    const getStatusConfig = (statusName: string) => {
+        switch (statusName) {
             case "confirmada":
                 return {
                     accentColor: "from-emerald-500 to-emerald-600",
@@ -28,7 +27,6 @@ function ReservationCard({
                     textColor: "text-gray-700",
                     statusTextColor: "text-emerald-600",
                     icon: CheckCircle,
-                    label: "Confirmada",
                     dotColor: "bg-emerald-500"
                 };
             case "pendiente":
@@ -39,7 +37,6 @@ function ReservationCard({
                     textColor: "text-gray-700",
                     statusTextColor: "text-amber-600",
                     icon: AlertCircle,
-                    label: "Pendiente",
                     dotColor: "bg-amber-500"
                 };
             case "cancelada":
@@ -50,7 +47,6 @@ function ReservationCard({
                     textColor: "text-gray-600",
                     statusTextColor: "text-gray-600",
                     icon: XCircle,
-                    label: "Cancelada",
                     dotColor: "bg-gray-500"
                 };
             case "denied":
@@ -61,8 +57,17 @@ function ReservationCard({
                     textColor: "text-gray-600",
                     statusTextColor: "text-gray-600",
                     icon: XCircle,
-                    label: "Denegada",
                     dotColor: "bg-gray-600"
+                };
+            case "finalizada":
+                return {
+                    accentColor: "from-blue-500 to-blue-600",
+                    bgColor: "bg-blue-50",
+                    borderColor: "border-blue-200",
+                    textColor: "text-gray-700",
+                    statusTextColor: "text-blue-600",
+                    icon: CheckCircle,
+                    dotColor: "bg-blue-500"
                 };
             default:
                 return {
@@ -72,13 +77,13 @@ function ReservationCard({
                     textColor: "text-gray-700",
                     statusTextColor: "text-gray-600",
                     icon: AlertCircle,
-                    label: "Desconocido",
                     dotColor: "bg-gray-400"
                 };
         }
     };
 
     const statusConfig = getStatusConfig(reservation.status?.name || 'unknown');
+    const statusLabel = reservation.status?.label || 'Desconocido';
 
     const parseLocalTime = (timestamp: string) => {
         const utcDate = new Date(timestamp);
@@ -153,7 +158,7 @@ function ReservationCard({
             {/* Status Indicator - Minimal dot and text */}
             <div className="absolute top-4 right-4 flex items-center gap-2">
                 <div className={`w-3 h-3 rounded-full ${statusConfig.dotColor} shadow-sm`}></div>
-                <span className={`${statusConfig.statusTextColor} font-semibold text-sm`}>{statusConfig.label}</span>
+                <span className={`${statusConfig.statusTextColor} font-semibold text-sm`}>{statusLabel}</span>
             </div>
 
             <div className="p-6 pt-16">

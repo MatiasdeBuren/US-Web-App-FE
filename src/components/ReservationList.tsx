@@ -38,15 +38,22 @@ function ReservationList({
         return cancelledStatuses.includes(reservation.status?.name?.toLowerCase() || '');
     };
 
+    const isReservationFinished = (reservation: Reservation): boolean => {
+        const finishedStatuses = ["finalizada", "finished", "completed"];
+        return finishedStatuses.includes(reservation.status?.name?.toLowerCase() || '');
+    };
+
     const activeReservations = reservations.filter(r => 
         (r.status?.name === "confirmada" || r.status?.name === "pendiente") && 
         !isReservationPast(r) &&
-        !isReservationCancelled(r)
+        !isReservationCancelled(r) &&
+        !isReservationFinished(r)
     );
     
     const inactiveReservations = reservations.filter(r => 
         isReservationCancelled(r) || 
-        isReservationPast(r)
+        isReservationPast(r) ||
+        isReservationFinished(r)
     );
 
     // Debug: Log the separation results

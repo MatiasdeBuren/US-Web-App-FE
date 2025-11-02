@@ -10,20 +10,20 @@ interface Reservation {
   endTime: string;
   status?: string;
   createdAt?: string;
-  user?: { id: number; name: string }; // <--- user object from backend
+  user?: { id: number; name: string };
 }
 interface AvailabilityViewerProps {
   amenityId: number;
   amenityName: string;
   capacity: number;
-  openTime?: string; // Format: "HH:mm" - amenity opening time
-  closeTime?: string; // Format: "HH:mm" - amenity closing time
+  openTime?: string; 
+  closeTime?: string; 
   fetchReservations: (amenityId: number) => Promise<Reservation[]>;
   isLoading?: boolean;
 }
 
 function getDayKey(d: Date) {
-  // Usar toLocaleDateString para evitar problemas de zona horaria
+
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
@@ -57,15 +57,15 @@ export default function AvailabilityTimelineViewer({
     day: string;
   } | null>(null);
 
-  // Calculate dynamic hour range based on amenity operating hours
+
   const { VISIBLE_START_HOUR, VISIBLE_END_HOUR, TOTAL_MINUTES } = useMemo(() => {
-    // Parse operating hours or use defaults
+
     const parseHour = (timeStr?: string) => timeStr ? parseInt(timeStr.split(':')[0]) : null;
     
-    const startHour = parseHour(openTime) ?? 8; // Default to 8 AM
-    const endHour = parseHour(closeTime) ?? 20; // Default to 8 PM
+    const startHour = parseHour(openTime) ?? 8; 
+    const endHour = parseHour(closeTime) ?? 20; 
     
-    // Ensure we have at least a 2-hour window and don't exceed day boundaries
+
     const finalStartHour = Math.max(6, Math.min(startHour, 22));
     const finalEndHour = Math.min(23, Math.max(endHour, finalStartHour + 2));
     
@@ -78,13 +78,13 @@ export default function AvailabilityTimelineViewer({
     };
   }, [openTime, closeTime]);
 
-  // Generate days for current week + weekOffset
+
   const days = useMemo(() => {
     const today = new Date();
     const currentWeekStart = new Date(today);
-    currentWeekStart.setDate(today.getDate() - today.getDay()); // Start of current week (Sunday)
+    currentWeekStart.setDate(today.getDate() - today.getDay());
     
-    // Add week offset
+
     currentWeekStart.setDate(currentWeekStart.getDate() + (weekOffset * 7));
     
     const result = [];
@@ -100,12 +100,12 @@ export default function AvailabilityTimelineViewer({
     return result;
   }, [weekOffset]);
 
-  // Load reservations when modal opens or week changes
+
   useEffect(() => {
     if (open && !isLoading) {
       setIsLoadingReservations(true);
       
-      // Get date range for current week
+
       const endOfWeek = new Date(days[6].date);
       endOfWeek.setHours(23, 59, 59, 999);
       
@@ -118,14 +118,14 @@ export default function AvailabilityTimelineViewer({
     }
   }, [open, amenityId, fetchReservations, isLoading, weekOffset, days]);
 
-  // Clear reservations when amenity changes to prevent showing old data
+  
   useEffect(() => {
     setReservations([]);
     setSelectedSlot(null);
-    setWeekOffset(0); // Reset to current week when amenity changes
+    setWeekOffset(0); 
   }, [amenityId]);
 
-  // Reset week offset when modal closes
+
   useEffect(() => {
     if (!open) {
       setWeekOffset(0);

@@ -9,6 +9,7 @@ interface ProfilePanelProps {
     onChangePassword: () => void;
     onDeleteAccount: () => void;
     onLogout: () => void;
+    isAdmin?: boolean;
 }
 
 function ProfilePanel({ 
@@ -18,7 +19,8 @@ function ProfilePanel({
     onEditProfile,
     onChangePassword,
     onDeleteAccount, 
-    onLogout 
+    onLogout,
+    isAdmin = false
 }: ProfilePanelProps) {
     return (
         <AnimatePresence>
@@ -132,27 +134,29 @@ function ProfilePanel({
                                 </div>
 
                                 {/* Danger Zone */}
-                                <div className="pt-4">
-                                    <h3 className="text-sm font-semibold text-red-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                        <Trash2 className="w-4 h-4" />
-                                        Zona Peligrosa
-                                    </h3>
-                                    
-                                    <motion.button
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={onDeleteAccount}
-                                        className="w-full flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 group cursor-pointer border border-red-100 hover:border-red-200"
-                                    >
-                                        <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center group-hover:bg-red-200 transition-colors">
-                                            <Trash2 className="w-5 h-5 text-red-600" />
-                                        </div>
-                                        <div className="text-left">
-                                            <p className="font-medium text-gray-900">Eliminar Cuenta</p>
-                                            <p className="text-sm text-gray-500">Eliminar permanentemente la cuenta</p>
-                                        </div>
-                                    </motion.button>
-                                </div>
+                                {!isAdmin && (
+                                    <div className="pt-4">
+                                        <h3 className="text-sm font-semibold text-red-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                            <Trash2 className="w-4 h-4" />
+                                            Zona Peligrosa
+                                        </h3>
+                                        
+                                        <motion.button
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            onClick={onDeleteAccount}
+                                            className="w-full flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 group cursor-pointer border border-red-100 hover:border-red-200"
+                                        >
+                                            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center group-hover:bg-red-200 transition-colors">
+                                                <Trash2 className="w-5 h-5 text-red-600" />
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="font-medium text-gray-900">Eliminar Cuenta</p>
+                                                <p className="text-sm text-gray-500">Eliminar permanentemente la cuenta</p>
+                                            </div>
+                                        </motion.button>
+                                    </div>
+                                )}
                             </div>
                         </div>
 

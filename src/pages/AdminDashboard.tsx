@@ -486,6 +486,7 @@ function AdminDashboard() {
                 onChangePassword={() => setShowPasswordPopup(true)}
                 onDeleteAccount={handleDeleteAccount}
                 onLogout={handleLogout}
+                isAdmin={true}
             />
 
             <EditProfileModal
