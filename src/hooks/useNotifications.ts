@@ -36,25 +36,6 @@ export function useNotifications({ token, pollInterval = 30000, onNewNotificatio
     const [lastCheckTime, setLastCheckTime] = useState<Date>(new Date());
     const previousNotificationIds = useRef<Set<string>>(new Set());
 
-    // Convertir notificación del backend al formato del frontend
-    const convertBackendNotification = useCallback((backendNotif: BackendNotification): Notification => {
-        const isUrgent = backendNotif.type === 'urgent_claim';
-        const priority = backendNotif.claim.priority || (isUrgent ? 'Urgente' : 'Normal');
-        const category = backendNotif.claim.category || 'General';
-        
-        return {
-            id: backendNotif.id,
-            type: backendNotif.type,
-            title: `Reclamo de prioridad ${priority}`,
-            message: `${backendNotif.claim.user.name} creó un reclamo: "${backendNotif.claim.title}"`,
-            createdAt: backendNotif.createdAt,
-            isRead: backendNotif.isRead,
-            claimId: backendNotif.claim.id,
-            category: category,
-            priority: backendNotif.claim.priority as 'low' | 'medium' | 'high' | 'urgent'
-        };
-    }, []);
-
     const fetchNotifications = useCallback(async () => {
         if (!token) return;
 
@@ -74,7 +55,23 @@ export function useNotifications({ token, pollInterval = 30000, onNewNotificatio
             const data: NotificationsResponse = await response.json();
             
             // Convertir notificaciones del backend al formato del frontend
-            const convertedNotifications = data.notifications.map(convertBackendNotification);
+            const convertedNotifications = data.notifications.map((backendNotif: BackendNotification): Notification => {
+                const isUrgent = backendNotif.type === 'urgent_claim';
+                const priority = backendNotif.claim.priority || (isUrgent ? 'Urgente' : 'Normal');
+                const category = backendNotif.claim.category || 'General';
+                
+                return {
+                    id: backendNotif.id,
+                    type: backendNotif.type,
+                    title: `Reclamo de prioridad ${priority}`,
+                    message: `${backendNotif.claim.user.name} creó un reclamo: "${backendNotif.claim.title}"`,
+                    createdAt: backendNotif.createdAt,
+                    isRead: backendNotif.isRead,
+                    claimId: backendNotif.claim.id,
+                    category: category,
+                    priority: backendNotif.claim.priority as 'low' | 'medium' | 'high' | 'urgent'
+                };
+            });
             
             if (previousNotificationIds.current.size > 0 && onNewNotification) {
                 convertedNotifications.forEach(notification => {
@@ -98,7 +95,7 @@ export function useNotifications({ token, pollInterval = 30000, onNewNotificatio
         } finally {
             setLoading(false);
         }
-    }, [token, convertBackendNotification]);
+    }, [token, onNewNotification]);
 
     // Marcar notificación como leída
     const markAsRead = useCallback(async (notificationId: string) => {
@@ -162,7 +159,7 @@ export function useNotifications({ token, pollInterval = 30000, onNewNotificatio
         const interval = setInterval(fetchNotifications, pollInterval);
         
         return () => clearInterval(interval);
-    }, [token, fetchNotifications, pollInterval]);
+    }, [token, pollInterval]); // Removí fetchNotifications de las dependencias
 
 
     const refresh = useCallback(() => {

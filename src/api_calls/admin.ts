@@ -437,7 +437,7 @@ export async function updateApartment(
                 throw new Error('Token de autenticación inválido.');
             }
             if (response.status === 404) {
-                throw new Error('Apartamento no encontrado.');
+                throw new Error('Departamento no encontrado.');
             }
             if (response.status === 409) {
                 throw new Error('Ya existe un apartamento con esa unidad.');
@@ -471,7 +471,7 @@ export async function deleteApartment(token: string, apartmentId: number): Promi
                 throw new Error('Token de autenticación inválido.');
             }
             if (response.status === 404) {
-                throw new Error('Apartamento no encontrado.');
+                throw new Error('Departamento no encontrado.');
             }
             if (response.status === 409) {
                 throw new Error('No se puede eliminar: el apartamento tiene reservas activas o usuarios asignados.');

@@ -63,7 +63,7 @@ export default function AdminRatingsView() {
         );
     };
 
-    const uniqueAmenities = Array.from(new Set(ratings.map(r => r.amenity?.name || 'Sin amenidad'))).sort();
+    const uniqueAmenities = Array.from(new Set(ratings.map(r => r.amenity?.name || 'Sin Amenity'))).sort();
 
     const filteredRatings = ratings.filter(rating => {
         const matchesStarFilter = filter === 'all' || Math.round(rating.overallRating) === filter;
@@ -169,14 +169,14 @@ export default function AdminRatingsView() {
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Filtrar por amenidad
+                            Filtrar por Amenity
                         </label>
                         <select
                             value={amenityFilter}
                             onChange={(e) => setAmenityFilter(e.target.value)}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                         >
-                            <option value="all">Todas las amenidades</option>
+                            <option value="all">Todas las amenities</option>
                             {uniqueAmenities.map(amenity => (
                                 <option key={amenity} value={amenity}>
                                     {amenity}
@@ -228,7 +228,7 @@ export default function AdminRatingsView() {
                                         
                                         <div className="flex items-center gap-2 mb-3">
                                             <span className="text-lg font-bold text-gray-800">
-                                                {rating.amenity?.name || 'Sin amenidad'}
+                                                {rating.amenity?.name || 'Sin Amenity'}
                                             </span>
                                         </div>
                                     </div>
@@ -285,7 +285,7 @@ export default function AdminRatingsView() {
 
             <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
                 <h3 className="text-xl font-bold text-gray-800 mb-4">
-                    Estadísticas por Amenidad
+                    Estadísticas por Amenity
                 </h3>
                 
                 <div className="space-y-3">

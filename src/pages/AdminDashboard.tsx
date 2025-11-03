@@ -280,7 +280,7 @@ function AdminDashboard() {
                                             <Building className="w-5 h-5 text-white" />
                                         </div>
                                         <div>
-                                            <h3 className="text-white font-semibold text-lg">Apartamentos</h3>
+                                            <h3 className="text-white font-semibold text-lg">Departamentos</h3>
                                             <p className="text-2xl font-bold text-white">{adminStats?.totalApartments || 0}</p>
                                         </div>
                                     </div>
@@ -357,7 +357,7 @@ function AdminDashboard() {
                             <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
                                 <Home className="w-6 h-6 text-white" />
                             </div>
-                            <h3 className="text-xl font-bold text-gray-800">Gestión de Apartamentos</h3>
+                            <h3 className="text-xl font-bold text-gray-800">Gestión de Departamentos</h3>
                         </div>
                         <p className="text-gray-600 mb-4">
                             Administra apartamentos y asignaciones de inquilinos
@@ -468,14 +468,14 @@ function AdminDashboard() {
                             <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-amber-600 rounded-xl flex items-center justify-center">
                                 <Star className="w-6 h-6 text-white fill-white" />
                             </div>
-                            <h3 className="text-xl font-bold text-gray-800">Reseñas de Amenidades</h3>
+                            <h3 className="text-xl font-bold text-gray-800">Reseñas de Amenity</h3>
                         </div>
                         <p className="text-gray-600 mb-4">
                             Ver y analizar las calificaciones de los usuarios
                         </p>
                         <div className="text-sm text-gray-500">
                             • Ver todas las reseñas<br />
-                            • Estadísticas por amenidad<br />
+                            • Estadísticas por Amenity<br />
                             • Filtros avanzados
                         </div>
                     </motion.div>
@@ -623,7 +623,7 @@ function AdminDashboard() {
                         <div className="sticky top-0 bg-gradient-to-r from-yellow-500 to-amber-600 px-8 py-6 flex items-center justify-between border-b border-yellow-600">
                             <div className="flex items-center gap-3">
                                 <Star className="w-8 h-8 text-white fill-white" />
-                                <h2 className="text-2xl font-bold text-white">Reseñas de Amenidades</h2>
+                                <h2 className="text-2xl font-bold text-white">Reseñas de Amenity</h2>
                             </div>
                             <button
                                 onClick={() => setShowRatingsView(false)}

@@ -31,7 +31,7 @@ C4Context
 
 #### 👨‍💼 Administrador
 - **Gestión de Usuarios**: CRUD completo de usuarios (residentes, propietarios)
-- **Gestión de Apartamentos**: Administra información de unidades habitacionales
+- **Gestión de Departamentos**: Administra información de unidades habitacionales
 - **Gestión de Amenities**: Configura espacios comunes (piscina, gimnasio, salón, etc.)
 - **Supervisión de Reservas**: Monitorea todas las reservas del sistema
 - **Estadísticas**: Accede a dashboards con métricas del consorcio

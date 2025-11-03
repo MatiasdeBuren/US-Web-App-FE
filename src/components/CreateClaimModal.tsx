@@ -234,7 +234,7 @@ function CreateClaimModal({ isVisible, onClose, onSave, editingClaim, isSaving =
               type="text"
               value={formData.location}
               onChange={(value) => handleChange('location', value)}
-              placeholder="Ej: Lobby principal - Ascensor A, Apartamento 3B, Gimnasio"
+              placeholder="Ej: Lobby principal - Ascensor A, Departamento 3B, Gimnasio"
               error={errors.location}
               disabled={isSaving}
               required

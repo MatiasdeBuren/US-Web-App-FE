@@ -11,6 +11,7 @@ interface ReservationManagementProps {
     token: string;
 }
 
+// Filter options for status
 const statusOptions: FilterOption[] = [
   { 
     value: 'all', 
@@ -60,6 +61,7 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
     const [rejectReason, setRejectReason] = useState<string>("");
     const [cancelReason, setCancelReason] = useState<string>("");
     
+    // Modal states
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [showAmenityModal, setShowAmenityModal] = useState(false);
     const [showDateModal, setShowDateModal] = useState(false);
@@ -430,7 +432,7 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
                                                         <div>
                                                             <div className="flex items-center gap-3 mb-2">
                                                                 <h3 className="text-lg font-semibold text-gray-800">
-                                                                    {reservation.amenity?.name || 'Amenidad desconocida'}
+                                                                    {reservation.amenity?.name || 'Amenity desconocida'}
                                                                 </h3>
                                                                 <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeColor(reservation.status?.name || 'unknown')}`}>
                                                                     <span>{getStatusIcon(reservation.status?.name || 'unknown')}</span>

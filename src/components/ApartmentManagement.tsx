@@ -134,7 +134,7 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
             await loadApartments();
             setShowCreateModal(false);
             setFormData({ unit: "", floor: "", rooms: "", areaM2: "", observations: "", ownerId: "" });
-            showToast("Apartamento creado exitosamente", "success");
+            showToast("Departamento creado exitosamente", "success");
         } catch (error) {
             console.error("Error creating apartment:", error);
             showToast(`Error al crear apartamento: ${error instanceof Error ? error.message : 'Error desconocido'}`, "error");
@@ -174,7 +174,7 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
             await loadApartments();
             setShowEditModal(false);
             setSelectedApartment(null);
-            showToast("Apartamento actualizado exitosamente", "success");
+            showToast("Departamento actualizado exitosamente", "success");
         } catch (error) {
             console.error("Error updating apartment:", error);
             showToast(`Error al actualizar apartamento: ${error instanceof Error ? error.message : 'Error desconocido'}`, "error");
@@ -198,7 +198,7 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
         try {
             await deleteApartment(token, apartment.id);
             await loadApartments();
-            showToast("Apartamento eliminado exitosamente", "success");
+            showToast("Departamento eliminado exitosamente", "success");
         } catch (error) {
             console.error("Error deleting apartment:", error);
             showToast(`Error al eliminar apartamento: ${error instanceof Error ? error.message : 'Error desconocido'}`, "error");
@@ -261,13 +261,13 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
         {
             value: "occupied",
             label: "Ocupados",
-            description: "Apartamentos con inquilinos asignados",
+            description: "Departamentos con inquilinos asignados",
             icon: UserCheck
         },
         {
             value: "vacant",
             label: "Disponibles",
-            description: "Apartamentos sin inquilinos asignados",
+            description: "Departamentos sin inquilinos asignados",
             icon: Building
         }
     ];
@@ -291,7 +291,7 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                                 <Building className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-gray-800">Gestión de Apartamentos</h2>
+                                <h2 className="text-2xl font-bold text-gray-800">Gestión de Departamentos</h2>
                                 <p className="text-gray-600 mt-1">Administrar apartamentos del edificio</p>
                             </div>
                         </div>
@@ -359,7 +359,7 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 cursor-pointer"
                         >
                             <Plus className="w-5 h-5" />
-                            Crear Apartamento
+                            Crear Departamento
                         </button>
                     </div>
                 </div>
@@ -475,7 +475,7 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                                 className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl"
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                <h3 className="text-xl font-semibold text-gray-800 mb-4">Crear Nuevo Apartamento</h3>
+                                <h3 className="text-xl font-semibold text-gray-800 mb-4">Crear Nuevo Departamento</h3>
                                 
                                 <form onSubmit={handleCreateApartment} className="space-y-4">
                                     <div>
@@ -573,7 +573,7 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                                             disabled={processing}
                                             className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 cursor-pointer"
                                         >
-                                            {processing ? "Creando..." : "Crear Apartamento"}
+                                            {processing ? "Creando..." : "Crear Departamento"}
                                         </button>
                                         <button
                                             type="button"
@@ -605,7 +605,7 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                                    Editar Apartamento {selectedApartment.unit}
+                                    Editar Departamento {selectedApartment.unit}
                                 </h3>
                                 
                                 <form onSubmit={handleEditApartment} className="space-y-4">
