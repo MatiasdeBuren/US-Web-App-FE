@@ -44,8 +44,6 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
     
     const [showFloorFilter, setShowFloorFilter] = useState(false);
     const [showOccupancyFilter, setShowOccupancyFilter] = useState(false);
-
-    // Form states
     const [formData, setFormData] = useState({
         unit: "",
         floor: "",
@@ -60,11 +58,9 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
             loadApartments();
             loadUsers();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, token]);
 
     useEffect(() => {
-        // Filtrar apartamentos
         let filtered = apartments;
 
         if (searchTerm) {
@@ -240,7 +236,6 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
         return floors;
     };
 
-    // Dynamic floor filter options
     const floorFilterOptions: FilterOption[] = [
         {
             value: "all",
@@ -256,7 +251,6 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
         }))
     ];
 
-    // Static occupancy filter options
     const occupancyFilterOptions: FilterOption[] = [
         {
             value: "all",
@@ -282,28 +276,30 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
 
     return (
         <div 
-            className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
             onClick={onClose}
         >
             <div 
-                className="bg-white rounded-xl max-w-6xl w-full max-h-[95vh] overflow-hidden shadow-2xl"
+                className="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700">
+                <div className="p-8 border-b border-gray-200">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <Building className="w-8 h-8 text-white" />
+                            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                                <Building className="w-5 h-5 text-white" />
+                            </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-white">Gestión de Apartamentos</h2>
-                                <p className="text-blue-100 mt-1">Administrar apartamentos del edificio</p>
+                                <h2 className="text-2xl font-bold text-gray-800">Gestión de Apartamentos</h2>
+                                <p className="text-gray-600 mt-1">Administrar apartamentos del edificio</p>
                             </div>
                         </div>
                         <button
                             onClick={onClose}
-                            className="text-white hover:text-blue-200 transition-colors cursor-pointer"
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                         >
-                            <X className="w-6 h-6" />
+                            <X className="w-6 h-6 text-gray-500" />
                         </button>
                     </div>
                 </div>
@@ -314,34 +310,44 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                         <div className="flex flex-col sm:flex-row gap-4 flex-1">
                             {/* Search */}
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                                 <input
                                     type="text"
                                     placeholder="Buscar por unidad, propietario, inquilino u observaciones..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-80"
+                                    className="pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-96"
                                 />
                             </div>
 
                             {/* Filters */}
-                            <div className="flex gap-3">
+                            <div className="flex gap-2">
                                 {/* Floor Filter Button */}
                                 <button
                                     onClick={() => setShowFloorFilter(true)}
-                                    className="px-3 py-2 border border-gray-300 rounded-lg hover:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors flex items-center gap-2 bg-white"
+                                    className="flex items-center justify-between px-4 py-2 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-left cursor-pointer min-w-[180px]"
                                 >
-                                    {floorFilterOptions.find(option => option.value === filterFloor)?.label || 'Todos los pisos'}
-                                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                                    <div className="flex items-center gap-2">
+                                        <Layers className="w-4 h-4 text-gray-400" />
+                                        <span className={filterFloor === 'all' ? 'text-gray-500' : 'text-gray-900 font-medium'}>
+                                            {floorFilterOptions.find(option => option.value === filterFloor)?.label || 'Todos los pisos'}
+                                        </span>
+                                    </div>
+                                    <ChevronDown className="w-4 h-4 text-gray-400" />
                                 </button>
 
                                 {/* Occupancy Filter Button */}
                                 <button
                                     onClick={() => setShowOccupancyFilter(true)}
-                                    className="px-3 py-2 border border-gray-300 rounded-lg hover:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors flex items-center gap-2 bg-white"
+                                    className="flex items-center justify-between px-4 py-2 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-left cursor-pointer min-w-[160px]"
                                 >
-                                    {occupancyFilterOptions.find(option => option.value === filterOccupancy)?.label || 'Todos'}
-                                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                                    <div className="flex items-center gap-2">
+                                        <Home className="w-4 h-4 text-gray-400" />
+                                        <span className={filterOccupancy === 'all' ? 'text-gray-500' : 'text-gray-900 font-medium'}>
+                                            {occupancyFilterOptions.find(option => option.value === filterOccupancy)?.label || 'Todos'}
+                                        </span>
+                                    </div>
+                                    <ChevronDown className="w-4 h-4 text-gray-400" />
                                 </button>
                             </div>
                         </div>
@@ -719,12 +725,16 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                     isVisible={showFloorFilter}
                     onClose={() => setShowFloorFilter(false)}
                     title="Filtrar por Piso"
+                    subtitle="Selecciona un piso para filtrar los apartamentos"
                     options={floorFilterOptions}
                     selectedValue={filterFloor}
                     onValueSelect={(value: string) => {
                         setFilterFloor(value);
                         setShowFloorFilter(false);
                     }}
+                    headerIcon={Layers}
+                    headerIconColor="text-blue-600"
+                    maxWidth="2xl"
                 />
 
                 {/* Occupancy Filter Modal */}
@@ -732,12 +742,16 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                     isVisible={showOccupancyFilter}
                     onClose={() => setShowOccupancyFilter(false)}
                     title="Filtrar por Ocupación"
+                    subtitle="Selecciona el estado de ocupación"
                     options={occupancyFilterOptions}
                     selectedValue={filterOccupancy}
                     onValueSelect={(value: string) => {
                         setFilterOccupancy(value);
                         setShowOccupancyFilter(false);
                     }}
+                    headerIcon={Home}
+                    headerIconColor="text-blue-600"
+                    maxWidth="2xl"
                 />
             </div>
         </div>
