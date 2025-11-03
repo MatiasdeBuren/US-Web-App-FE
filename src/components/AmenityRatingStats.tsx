@@ -15,16 +15,30 @@ const SUBCATEGORY_LABELS: Record<string, string> = {
 
 export default function AmenityRatingStats({ stats, compact = false }: AmenityRatingStatsProps) {
     const renderStars = (rating: number) => {
+        const fullStars = Math.floor(rating);
+        const hasHalfStar = rating % 1 >= 0.5;
+        const emptyStars = 3 - fullStars - (hasHalfStar ? 1 : 0);
+
         return (
             <div className="flex gap-1">
-                {[1, 2, 3].map((star) => (
+                {[...Array(fullStars)].map((_, i) => (
                     <Star
-                        key={star}
-                        className={`w-4 h-4 ${
-                            star <= Math.round(rating)
-                                ? 'fill-yellow-400 text-yellow-400'
-                                : 'text-gray-300'
-                        }`}
+                        key={`full-${i}`}
+                        className="w-4 h-4 fill-yellow-400 text-yellow-400"
+                    />
+                ))}
+                {hasHalfStar && (
+                    <div className="relative w-4 h-4">
+                        <Star className="w-4 h-4 text-gray-300 absolute" />
+                        <div className="overflow-hidden w-2 absolute">
+                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                        </div>
+                    </div>
+                )}
+                {[...Array(emptyStars)].map((_, i) => (
+                    <Star
+                        key={`empty-${i}`}
+                        className="w-4 h-4 text-gray-300"
                     />
                 ))}
             </div>

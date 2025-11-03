@@ -98,3 +98,39 @@ export const getAllRatings = async (): Promise<Rating[]> => {
     
     return response.json();
 };
+
+export const getUserRatingForAmenity = async (amenityId: number): Promise<Rating | null> => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_URL}/ratings/my-rating/${amenityId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.status === 404) {
+        return null;
+    }
+    
+    if (!response.ok) {
+        throw new Error('Error al obtener calificación');
+    }
+    
+    return response.json();
+};
+
+export const updateRating = async (data: RatingData): Promise<Rating> => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_URL}/ratings`, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Error al actualizar calificación');
+    }
+    
+    return response.json();
+};
