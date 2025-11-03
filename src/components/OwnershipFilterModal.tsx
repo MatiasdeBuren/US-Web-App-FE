@@ -46,7 +46,7 @@ function OwnershipFilterModal({ isVisible, onClose, selectedOwnership, onOwnersh
       subtitle="Selecciona qué reclamos ver"
       headerIcon={Filter}
       headerIconColor="text-gray-600"
-      maxWidth="md"
+      maxWidth="2xl"
     />
   );
 }

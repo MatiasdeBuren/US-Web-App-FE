@@ -662,7 +662,7 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
                 subtitle="Selecciona un estado para filtrar las reservas"
                 headerIcon={Filter}
                 headerIconColor="text-orange-600"
-                maxWidth="lg"
+                maxWidth="2xl"
             />
 
             <GenericFilterModal
@@ -675,7 +675,7 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
                 subtitle="Selecciona un amenity para filtrar las reservas"
                 headerIcon={Building}
                 headerIconColor="text-orange-600"
-                maxWidth="lg"
+                maxWidth="2xl"
             />
 
             <DateFilterModal
