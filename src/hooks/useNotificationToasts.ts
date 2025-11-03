@@ -21,7 +21,6 @@ export function useNotificationToasts() {
 
         setToasts(prev => [...prev, newToast]);
 
-        // Auto-remove toast after duration
         setTimeout(() => {
             removeToast(id);
         }, newToast.duration);

@@ -3,11 +3,10 @@ import type { Notification } from '../components/NotificationBell';
 
 interface UseNotificationsOptions {
     token: string | null;
-    pollInterval?: number; // en milisegundos
+    pollInterval?: number; 
     onNewNotification?: (notification: Notification) => void;
 }
 
-// Estructura de respuesta del backend
 interface BackendNotification {
     id: string;
     type: 'urgent_claim' | 'new_claim';
@@ -18,7 +17,7 @@ interface BackendNotification {
         id: string;
         title: string;
         priority: string;
-        category?: string; // May be added in future
+        category?: string; 
         user: {
             name: string;
         };
@@ -56,7 +55,6 @@ export function useNotifications({ token, pollInterval = 30000, onNewNotificatio
         };
     }, []);
 
-    // Obtener notificaciones desde el backend
     const fetchNotifications = useCallback(async () => {
         if (!token) return;
 
@@ -78,7 +76,6 @@ export function useNotifications({ token, pollInterval = 30000, onNewNotificatio
             // Convertir notificaciones del backend al formato del frontend
             const convertedNotifications = data.notifications.map(convertBackendNotification);
             
-            // Detectar nuevas notificaciones si ya tenemos notificaciones previas
             if (previousNotificationIds.current.size > 0 && onNewNotification) {
                 convertedNotifications.forEach(notification => {
                     if (!previousNotificationIds.current.has(notification.id) && !notification.isRead) {
@@ -87,10 +84,8 @@ export function useNotifications({ token, pollInterval = 30000, onNewNotificatio
                 });
             }
             
-            // Actualizar IDs previos
             previousNotificationIds.current = new Set(convertedNotifications.map(n => n.id));
             
-            // Ordenar por fecha (más recientes primero)
             convertedNotifications.sort((a, b) => 
                 new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             );
@@ -122,21 +117,18 @@ export function useNotifications({ token, pollInterval = 30000, onNewNotificatio
 
             if (!response.ok) throw new Error('Error marking notification as read');
 
-            // Actualizar estado local
             setNotifications(prev => prev.map(notification => 
                 notification.id === notificationId 
                     ? { ...notification, isRead: true }
                     : notification
             ));
 
-            // Actualizar contador
             setUnreadCount(prev => Math.max(0, prev - 1));
         } catch (error) {
             console.error('Error marking notification as read:', error);
         }
     }, [token]);
 
-    // Marcar todas como leídas
     const markAllAsRead = useCallback(async () => {
         if (!token) return;
 
@@ -153,7 +145,6 @@ export function useNotifications({ token, pollInterval = 30000, onNewNotificatio
 
             if (!response.ok) throw new Error('Error marking all notifications as read');
 
-            // Actualizar estado local
             setNotifications(prev => prev.map(notification => 
                 ({ ...notification, isRead: true })
             ));
@@ -164,20 +155,16 @@ export function useNotifications({ token, pollInterval = 30000, onNewNotificatio
         }
     }, [token]);
 
-    // Polling automático
     useEffect(() => {
         if (!token) return;
 
-        // Fetch inicial
         fetchNotifications();
-
-        // Setup polling
         const interval = setInterval(fetchNotifications, pollInterval);
         
         return () => clearInterval(interval);
     }, [token, fetchNotifications, pollInterval]);
 
-    // Refresh manual
+
     const refresh = useCallback(() => {
         fetchNotifications();
     }, [fetchNotifications]);

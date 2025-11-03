@@ -73,7 +73,7 @@ const statusLabels = {
 
 
 function ClaimsPage() {
-  // API and loading states
+  
   const [token, setToken] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [claims, setClaims] = useState<Claim[]>([]);
@@ -125,7 +125,6 @@ function ClaimsPage() {
     }
   }, [searchTerm, selectedCategory, selectedStatus]);
 
-  // Effect to load and filter claims
   useEffect(() => {
     const loadAndFilterClaims = async () => {
       if (!token) return;
@@ -133,16 +132,11 @@ function ClaimsPage() {
       setIsInitialLoading(true);
       
       try {
-        // Determine if we need all claims based on ownership filter
         const needAllClaims = selectedOwnership === 'all' || selectedOwnership === 'others';
-        
-        // Load claims from API (API handles ownership filtering)
         const allClaims = await loadClaimsData(token, needAllClaims);
         
-        // Apply client-side filtering for "others" ownership
         let filteredClaims = allClaims;
         if (selectedOwnership === 'others' && currentUser) {
-          // When showing "others", filter out current user's claims
           filteredClaims = allClaims.filter(claim => claim.userId !== currentUser.id);
         }
         
@@ -158,7 +152,6 @@ function ClaimsPage() {
     loadAndFilterClaims();
   }, [token, searchTerm, selectedCategory, selectedStatus, selectedOwnership, currentUser, loadClaimsData]);
 
-  // Load user data function
   const loadUserData = useCallback(async (authToken: string) => {
     try {
       const userResponse = await fetch(`${import.meta.env.VITE_API_URL}/dashboard`, {
@@ -177,7 +170,6 @@ function ClaimsPage() {
     }
   }, []);
 
-  // Load token and user data on component mount
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
     if (!savedToken) {
@@ -189,7 +181,6 @@ function ClaimsPage() {
     loadUserData(savedToken);
   }, [loadUserData]);
 
-  // Clear error states on component unmount
   useEffect(() => {
     return () => {
       setShowErrorToast(false);
@@ -207,23 +198,20 @@ function ClaimsPage() {
     
     return matchesSearch && matchesCategory && matchesStatus;
   }).sort((a, b) => {
-    // Priority order: 
-    // 1. Finalized claims (resolved/rejected) go to the bottom
+
     const aFinalized = a.status?.name === 'resuelto' || a.status?.name === 'rechazado';
     const bFinalized = b.status?.name === 'resuelto' || b.status?.name === 'rechazado';
     
     if (aFinalized && !bFinalized) return 1;
     if (!aFinalized && bFinalized) return -1;
     
-    // 2. Within each group (active vs finalized), sort by opinion count (most opinions first)
     const aOpinionCount = (a.adhesion_counts?.support || 0) + (a.adhesion_counts?.disagree || 0);
     const bOpinionCount = (b.adhesion_counts?.support || 0) + (b.adhesion_counts?.disagree || 0);
     
     if (aOpinionCount !== bOpinionCount) {
-      return bOpinionCount - aOpinionCount; // More opinions first
+      return bOpinionCount - aOpinionCount; 
     }
-    
-    // 3. If same opinion count, sort by updated date (newest first)
+
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 
@@ -236,8 +224,6 @@ function ClaimsPage() {
       minute: '2-digit'
     });
   };
-
-
 
   const getCurrentCategoryLabel = () => {
     if (selectedCategory === 'all') return 'Todas las categorías';
@@ -278,7 +264,6 @@ function ClaimsPage() {
     setIsSaving(true);
     try {
       if (editingClaim) {
-        // Update existing claim
         const updatedClaim = await updateClaim(token, editingClaim.id, claimData as UpdateClaimData);
         setClaims(prev => prev.map(claim => 
           claim.id === editingClaim.id ? updatedClaim : claim
@@ -286,20 +271,16 @@ function ClaimsPage() {
         setToastAction('updated');
         setToastClaimSubject(claimData.subject);
       } else {
-        // Create new claim
         const newClaim = await createClaim(token, claimData);
         console.log('Received new claim from backend:', newClaim);
-        
-        // Handle empty response from backend
+
         if (!newClaim || !newClaim.id) {
           console.warn('Backend returned invalid claim data, refreshing claims list');
-          // Refresh the entire claims list to get the newly created claim
           const refreshedClaims = await getClaims(token, { includeAll: true });
           setClaims(refreshedClaims.claims || []);
           setToastAction('created');
           setToastClaimSubject(claimData.subject);
         } else {
-          // Normal case: backend returned valid claim data
           setClaims(prev => [newClaim, ...prev]);
           setToastAction('created');
           setToastClaimSubject(claimData.subject);
@@ -314,14 +295,12 @@ function ClaimsPage() {
       const errorMsg = error instanceof Error ? error.message : (editingClaim ? 'No se pudo actualizar el reclamo' : 'No se pudo crear el reclamo');
       setErrorMessage(errorMsg);
       setShowErrorToast(true);
-      
-      // Auto-clear error after 5 seconds to prevent navigation issues
+
       setTimeout(() => {
         setShowErrorToast(false);
         setErrorMessage('');
       }, 5000);
-      
-      // Ensure modal stays open on error
+
       setShowCreateModal(true);
     } finally {
       setIsSaving(false);
@@ -363,7 +342,7 @@ function ClaimsPage() {
     }
   };
 
-  const handleAdhesion = async (claimId: number, adhesionType: 'support' | 'disagree') => {
+  const handleAdhesion = async (claimId: number, isSupport: boolean) => {
     if (!token) {
       setErrorMessage('No hay sesión activa');
       setShowErrorToast(true);
@@ -371,59 +350,53 @@ function ClaimsPage() {
     }
 
     try {
-      // Find the current claim
       const claim = claims.find(c => c.id === claimId);
       if (!claim) return;
 
-      // If user already has this adhesion, remove it; otherwise, create/update it
-      if (claim.user_adhesion === adhesionType) {
+      const currentAdhesion = claim.user_adhesion;
+      const isSameAdhesion = currentAdhesion === isSupport;
+
+      if (isSameAdhesion) {
         await deleteClaimAdhesion(token, claimId);
-        
-        // Update local state
+
         setClaims(prev => prev.map(c => {
           if (c.id === claimId) {
             const currentCounts = c.adhesion_counts || { support: 0, disagree: 0 };
-            const newCounts = {
-              support: adhesionType === 'support' ? Math.max(0, currentCounts.support - 1) : currentCounts.support,
-              disagree: adhesionType === 'disagree' ? Math.max(0, currentCounts.disagree - 1) : currentCounts.disagree
-            };
             return {
               ...c,
               user_adhesion: null,
-              adhesion_counts: newCounts
+              adhesion_counts: {
+                support: isSupport ? Math.max(0, currentCounts.support - 1) : currentCounts.support,
+                disagree: !isSupport ? Math.max(0, currentCounts.disagree - 1) : currentCounts.disagree
+              }
             };
           }
           return c;
         }));
       } else {
-        await createClaimAdhesion(token, claimId, adhesionType);
-        
-        // Update local state
+        await createClaimAdhesion(token, claimId, isSupport);
+
         setClaims(prev => prev.map(c => {
           if (c.id === claimId) {
             const currentCounts = c.adhesion_counts || { support: 0, disagree: 0 };
-            const oldAdhesion = c.user_adhesion;
-            
             let newSupport = currentCounts.support;
             let newDisagree = currentCounts.disagree;
-            
-            // Remove from old count if switching
-            if (oldAdhesion === 'support') {
+
+            if (currentAdhesion === true) {
               newSupport = Math.max(0, newSupport - 1);
-            } else if (oldAdhesion === 'disagree') {
+            } else if (currentAdhesion === false) {
               newDisagree = Math.max(0, newDisagree - 1);
             }
-            
-            // Add to new count
-            if (adhesionType === 'support') {
-              newSupport = newSupport + 1;
+
+            if (isSupport) {
+              newSupport++;
             } else {
-              newDisagree = newDisagree + 1;
+              newDisagree++;
             }
             
             return {
               ...c,
-              user_adhesion: adhesionType,
+              user_adhesion: isSupport,
               adhesion_counts: {
                 support: newSupport,
                 disagree: newDisagree
@@ -660,9 +633,9 @@ function ClaimsPage() {
                         {/* Action Buttons */}
                         <div className="flex gap-2 w-full sm:w-auto">
                           <button
-                            onClick={() => handleAdhesion(claim.id, 'support')}
+                            onClick={() => handleAdhesion(claim.id, true)}
                             className={`flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer flex-1 sm:flex-initial ${
-                              claim.user_adhesion === 'support'
+                              claim.user_adhesion === true
                                 ? 'bg-green-100 text-green-700 border border-green-300'
                                 : 'bg-gray-50 text-gray-700 hover:bg-green-50 hover:text-green-700 border border-gray-200'
                             }`}
@@ -671,9 +644,9 @@ function ClaimsPage() {
                             <span className="hidden sm:inline">Me adhiero</span>
                           </button>
                           <button
-                            onClick={() => handleAdhesion(claim.id, 'disagree')}
+                            onClick={() => handleAdhesion(claim.id, false)}
                             className={`flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer flex-1 sm:flex-initial ${
-                              claim.user_adhesion === 'disagree'
+                              claim.user_adhesion === false
                                 ? 'bg-red-100 text-red-700 border border-red-300'
                                 : 'bg-gray-50 text-gray-700 hover:bg-red-50 hover:text-red-700 border border-gray-200'
                             }`}

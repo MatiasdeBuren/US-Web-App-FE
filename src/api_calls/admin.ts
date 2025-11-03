@@ -1,7 +1,5 @@
-// API calls para funcionalidades de administrador
 const API_URL = import.meta.env.VITE_API_URL as string;
 
-// Tipos para las respuestas de admin
 export interface AdminStats {
     totalUsers: number;
     totalApartments: number;
@@ -22,7 +20,6 @@ export interface AdminUser {
         floor: number;
         rooms?: number;
     };
-    // Backend returns both formats, so we support both
     _count?: {
         reservations: number;
     };
@@ -35,10 +32,10 @@ export interface AdminAmenity {
     name: string;
     capacity: number;
     maxDuration: number;
-    openTime?: string;  // Format: "HH:mm"
-    closeTime?: string; // Format: "HH:mm"
+    openTime?: string;
+    closeTime?: string;
     isActive: boolean;
-    requiresApproval?: boolean; // Whether this amenity requires admin approval for reservations
+    requiresApproval?: boolean;
     createdAt: string;
     updatedAt: string;
     _count?: {
@@ -104,7 +101,6 @@ export interface AdminReservation {
     };
 }
 
-// GET /admin/stats - Obtener estadísticas del sistema
 export async function getAdminStats(token: string): Promise<AdminStats> {
     try {
         const response = await fetch(`${API_URL}/admin/stats`, {
@@ -126,7 +122,6 @@ export async function getAdminStats(token: string): Promise<AdminStats> {
 
         const data = await response.json();
         
-        // Validar que la respuesta tenga la estructura esperada
         return {
             totalUsers: data.totalUsers || 0,
             totalApartments: data.totalApartments || 0,
@@ -140,7 +135,6 @@ export async function getAdminStats(token: string): Promise<AdminStats> {
     }
 }
 
-// GET /admin/users - Obtener todos los usuarios
 export async function getAdminUsers(token: string): Promise<AdminUser[]> {
     try {
         const response = await fetch(`${API_URL}/admin/users`, {
@@ -166,7 +160,7 @@ export async function getAdminUsers(token: string): Promise<AdminUser[]> {
         if (data && Array.isArray(data.users)) {
             return data.users;
         } else if (Array.isArray(data)) {
-            // Fallback: si es un array directo
+            
             return data;
         } else {
             console.error('API did not return expected users structure:', data);
@@ -178,7 +172,6 @@ export async function getAdminUsers(token: string): Promise<AdminUser[]> {
     }
 }
 
-// PUT /admin/users/:id/role - Cambiar role de un usuario
 export async function updateUserRole(token: string, userId: number, role: string): Promise<AdminUser> {
     const response = await fetch(`${API_URL}/admin/users/${userId}/role`, {
         method: 'PUT',
@@ -197,7 +190,6 @@ export async function updateUserRole(token: string, userId: number, role: string
     return response.json();
 }
 
-// GET /admin/reservations - Obtener todas las reservas
 export async function getAdminReservations(
     token: string, 
     params?: {
@@ -250,7 +242,6 @@ export async function getAdminReservations(
     }
 }
 
-// POST /admin/amenities - Crear nuevo amenity
 export async function createAmenity(
     token: string, 
     amenityData: {
@@ -292,8 +283,6 @@ export async function createAmenity(
         throw error;
     }
 }
-
-// PUT /admin/amenities/:id - Actualizar amenity
 export async function updateAmenity(
     token: string, 
     amenityId: number,
@@ -340,11 +329,6 @@ export async function updateAmenity(
     }
 }
 
-// ================================
-// APARTMENT MANAGEMENT FUNCTIONS
-// ================================
-
-// GET /admin/apartments - Obtener todos los apartamentos
 export async function getAdminApartments(token: string): Promise<AdminApartment[]> {
     try {
         const response = await fetch(`${API_URL}/admin/apartments`, {
@@ -381,7 +365,6 @@ export async function getAdminApartments(token: string): Promise<AdminApartment[
     }
 }
 
-// POST /admin/apartments - Crear nuevo apartamento
 export async function createApartment(
     token: string, 
     apartmentData: {
@@ -423,8 +406,6 @@ export async function createApartment(
         throw error;
     }
 }
-
-// PUT /admin/apartments/:id - Actualizar apartamento
 export async function updateApartment(
     token: string, 
     apartmentId: number,
@@ -472,7 +453,6 @@ export async function updateApartment(
     }
 }
 
-// DELETE /admin/apartments/:id - Eliminar apartamento
 export async function deleteApartment(token: string, apartmentId: number): Promise<void> {
     try {
         const response = await fetch(`${API_URL}/admin/apartments/${apartmentId}`, {
@@ -505,11 +485,7 @@ export async function deleteApartment(token: string, apartmentId: number): Promi
     }
 }
 
-// ================================
-// AMENITY MANAGEMENT FUNCTIONS
-// ================================
 
-// GET /admin/amenities - Obtener todos los amenities
 export async function getAdminAmenities(token: string): Promise<AdminAmenity[]> {
     try {
         const response = await fetch(`${API_URL}/admin/amenities`, {
@@ -546,7 +522,7 @@ export async function getAdminAmenities(token: string): Promise<AdminAmenity[]> 
     }
 }
 
-// DELETE /admin/amenities/:id - Eliminar amenity
+
 export async function deleteAmenity(token: string, amenityId: number): Promise<void> {
     try {
         const response = await fetch(`${API_URL}/admin/amenities/${amenityId}`, {
@@ -579,7 +555,6 @@ export async function deleteAmenity(token: string, amenityId: number): Promise<v
     }
 }
 
-// GET /admin/amenities/:id/reservations - Obtener reservas de un amenity específico
 export async function getAmenityReservations(
     token: string, 
     amenityId: number,
@@ -629,11 +604,7 @@ export async function getAmenityReservations(
     }
 }
 
-// ================================
-// RESERVATION APPROVAL FUNCTIONS
-// ================================
 
-// GET /admin/reservations/pending - Obtener reservas pendientes de aprobación
 export async function getPendingReservations(token: string): Promise<AdminReservation[]> {
     try {
         const response = await fetch(`${API_URL}/admin/reservations/pending`, {
@@ -669,7 +640,6 @@ export async function getPendingReservations(token: string): Promise<AdminReserv
     }
 }
 
-// PUT /admin/reservations/:id/approve - Aprobar una reserva pendiente
 export async function approveReservation(token: string, reservationId: number): Promise<AdminReservation> {
     try {
         const response = await fetch(`${API_URL}/admin/reservations/${reservationId}/approve`, {
@@ -705,7 +675,6 @@ export async function approveReservation(token: string, reservationId: number): 
     }
 }
 
-// PUT /admin/reservations/:id/reject - Rechazar una reserva pendiente
 export async function rejectReservation(
     token: string, 
     reservationId: number,
@@ -746,9 +715,7 @@ export async function rejectReservation(
     }
 }
 
-/**
- * Cancelar cualquier reserva como admin (confirmada, pendiente, o incluso pasada)
- */
+
 export async function cancelReservationAsAdmin(
     token: string, 
     reservationId: number,
