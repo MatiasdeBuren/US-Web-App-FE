@@ -8,7 +8,8 @@ import {
     Shield,
     Home,
     Clock,
-    BarChart3
+    BarChart3,
+    Star
 } from "lucide-react";
 
 import Header from "../components/Header";
@@ -22,6 +23,7 @@ import ApartmentManagement from "../components/ApartmentManagement";
 import AmenityManagement from "../components/AmenityManagement";
 import ClaimsManagement from "../components/ClaimsManagement";
 import AnalyticsReports from "../components/AnalyticsReports";
+import AdminRatingsView from "../components/AdminRatingsView";
 import { LoadingOverlay } from "../components/LoadingSpinner";
 import LogoutSuccessToast from "../components/LogoutSuccessToast";
 import PasswordChangeSuccessToast from "../components/PasswordChangeSuccessToast";
@@ -53,6 +55,7 @@ function AdminDashboard() {
     const [showAmenityManagement, setShowAmenityManagement] = useState(false);
     const [showClaimsManagement, setShowClaimsManagement] = useState(false);
     const [showAnalyticsReports, setShowAnalyticsReports] = useState(false);
+    const [showRatingsView, setShowRatingsView] = useState(false);
     const [showNotificationsModal, setShowNotificationsModal] = useState(false);
     const [showSuccessToast, setShowSuccessToast] = useState(false);
     const [showPasswordChangeToast, setShowPasswordChangeToast] = useState(false);
@@ -459,6 +462,28 @@ function AdminDashboard() {
                         className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
+                        onClick={() => setShowRatingsView(true)}
+                    >
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-amber-600 rounded-xl flex items-center justify-center">
+                                <Star className="w-6 h-6 text-white fill-white" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-800">Reseñas de Amenidades</h3>
+                        </div>
+                        <p className="text-gray-600 mb-4">
+                            Ver y analizar las calificaciones de los usuarios
+                        </p>
+                        <div className="text-sm text-gray-500">
+                            • Ver todas las reseñas<br />
+                            • Estadísticas por amenidad<br />
+                            • Filtros avanzados
+                        </div>
+                    </motion.div>
+
+                    <motion.div 
+                        className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                     >
                         <div className="flex items-center gap-4 mb-6">
                             <div className="w-12 h-12 bg-gradient-to-r from-gray-500 to-slate-600 rounded-xl flex items-center justify-center">
@@ -486,6 +511,7 @@ function AdminDashboard() {
                 onChangePassword={() => setShowPasswordPopup(true)}
                 onDeleteAccount={handleDeleteAccount}
                 onLogout={handleLogout}
+                isAdmin={true}
             />
 
             <EditProfileModal
@@ -590,6 +616,30 @@ function AdminDashboard() {
                 onClose={() => setShowAnalyticsReports(false)}
                 token={token || ''}
             />
+
+            {showRatingsView && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden">
+                        <div className="sticky top-0 bg-gradient-to-r from-yellow-500 to-amber-600 px-8 py-6 flex items-center justify-between border-b border-yellow-600">
+                            <div className="flex items-center gap-3">
+                                <Star className="w-8 h-8 text-white fill-white" />
+                                <h2 className="text-2xl font-bold text-white">Reseñas de Amenidades</h2>
+                            </div>
+                            <button
+                                onClick={() => setShowRatingsView(false)}
+                                className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
+                            >
+                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="overflow-y-auto max-h-[calc(90vh-100px)] p-8">
+                            <AdminRatingsView />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

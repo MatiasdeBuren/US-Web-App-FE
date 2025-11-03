@@ -14,7 +14,7 @@ interface UserManagementProps {
     isOpen: boolean;
     onClose: () => void;
     token: string;
-    currentUserEmail?: string; // Email del usuario actual para evitar auto-modificaciones
+    currentUserEmail?: string;
 }
 
 function UserManagement({ isOpen, onClose, token, currentUserEmail }: UserManagementProps) {
@@ -66,7 +66,6 @@ function UserManagement({ isOpen, onClose, token, currentUserEmail }: UserManage
     }, [isOpen, token]);
 
     useEffect(() => {
-        // Filtrar usuarios basado en búsqueda y role
         let filtered = users;
 
         if (searchTerm) {
@@ -87,7 +86,6 @@ function UserManagement({ isOpen, onClose, token, currentUserEmail }: UserManage
         setLoading(true);
         try {
             const usersData = await getAdminUsers(token);
-            // Asegurar que siempre sea un array
             if (Array.isArray(usersData)) {
                 setUsers(usersData);
             } else {
@@ -96,8 +94,7 @@ function UserManagement({ isOpen, onClose, token, currentUserEmail }: UserManage
             }
         } catch (error) {
             console.error("Error loading users:", error);
-            setUsers([]); // Establecer array vacío en caso de error
-            // Mostrar error pero no bloquear la UI
+            setUsers([]);
             console.warn("Failed to load users, showing empty list");
         } finally {
             setLoading(false);
@@ -113,7 +110,6 @@ function UserManagement({ isOpen, onClose, token, currentUserEmail }: UserManage
         try {
             const updatedUser = await updateUserRole(token, userId, newRole);
             
-            // Actualizar la lista local
             setUsers(prev => prev.map(user => 
                 user.id === userId ? { ...user, role: updatedUser.role } : user
             ));
@@ -308,6 +304,9 @@ function UserManagement({ isOpen, onClose, token, currentUserEmail }: UserManage
                     setFilterRole(value);
                     setShowRoleFilter(false);
                 }}
+                headerIcon={Users}
+                headerIconColor="text-blue-600"
+                maxWidth="2xl"
             />
 
             {/* Success Toast */}

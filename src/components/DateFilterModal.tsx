@@ -19,7 +19,6 @@ interface DateFilterModalProps {
   subtitle?: string;
 }
 
-// Predefined date filter options
 const getDateFilterOptions = (): DateFilterOption[] => {
   const today = new Date();
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -205,7 +204,7 @@ const DateFilterModal = ({
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 max-h-[80vh] overflow-hidden"
+          className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
           style={{
             scrollbarWidth: 'none',
@@ -214,9 +213,14 @@ const DateFilterModal = ({
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900">{title}</h3>
-              {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Calendar className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">{title}</h3>
+                {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
+              </div>
             </div>
             <button
               onClick={onClose}

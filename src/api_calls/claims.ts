@@ -1,7 +1,5 @@
-// API calls para la funcionalidad de reclamos/claims
 const API_URL = import.meta.env.VITE_API_URL as string;
 
-// Tipos para las respuestas de claims basadas en el nuevo schema
 export interface ClaimCategory {
     id: number;
     name: string;
@@ -36,32 +34,32 @@ export interface Claim {
     createdAt: string;
     updatedAt: string;
     createdBy: string;
-    userId?: number; // ID del usuario que creó el reclamo
-    adminNotes?: string; // Notas administrativas agregadas por el admin
-    isAnonymous?: boolean; // Si el reclamo fue marcado como anónimo por el creador
+    userId?: number;
+    adminNotes?: string;
+    isAnonymous?: boolean;
     adhesion_counts?: {
         support: number;
         disagree: number;
     };
-    user_adhesion?: 'support' | 'disagree' | null;
+    user_adhesion?: boolean | null; // true = support, false = disagree
 }
 
 export interface CreateClaimData {
     subject: string;
-    category: string; // Now we send the category name (e.g., 'ascensor', 'plomeria', etc.)
+    category: string;
     description: string;
     location: string;
-    priority: string; // Now we send the priority name (e.g., 'baja', 'media', etc.)
-    isAnonymous?: boolean; // Si el reclamo debe ser mostrado como anónimo
+    priority: string; 
+    isAnonymous?: boolean;
 }
 
 export interface UpdateClaimData {
     subject?: string;
-    category?: string; // Category name
+    category?: string; 
     description?: string;
     location?: string;
-    priority?: string; // Priority name
-    status?: string; // Status name
+    priority?: string; 
+    status?: string; 
 }
 
 export interface ClaimsListResponse {
@@ -71,11 +69,7 @@ export interface ClaimsListResponse {
     limit: number;
 }
 
-// ================================
-// FUNCIONES DE TABLAS DE CONSULTA
-// ================================
 
-// GET /claims/categories - Obtener todas las categorías
 export async function getClaimCategories(): Promise<ClaimCategory[]> {
     try {
         const response = await fetch(`${API_URL}/claims/categories`);
@@ -89,7 +83,6 @@ export async function getClaimCategories(): Promise<ClaimCategory[]> {
     }
 }
 
-// GET /claims/priorities - Obtener todas las prioridades
 export async function getClaimPriorities(): Promise<ClaimPriority[]> {
     try {
         const response = await fetch(`${API_URL}/claims/priorities`);
@@ -103,7 +96,6 @@ export async function getClaimPriorities(): Promise<ClaimPriority[]> {
     }
 }
 
-// GET /claims/statuses - Obtener todos los estados
 export async function getClaimStatuses(): Promise<ClaimStatus[]> {
     try {
         const response = await fetch(`${API_URL}/claims/statuses`);
@@ -117,11 +109,7 @@ export async function getClaimStatuses(): Promise<ClaimStatus[]> {
     }
 }
 
-// ================================
-// FUNCIONES DE GESTIÓN DE RECLAMOS
-// ================================
 
-// GET /claims - Obtener reclamos del usuario (con opción de incluir todos)
 export async function getClaims(
     token: string,
     options?: {
@@ -162,8 +150,7 @@ export async function getClaims(
         }
 
         const data = await response.json();
-        
-        // Validar que la respuesta tenga la estructura esperada
+
         return {
             claims: Array.isArray(data.claims) ? data.claims : [],
             total: data.total || 0,
@@ -176,7 +163,6 @@ export async function getClaims(
     }
 }
 
-// GET /claims/:id - Obtener un reclamo específico
 export async function getClaim(token: string, claimId: number): Promise<Claim> {
     try {
         const response = await fetch(`${API_URL}/claims/${claimId}`, {
@@ -206,7 +192,6 @@ export async function getClaim(token: string, claimId: number): Promise<Claim> {
     }
 }
 
-// POST /claims - Crear un nuevo reclamo
 export async function createClaim(
     token: string, 
     claimData: CreateClaimData
@@ -238,14 +223,12 @@ export async function createClaim(
 
         const result = await response.json();
         console.log('Backend response for createClaim:', result);
-        
-        // Handle Promise response from backend (if mapClaimWithCreatedBy is not awaited)
+
         if (result && typeof result.then === 'function') {
             console.warn('Backend returned a Promise instead of resolved data');
             throw new Error('Error interno del servidor: respuesta inesperada');
         }
-        
-        // Handle empty or invalid response from backend
+
         if (!result || typeof result !== 'object' || !result.id) {
             console.warn('Backend returned invalid claim data:', result);
             throw new Error('Error interno del servidor: datos inválidos');
@@ -258,7 +241,6 @@ export async function createClaim(
     }
 }
 
-// PUT /claims/:id - Actualizar un reclamo existente
 export async function updateClaim(
     token: string, 
     claimId: number,
@@ -299,7 +281,6 @@ export async function updateClaim(
     }
 }
 
-// DELETE /claims/:id - Eliminar un reclamo
 export async function deleteClaim(token: string, claimId: number): Promise<void> {
     try {
         const response = await fetch(`${API_URL}/claims/${claimId}`, {
@@ -332,11 +313,6 @@ export async function deleteClaim(token: string, claimId: number): Promise<void>
     }
 }
 
-// ================================
-// FUNCIONES DE GESTIÓN ADMIN DE RECLAMOS
-// ================================
-
-// GET /admin/claims - Obtener todos los reclamos (solo admin)
 export async function getAdminClaims(
     token: string,
     options?: {
@@ -390,7 +366,6 @@ export async function getAdminClaims(
     }
 }
 
-// PUT /admin/claims/:id/status - Actualizar el estado de un reclamo (solo admin)
 export async function updateClaimStatus(
     token: string, 
     claimId: number,
@@ -432,7 +407,6 @@ export async function updateClaimStatus(
     }
 }
 
-// DELETE /admin/claims/:id - Eliminar cualquier reclamo (solo admin)
 export async function deleteAdminClaim(token: string, claimId: number): Promise<void> {
     try {
         const response = await fetch(`${API_URL}/admin/claims/${claimId}`, {
@@ -462,11 +436,6 @@ export async function deleteAdminClaim(token: string, claimId: number): Promise<
     }
 }
 
-// ================================
-// FUNCIONES DE ADHESIÓN A RECLAMOS
-// ================================
-
-// GET /claims/:id/adhesions - Obtener adhesiones de un reclamo
 export async function getClaimAdhesions(token: string, claimId: number): Promise<{
     total_support: number;
     total_disagree: number;
@@ -501,7 +470,7 @@ export async function getClaimAdhesions(token: string, claimId: number): Promise
 export async function createClaimAdhesion(
     token: string, 
     claimId: number, 
-    adhesionType: 'support' | 'disagree'
+    isSupport: boolean
 ): Promise<{ message: string; adhesion_type: string }> {
     try {
         const response = await fetch(`${API_URL}/claims/${claimId}/adhesions`, {
@@ -510,7 +479,7 @@ export async function createClaimAdhesion(
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ adhesion_type: adhesionType })
+            body: JSON.stringify({ adhesion_type: isSupport })
         });
 
         if (!response.ok) {
@@ -537,7 +506,6 @@ export async function createClaimAdhesion(
     }
 }
 
-// DELETE /claims/:id/adhesions - Eliminar adhesión del usuario
 export async function deleteClaimAdhesion(token: string, claimId: number): Promise<{ message: string }> {
     try {
         const response = await fetch(`${API_URL}/claims/${claimId}/adhesions`, {

@@ -54,7 +54,7 @@ function StatusFilterModal({ isVisible, onClose, selectedStatus, onStatusSelect 
       subtitle="Selecciona un estado para filtrar los reclamos"
       headerIcon={Filter}
       headerIconColor="text-blue-600"
-      maxWidth="lg"
+      maxWidth="2xl"
     />
   );
 }

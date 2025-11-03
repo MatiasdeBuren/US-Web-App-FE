@@ -38,18 +38,25 @@ function ReservationList({
         return cancelledStatuses.includes(reservation.status?.name?.toLowerCase() || '');
     };
 
+    const isReservationFinished = (reservation: Reservation): boolean => {
+        const finishedStatuses = ["finalizada", "finished", "completed"];
+        return finishedStatuses.includes(reservation.status?.name?.toLowerCase() || '');
+    };
+
     const activeReservations = reservations.filter(r => 
         (r.status?.name === "confirmada" || r.status?.name === "pendiente") && 
         !isReservationPast(r) &&
-        !isReservationCancelled(r)
+        !isReservationCancelled(r) &&
+        !isReservationFinished(r)
     );
     
     const inactiveReservations = reservations.filter(r => 
         isReservationCancelled(r) || 
-        isReservationPast(r)
+        isReservationPast(r) ||
+        isReservationFinished(r)
     );
 
-    // Debug: Log the separation results
+
     console.log('ReservationList - Active reservations:', activeReservations.map(r => ({
         id: r.id,
         status: r.status,
@@ -63,21 +70,21 @@ function ReservationList({
         isPast: isReservationPast(r)
     })));
 
-    // Pagination state for active reservations
+
     const [activeCurrentPage, setActiveCurrentPage] = useState(1);
     const activeTotalPages = Math.ceil(activeReservations.length / ITEMS_PER_PAGE);
     const activeStartIndex = (activeCurrentPage - 1) * ITEMS_PER_PAGE;
     const activeEndIndex = activeStartIndex + ITEMS_PER_PAGE;
     const activeCurrentItems = activeReservations.slice(activeStartIndex, activeEndIndex);
 
-    // Pagination state for inactive reservations
+
     const [inactiveCurrentPage, setInactiveCurrentPage] = useState(1);
     const inactiveTotalPages = Math.ceil(inactiveReservations.length / ITEMS_PER_PAGE);
     const inactiveStartIndex = (inactiveCurrentPage - 1) * ITEMS_PER_PAGE;
     const inactiveEndIndex = inactiveStartIndex + ITEMS_PER_PAGE;
     const inactiveCurrentItems = inactiveReservations.slice(inactiveStartIndex, inactiveEndIndex);
 
-    // Pagination component
+
     const PaginationControls = ({ 
         currentPage, 
         totalPages, 
