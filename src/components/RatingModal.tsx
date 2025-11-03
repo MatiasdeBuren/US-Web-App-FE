@@ -182,16 +182,13 @@ export default function RatingModal({
                                 <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
                                 <div className="flex-1">
                                     <p className="text-sm font-semibold text-yellow-800 mb-2">
-                                        Ya has calificado esta amenidad
-                                    </p>
-                                    <p className="text-sm text-yellow-700 mb-3">
-                                        Puedes ver tu calificación actual o editarla si deseas cambiarla.
+                                        Ya calificaste esta amenidad
                                     </p>
                                     <button
                                         onClick={() => setIsEditing(true)}
                                         className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-lg transition-colors"
                                     >
-                                        Editar mi calificación
+                                        Editar calificación
                                     </button>
                                 </div>
                             </div>
@@ -207,13 +204,13 @@ export default function RatingModal({
                     <div className="space-y-6">
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                             <p className="text-sm text-blue-800">
-                                <strong>Califica las categorías:</strong> Tu calificación general se calculará automáticamente como el promedio de las categorías que selecciones.
+                                La calificación general se calcula automáticamente con el promedio de las categorías.
                             </p>
                         </div>
 
                         <div>
                             <p className="text-sm font-semibold text-gray-700 mb-4">
-                                Califica las siguientes categorías (al menos una es requerida)
+                                Califica al menos una categoría
                             </p>
 
                             <div className={`space-y-4 ${existingRating && !isEditing ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -249,7 +246,7 @@ export default function RatingModal({
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Comentario (opcional)
+                                Comentario
                             </label>
                             <textarea
                                 value={comment}
