@@ -2,7 +2,6 @@ const API_URL = import.meta.env.VITE_API_URL as string;
 
 export interface RatingData {
     amenityId: number;
-    overallRating: number;
     cleanliness?: number;
     equipment?: number;
     comfort?: number;

@@ -13,12 +13,6 @@ interface RatingModalProps {
     onSuccess: () => void;
 }
 
-const RATING_LABELS = {
-    1: 'Malo',
-    2: 'Bueno',
-    3: 'Muy bueno'
-};
-
 const SUBCATEGORY_LABELS = {
     cleanliness: 'Limpieza',
     equipment: 'Estado del equipamiento',
@@ -33,7 +27,6 @@ export default function RatingModal({
     amenityName,
     onSuccess
 }: RatingModalProps) {
-    const [overallRating, setOverallRating] = useState<number>(0);
     const [cleanliness, setCleanliness] = useState<number>(0);
     const [equipment, setEquipment] = useState<number>(0);
     const [comfort, setComfort] = useState<number>(0);
@@ -43,8 +36,10 @@ export default function RatingModal({
     const [error, setError] = useState<string | null>(null);
 
     const handleSubmit = async () => {
-        if (overallRating === 0) {
-            setError('Debes seleccionar una calificación general');
+        const ratedCategories = [cleanliness, equipment, comfort, compliance].filter(r => r > 0);
+        
+        if (ratedCategories.length === 0) {
+            setError('Debes calificar al menos una categoría');
             return;
         }
 
@@ -54,7 +49,6 @@ export default function RatingModal({
         try {
             const data: RatingData = {
                 amenityId,
-                overallRating,
                 ...(cleanliness > 0 && { cleanliness }),
                 ...(equipment > 0 && { equipment }),
                 ...(comfort > 0 && { comfort }),
@@ -136,23 +130,15 @@ export default function RatingModal({
                     )}
 
                     <div className="space-y-6">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Calificación general *
-                            </label>
-                            <div className="flex items-center gap-4">
-                                <RatingStars value={overallRating} onChange={setOverallRating} />
-                                {overallRating > 0 && (
-                                    <span className="text-gray-600 font-medium">
-                                        {RATING_LABELS[overallRating as keyof typeof RATING_LABELS]}
-                                    </span>
-                                )}
-                            </div>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <p className="text-sm text-blue-800">
+                                <strong>Califica las categorías:</strong> Tu calificación general se calculará automáticamente como el promedio de las categorías que selecciones.
+                            </p>
                         </div>
 
-                        <div className="border-t pt-6">
+                        <div>
                             <p className="text-sm font-semibold text-gray-700 mb-4">
-                                Calificaciones opcionales
+                                Califica las siguientes categorías (al menos una es requerida)
                             </p>
 
                             <div className="space-y-4">
