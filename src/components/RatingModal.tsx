@@ -8,7 +8,6 @@ import { LoadingButton } from './LoadingSpinner';
 interface RatingModalProps {
     isOpen: boolean;
     onClose: () => void;
-    reservationId: number;
     amenityId: number;
     amenityName: string;
     onSuccess: () => void;
@@ -30,7 +29,6 @@ const SUBCATEGORY_LABELS = {
 export default function RatingModal({
     isOpen,
     onClose,
-    reservationId,
     amenityId,
     amenityName,
     onSuccess
@@ -55,7 +53,6 @@ export default function RatingModal({
 
         try {
             const data: RatingData = {
-                reservationId,
                 amenityId,
                 overallRating,
                 ...(cleanliness > 0 && { cleanliness }),

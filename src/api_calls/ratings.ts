@@ -99,16 +99,3 @@ export const getAllRatings = async (): Promise<Rating[]> => {
     
     return response.json();
 };
-
-export const checkCanRate = async (reservationId: number): Promise<{ canRate: boolean; reason?: string }> => {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/ratings/can-rate/${reservationId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-    });
-    
-    if (!response.ok) {
-        throw new Error('Error al verificar permisos');
-    }
-    
-    return response.json();
-};

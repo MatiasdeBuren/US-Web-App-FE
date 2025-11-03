@@ -1,11 +1,11 @@
-import { ChevronRight, MapPin, MessageSquare } from "lucide-react";
+import { ChevronRight, MapPin, MessageSquare, Star } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { Amenity } from "../types";
 import AvailabilityViewer from "./reservation_available_dates";
 import AmenityRatingStats from "./AmenityRatingStats";
 import AmenityReviews from "./AmenityReviews";
 import RatingModal from "./RatingModal";
-import { getAmenityRatings, type AmenityRatingsResponse, checkCanRate } from "../api_calls/ratings";
+import { getAmenityRatings, type AmenityRatingsResponse } from "../api_calls/ratings";
 
 interface SpaceSelectorProps {
     spaces: Amenity[];
@@ -31,7 +31,9 @@ function SpaceSelector({
     const [loadingOccupancy, setLoadingOccupancy] = useState(false);
     const [ratingsData, setRatingsData] = useState<{ [amenityId: number]: AmenityRatingsResponse }>({});
     const [showReviewsModal, setShowReviewsModal] = useState(false);
+    const [showRatingModal, setShowRatingModal] = useState(false);
     const [selectedAmenityForReviews, setSelectedAmenityForReviews] = useState<number | null>(null);
+    const [selectedAmenityForRating, setSelectedAmenityForRating] = useState<Amenity | null>(null);
 
     useEffect(() => {
         const updateOccupancyData = async () => {
@@ -176,6 +178,19 @@ function SpaceSelector({
                                             Ver reseñas
                                         </button>
                                     )}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedAmenityForRating(space);
+                                            setShowRatingModal(true);
+                                        }}
+                                        className={`text-sm font-medium flex items-center gap-1 hover:underline ${
+                                            selectedSpace === space.name ? 'text-yellow-300' : 'text-yellow-600'
+                                        }`}
+                                    >
+                                        <Star className="w-4 h-4" />
+                                        Calificar
+                                    </button>
                                 </div>
                             </div>
                             {selectedSpace === space.name && (
@@ -251,6 +266,27 @@ function SpaceSelector({
                         </div>
                     </div>
                 </div>
+            )}
+
+            {showRatingModal && selectedAmenityForRating && (
+                <RatingModal
+                    isOpen={showRatingModal}
+                    onClose={() => {
+                        setShowRatingModal(false);
+                        setSelectedAmenityForRating(null);
+                    }}
+                    amenityId={selectedAmenityForRating.id}
+                    amenityName={selectedAmenityForRating.name}
+                    onSuccess={async () => {
+                        const ratings = await getAmenityRatings(selectedAmenityForRating.id);
+                        setRatingsData(prev => ({
+                            ...prev,
+                            [selectedAmenityForRating.id]: ratings
+                        }));
+                        setShowRatingModal(false);
+                        setSelectedAmenityForRating(null);
+                    }}
+                />
             )}
         </div>
     );

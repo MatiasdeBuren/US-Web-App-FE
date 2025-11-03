@@ -1,9 +1,7 @@
 import ReservationCard from "./ReservationCard";
 import type { Reservation } from "../types";
-import { Calendar, Clock, ChevronLeft, ChevronRight, Star } from "lucide-react";
-import { useState, useEffect } from "react";
-import { checkCanRate } from "../api_calls/ratings";
-import RatingModal from "./RatingModal";
+import { Calendar, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
 
 interface ReservationListProps {
     reservations: Reservation[];
@@ -22,10 +20,6 @@ function ReservationList({
     cancellingId,
     hidingId
 }: ReservationListProps) {
-    const [rateableReservations, setRateableReservations] = useState<Set<number>>(new Set());
-    const [showRatingModal, setShowRatingModal] = useState(false);
-    const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
-    
     console.log('ReservationList - All reservations:', reservations.map(r => ({
         id: r.id,
         status: r.status,
@@ -48,31 +42,6 @@ function ReservationList({
         const finishedStatuses = ["finalizada", "finished", "completed"];
         return finishedStatuses.includes(reservation.status?.name?.toLowerCase() || '');
     };
-
-    const finishedReservations = reservations.filter(r => isReservationFinished(r));
-
-    useEffect(() => {
-        const checkRateableReservations = async () => {
-            const rateable = new Set<number>();
-            
-            for (const reservation of finishedReservations) {
-                try {
-                    const canRate = await checkCanRate(reservation.id);
-                    if (canRate) {
-                        rateable.add(reservation.id);
-                    }
-                } catch (error) {
-                    console.error(`Error checking if can rate reservation ${reservation.id}:`, error);
-                }
-            }
-            
-            setRateableReservations(rateable);
-        };
-
-        if (finishedReservations.length > 0) {
-            checkRateableReservations();
-        }
-    }, [reservations]);
 
     const activeReservations = reservations.filter(r => 
         (r.status?.name === "confirmada" || r.status?.name === "pendiente") && 
@@ -178,62 +147,6 @@ function ReservationList({
 
     return (
         <section className="space-y-12">
-            {/* Rateable Reservations Section */}
-            {rateableReservations.size > 0 && (
-                <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl p-6 border-2 border-yellow-200">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-3 bg-yellow-500 rounded-xl shadow-lg">
-                            <Star className="w-6 h-6 text-white fill-white" />
-                        </div>
-                        <div>
-                            <h2 className="text-2xl font-bold text-gray-800">
-                                Califica tu experiencia
-                            </h2>
-                            <p className="text-gray-600">
-                                Tienes {rateableReservations.size} amenidad{rateableReservations.size !== 1 ? 'es' : ''} por calificar
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {finishedReservations
-                            .filter(r => rateableReservations.has(r.id))
-                            .map((reservation) => (
-                                <div
-                                    key={reservation.id}
-                                    className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition-shadow border border-yellow-200"
-                                >
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div>
-                                            <h3 className="font-bold text-lg text-gray-800">
-                                                {reservation.amenity.name}
-                                            </h3>
-                                            <p className="text-sm text-gray-600">
-                                                {new Date(reservation.startTime).toLocaleDateString('es-AR', {
-                                                    day: 'numeric',
-                                                    month: 'long',
-                                                    year: 'numeric'
-                                                })}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    
-                                    <button
-                                        onClick={() => {
-                                            setSelectedReservation(reservation);
-                                            setShowRatingModal(true);
-                                        }}
-                                        className="w-full py-2.5 px-4 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
-                                    >
-                                        <Star className="w-4 h-4" />
-                                        Calificar ahora
-                                    </button>
-                                </div>
-                            ))}
-                    </div>
-                </div>
-            )}
-
             {/* Active Reservations Section */}
             {activeReservations.length > 0 && (
                 <div>
@@ -325,29 +238,6 @@ function ReservationList({
                         Cuando hagas una reserva, aparecerá aquí. ¡Comienza reservando un espacio arriba!
                     </p>
                 </div>
-            )}
-
-            {/* Rating Modal */}
-            {selectedReservation && (
-                <RatingModal
-                    isOpen={showRatingModal}
-                    onClose={() => {
-                        setShowRatingModal(false);
-                        setSelectedReservation(null);
-                    }}
-                    reservationId={selectedReservation.id}
-                    amenityId={selectedReservation.amenity.id}
-                    amenityName={selectedReservation.amenity.name}
-                    onSuccess={() => {
-                        setRateableReservations(prev => {
-                            const newSet = new Set(prev);
-                            newSet.delete(selectedReservation.id);
-                            return newSet;
-                        });
-                        setShowRatingModal(false);
-                        setSelectedReservation(null);
-                    }}
-                />
             )}
         </section>
     );
