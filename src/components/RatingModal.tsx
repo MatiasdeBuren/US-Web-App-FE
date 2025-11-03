@@ -1,0 +1,230 @@
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Star } from 'lucide-react';
+import { createRating } from '../api_calls/ratings';
+import type { RatingData } from '../api_calls/ratings';
+import { LoadingButton } from './LoadingSpinner';
+
+interface RatingModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    reservationId: number;
+    amenityId: number;
+    amenityName: string;
+    onSuccess: () => void;
+}
+
+const RATING_LABELS = {
+    1: 'Malo',
+    2: 'Bueno',
+    3: 'Muy bueno'
+};
+
+const SUBCATEGORY_LABELS = {
+    cleanliness: 'Limpieza',
+    equipment: 'Estado del equipamiento',
+    comfort: 'Comodidad',
+    compliance: 'Cumplimiento de normas'
+};
+
+export default function RatingModal({
+    isOpen,
+    onClose,
+    reservationId,
+    amenityId,
+    amenityName,
+    onSuccess
+}: RatingModalProps) {
+    const [overallRating, setOverallRating] = useState<number>(0);
+    const [cleanliness, setCleanliness] = useState<number>(0);
+    const [equipment, setEquipment] = useState<number>(0);
+    const [comfort, setComfort] = useState<number>(0);
+    const [compliance, setCompliance] = useState<number>(0);
+    const [comment, setComment] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleSubmit = async () => {
+        if (overallRating === 0) {
+            setError('Debes seleccionar una calificación general');
+            return;
+        }
+
+        setIsSubmitting(true);
+        setError(null);
+
+        try {
+            const data: RatingData = {
+                reservationId,
+                amenityId,
+                overallRating,
+                ...(cleanliness > 0 && { cleanliness }),
+                ...(equipment > 0 && { equipment }),
+                ...(comfort > 0 && { comfort }),
+                ...(compliance > 0 && { compliance }),
+                ...(comment.trim() && { comment: comment.trim() })
+            };
+
+            await createRating(data);
+            onSuccess();
+            onClose();
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Error al enviar calificación');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const RatingStars = ({ 
+        value, 
+        onChange 
+    }: { 
+        value: number; 
+        onChange: (val: number) => void;
+    }) => (
+        <div className="flex gap-2">
+            {[1, 2, 3].map((rating) => (
+                <button
+                    key={rating}
+                    type="button"
+                    onClick={() => onChange(rating)}
+                    className="transition-transform hover:scale-110"
+                >
+                    <Star
+                        className={`w-8 h-8 ${
+                            rating <= value
+                                ? 'fill-yellow-400 text-yellow-400'
+                                : 'text-gray-300'
+                        }`}
+                    />
+                </button>
+            ))}
+        </div>
+    );
+
+    if (!isOpen) return null;
+
+    return (
+        <AnimatePresence>
+            <div 
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+                onClick={onClose}
+            >
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-800">
+                                Calificar reserva
+                            </h2>
+                            <p className="text-gray-600 mt-1">{amenityName}</p>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
+
+                    {error && (
+                        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                            {error}
+                        </div>
+                    )}
+
+                    <div className="space-y-6">
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Calificación general *
+                            </label>
+                            <div className="flex items-center gap-4">
+                                <RatingStars value={overallRating} onChange={setOverallRating} />
+                                {overallRating > 0 && (
+                                    <span className="text-gray-600 font-medium">
+                                        {RATING_LABELS[overallRating as keyof typeof RATING_LABELS]}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="border-t pt-6">
+                            <p className="text-sm font-semibold text-gray-700 mb-4">
+                                Calificaciones opcionales
+                            </p>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm text-gray-600 mb-2">
+                                        {SUBCATEGORY_LABELS.cleanliness}
+                                    </label>
+                                    <RatingStars value={cleanliness} onChange={setCleanliness} />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm text-gray-600 mb-2">
+                                        {SUBCATEGORY_LABELS.equipment}
+                                    </label>
+                                    <RatingStars value={equipment} onChange={setEquipment} />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm text-gray-600 mb-2">
+                                        {SUBCATEGORY_LABELS.comfort}
+                                    </label>
+                                    <RatingStars value={comfort} onChange={setComfort} />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm text-gray-600 mb-2">
+                                        {SUBCATEGORY_LABELS.compliance}
+                                    </label>
+                                    <RatingStars value={compliance} onChange={setCompliance} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Comentario (opcional)
+                            </label>
+                            <textarea
+                                value={comment}
+                                onChange={(e) => setComment(e.target.value)}
+                                placeholder="Comparte tu experiencia..."
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-none"
+                                rows={4}
+                                maxLength={500}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                                {comment.length}/500 caracteres
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3 pt-4">
+                            <button
+                                onClick={onClose}
+                                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <LoadingButton
+                                onClick={handleSubmit}
+                                loading={isSubmitting}
+                                className="flex-1 px-6 py-3 bg-gray-800 text-white rounded-xl font-semibold hover:bg-gray-900 transition-colors disabled:bg-gray-400"
+                                loadingText="Enviando..."
+                            >
+                                Enviar calificación
+                            </LoadingButton>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+        </AnimatePresence>
+    );
+}

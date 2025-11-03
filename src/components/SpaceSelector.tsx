@@ -1,7 +1,11 @@
-import { ChevronRight, MapPin } from "lucide-react";
+import { ChevronRight, MapPin, MessageSquare } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { Amenity } from "../types";
 import AvailabilityViewer from "./reservation_available_dates";
+import AmenityRatingStats from "./AmenityRatingStats";
+import AmenityReviews from "./AmenityReviews";
+import RatingModal from "./RatingModal";
+import { getAmenityRatings, type AmenityRatingsResponse, checkCanRate } from "../api_calls/ratings";
 
 interface SpaceSelectorProps {
     spaces: Amenity[];
@@ -25,6 +29,9 @@ function SpaceSelector({
 }: SpaceSelectorProps) {
     const [occupancyData, setOccupancyData] = useState<{ [amenityName: string]: number }>({});
     const [loadingOccupancy, setLoadingOccupancy] = useState(false);
+    const [ratingsData, setRatingsData] = useState<{ [amenityId: number]: AmenityRatingsResponse }>({});
+    const [showReviewsModal, setShowReviewsModal] = useState(false);
+    const [selectedAmenityForReviews, setSelectedAmenityForReviews] = useState<number | null>(null);
 
     useEffect(() => {
         const updateOccupancyData = async () => {
@@ -48,6 +55,24 @@ function SpaceSelector({
 
         updateOccupancyData();
     }, [selectedDate, selectedTime, spaces, getAmenityOccupancy]);
+
+    useEffect(() => {
+        const loadRatings = async () => {
+            const newRatingsData: { [amenityId: number]: AmenityRatingsResponse } = {};
+
+            try {
+                for (const space of spaces) {
+                    const ratings = await getAmenityRatings(space.id);
+                    newRatingsData[space.id] = ratings;
+                }
+                setRatingsData(newRatingsData);
+            } catch (error) {
+                console.error('Error loading ratings:', error);
+            }
+        };
+
+        loadRatings();
+    }, [spaces]);
     return (
         <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-8 h-full">
             {/* Header */}
@@ -99,6 +124,12 @@ function SpaceSelector({
                             <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-2">
                                     <h3 className="text-xl font-bold">{space.name}</h3>
+                                    {ratingsData[space.id] && ratingsData[space.id].stats.totalRatings > 0 && (
+                                        <AmenityRatingStats 
+                                            stats={ratingsData[space.id].stats}
+                                            compact={true}
+                                        />
+                                    )}
                                     {space.requiresApproval && (
                                         <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${
                                             selectedSpace === space.name 
@@ -129,6 +160,21 @@ function SpaceSelector({
                                         }`}>
                                             Horario: {space.openTime || '00:00'} - {space.closeTime || '23:59'}
                                         </p>
+                                    )}
+                                    {ratingsData[space.id] && ratingsData[space.id].stats.totalRatings > 0 && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedAmenityForReviews(space.id);
+                                                setShowReviewsModal(true);
+                                            }}
+                                            className={`text-sm font-medium flex items-center gap-1 hover:underline ${
+                                                selectedSpace === space.name ? 'text-gray-300' : 'text-blue-600'
+                                            }`}
+                                        >
+                                            <MessageSquare className="w-4 h-4" />
+                                            Ver reseñas
+                                        </button>
                                     )}
                                 </div>
                             </div>
@@ -174,6 +220,38 @@ function SpaceSelector({
                     </div>
                 ))}
             </div>
+
+            {showReviewsModal && selectedAmenityForReviews && (
+                <div 
+                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                    onClick={() => setShowReviewsModal(false)}
+                >
+                    <div 
+                        className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                            <h2 className="text-2xl font-bold text-gray-800">
+                                Reseñas de {spaces.find(s => s.id === selectedAmenityForReviews)?.name}
+                            </h2>
+                            <button
+                                onClick={() => setShowReviewsModal(false)}
+                                className="text-gray-500 hover:text-gray-700 transition-colors"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+                            <AmenityReviews 
+                                amenityId={selectedAmenityForReviews}
+                                amenityName={spaces.find(s => s.id === selectedAmenityForReviews)?.name || ''}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
