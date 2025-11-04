@@ -369,7 +369,7 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
                     </div>
 
                     {/* Reservations List */}
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto scrollbar-hidden">
                         {loading ? (
                             <div className="flex justify-center items-center h-40">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>

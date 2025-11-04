@@ -615,29 +615,10 @@ function AdminDashboard() {
                 token={token || ''}
             />
 
-            {showRatingsView && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden">
-                        <div className="sticky top-0 bg-gradient-to-r from-yellow-500 to-amber-600 px-8 py-6 flex items-center justify-between border-b border-yellow-600">
-                            <div className="flex items-center gap-3">
-                                <Star className="w-8 h-8 text-white fill-white" />
-                                <h2 className="text-2xl font-bold text-white">Reseñas de Amenity</h2>
-                            </div>
-                            <button
-                                onClick={() => setShowRatingsView(false)}
-                                className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
-                            >
-                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="overflow-y-auto max-h-[calc(90vh-100px)] p-8">
-                            <AdminRatingsView />
-                        </div>
-                    </div>
-                </div>
-            )}
+            <AdminRatingsView
+                isOpen={showRatingsView}
+                onClose={() => setShowRatingsView(false)}
+            />
         </div>
     );
 }
