@@ -4,7 +4,6 @@ import {
     Users, 
     Building, 
     Calendar, 
-    Settings,  
     Shield,
     Home,
     Clock,
@@ -475,27 +474,6 @@ function AdminDashboard() {
                             • Ver todas las reseñas<br />
                             • Estadísticas por Amenity<br />
                             • Filtros avanzados
-                        </div>
-                    </motion.div>
-
-                    <motion.div 
-                        className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                    >
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="w-12 h-12 bg-gradient-to-r from-gray-500 to-slate-600 rounded-xl flex items-center justify-center">
-                                <Settings className="w-6 h-6 text-white" />
-                            </div>
-                            <h3 className="text-xl font-bold text-gray-800">Configuración del Sistema</h3>
-                        </div>
-                        <p className="text-gray-600 mb-4">
-                            Configura parámetros generales del sistema
-                        </p>
-                        <div className="text-sm text-gray-500">
-                            • Configuraciones globales<br />
-                            • Políticas de reservas<br />
-                            • Mantenimiento del sistema
                         </div>
                     </motion.div>
                 </div>
