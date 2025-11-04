@@ -17,7 +17,6 @@ const UserNotificationsPage = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    // Cargar token del localStorage
     useEffect(() => {
         const savedToken = localStorage.getItem("token");
         if (savedToken) {
@@ -25,14 +24,12 @@ const UserNotificationsPage = () => {
         }
     }, []);
 
-    // Filtrar notificaciones
     const filteredNotifications = useMemo(() => {
         return notifications.filter(notification => {
-            // Filtro por estado (leído/no leído)
+
             if (filter === 'read' && !notification.isRead) return false;
             if (filter === 'unread' && notification.isRead) return false;
-            
-            // Filtro por tipo
+
             if (typeFilter !== 'all' && notification.type !== typeFilter) return false;
             
             return true;
@@ -82,7 +79,6 @@ const UserNotificationsPage = () => {
         }
     };
 
-    // Obtener color del tipo
     const getTypeColor = (type: string) => {
         switch (type) {
             case 'reservation_confirmed':
@@ -100,7 +96,6 @@ const UserNotificationsPage = () => {
         }
     };
 
-    // Obtener nombre del tipo
     const getTypeName = (type: string) => {
         switch (type) {
             case 'reservation_confirmed':

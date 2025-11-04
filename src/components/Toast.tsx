@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, createContext, useContext, useCallback } from "react";
 import { CheckCircle, XCircle, AlertCircle, X } from "lucide-react";
 
 export interface ToastProps {
@@ -14,10 +14,8 @@ export function Toast({ id, message, type, duration = 4000, onClose }: ToastProp
   const [isLeaving, setIsLeaving] = useState(false);
 
   useEffect(() => {
-    // Trigger entrance animation
+    
     setTimeout(() => setIsVisible(true), 10);
-
-    // Auto-hide after duration
     const timer = setTimeout(() => {
       setIsLeaving(true);
       setTimeout(() => onClose(id), 300);
@@ -94,9 +92,6 @@ export function Toast({ id, message, type, duration = 4000, onClose }: ToastProp
   );
 }
 
-// Toast Manager Context and Hook
-import { createContext, useContext, useCallback } from "react";
-
 interface ToastContextType {
   showToast: (message: string, type: ToastProps['type']) => void;
 }
@@ -145,6 +140,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useToast() {
   const context = useContext(ToastContext);
   if (!context) {

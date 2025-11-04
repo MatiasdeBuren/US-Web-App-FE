@@ -126,7 +126,7 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
       }
     }
     
-    console.log('📊 [ANALYTICS] Filtered to', filteredReservations.length, 'reservations');
+    console.log(' [ANALYTICS] Filtered to', filteredReservations.length, 'reservations');
     
     const processedStats = processReservationData(filteredReservations);
     const processedHourly = processHourlyData(filteredReservations);
@@ -138,11 +138,11 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
   const loadAnalyticsData = React.useCallback(async () => {
     try {
       setLoading(true);
-      console.log('🔍 [ANALYTICS] Loading reservations data...');
+      console.log(' [ANALYTICS] Loading reservations data...');
       
       const reservations = await getAdminReservations(token, { limit: 1000 }); // Get more data for analysis
       
-      console.log('📊 [ANALYTICS] Processing', reservations.length, 'reservations');
+      console.log('[ANALYTICS] Processing', reservations.length, 'reservations');
 
       setAllReservations(reservations);
       
@@ -185,7 +185,7 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
       const startTime = new Date(reservation.startTime);
       const endTime = new Date(reservation.endTime);
       const hour = startTime.getHours();
-      const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60); // hours
+      const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
       
       if (!amenityMap.has(amenityName)) {
         amenityMap.set(amenityName, {

@@ -107,7 +107,6 @@ function ReservationCard({
         };
     };
 
-    // Parse start and end times
     const startTime = parseLocalTime(reservation.startTime);
     const endTime = parseLocalTime(reservation.endTime);
     

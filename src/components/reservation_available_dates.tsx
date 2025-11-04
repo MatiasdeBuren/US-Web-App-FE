@@ -31,7 +31,7 @@ function getDayKey(d: Date) {
 }
 
 function getColorByRatio(ratio: number) {
-  // ratio: 0..1 (ocupación actual vs capacidad máxima)
+
   if (ratio >= 1) return "bg-red-500 text-white border-red-600";
   if (ratio >= 0.8) return "bg-orange-500 text-white border-orange-600";
   if (ratio >= 0.5) return "bg-yellow-400 text-black border-yellow-500";
@@ -143,7 +143,6 @@ export default function AvailabilityTimelineViewer({
       const dayKey = getDayKey(startDate);
 
       if (result[dayKey]) {
-        // Prevent duplicates: prefer matching by id, otherwise by start/end/user
         const exists = result[dayKey].some((existing) => {
           if (res.id !== undefined && existing.id !== undefined) {
             return existing.id === res.id;
@@ -351,7 +350,7 @@ export default function AvailabilityTimelineViewer({
                                 className={`absolute rounded-lg p-1 border-2 shadow-lg cursor-pointer hover:shadow-xl hover:z-10 transition-all ${colorClass}`}
                                 style={{
                                   top: `${topPct}%`,
-                                  height: `${heightPct}%`, // Use exact calculated height, no artificial minimum
+                                  height: `${heightPct}%`,
                                   left: `2%`,
                                   width: `96%`,
                                   zIndex: 1

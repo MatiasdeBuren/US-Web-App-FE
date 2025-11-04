@@ -90,7 +90,6 @@ const NotificationToastComponent = ({ toast, onClose }: NotificationToastProps) 
     );
 };
 
-// Contenedor de Notification Toasts
 interface NotificationToastContainerProps {
     toasts: NotificationToast[];
     onRemoveToast: (id: string) => void;

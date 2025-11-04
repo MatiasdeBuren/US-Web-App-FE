@@ -19,8 +19,6 @@ function CancelReservationModal({
 }: CancelReservationModalProps) {
     if (!reservation) return null;
 
-    // Format the reservation details
-    // Parse UTC timestamp and convert to local time for display
     const startDate = new Date(reservation.startTime);
     const endDate = new Date(reservation.endTime);
     
