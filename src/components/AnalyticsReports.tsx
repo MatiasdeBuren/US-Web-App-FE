@@ -358,23 +358,23 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
           {/* Filters Section */}
           <div className="flex-shrink-0 p-6 border-b border-gray-100">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex gap-2">
+              <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
                 <button
                   onClick={() => setActiveTab('reservations')}
-                  className={`px-4 py-2 rounded-xl font-medium transition-all ${
+                  className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${
                     activeTab === 'reservations'
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
                   Reservas
                 </button>
                 <button
                   onClick={() => setActiveTab('claims')}
-                  className={`px-4 py-2 rounded-xl font-medium transition-all ${
+                  className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${
                     activeTab === 'claims'
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
                   Reclamos
@@ -382,16 +382,16 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
               </div>
 
               {activeTab === 'claims' && (
-                <div className="flex gap-2">
+                <div className="flex gap-1 p-1 bg-purple-50 rounded-lg">
                   <button
                     onClick={() => {
                       setClaimsPeriod('daily');
                       setDayOffset(0);
                     }}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                       claimsPeriod === 'daily'
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'text-purple-700 hover:text-purple-900'
                     }`}
                   >
                     Diario
@@ -401,10 +401,10 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                       setClaimsPeriod('weekly');
                       setDayOffset(0);
                     }}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                       claimsPeriod === 'weekly'
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'text-purple-700 hover:text-purple-900'
                     }`}
                   >
                     Semanal
@@ -414,10 +414,10 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                       setClaimsPeriod('monthly');
                       setDayOffset(0);
                     }}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                       claimsPeriod === 'monthly'
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'text-purple-700 hover:text-purple-900'
                     }`}
                   >
                     Mensual
