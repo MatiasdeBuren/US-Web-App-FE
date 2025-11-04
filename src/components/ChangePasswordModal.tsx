@@ -40,7 +40,6 @@ function ChangePasswordModal({
     const handleSave = async () => {
         setError("");
 
-        // Validaciones usando la función centralizada
         const validation = validatePassword(newPassword, confirmPassword, currentPassword);
         if (!validation.isValid) {
             setError(validation.errors[0]);

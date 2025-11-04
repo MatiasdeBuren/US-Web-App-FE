@@ -113,7 +113,6 @@ function CreateClaimModal({ isVisible, onClose, onSave, editingClaim, isSaving =
       }
     } catch (error) {
       console.error('Error in handleSubmit:', error);
-      // Prevent blank screen by ensuring the form stays visible
     }
   };
 

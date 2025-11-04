@@ -33,7 +33,6 @@ function LoadingSpinner({ size = "md", color = "blue", text }: LoadingSpinnerPro
   );
 }
 
-// Componente para overlay de loading completo
 interface LoadingOverlayProps {
   isVisible: boolean;
   text?: string;
@@ -57,7 +56,6 @@ export function LoadingOverlay({ isVisible, text = "Cargando..." }: LoadingOverl
   );
 }
 
-// Componente para botones con loading inline
 interface LoadingButtonProps {
   onClick: () => void;
   loading: boolean;

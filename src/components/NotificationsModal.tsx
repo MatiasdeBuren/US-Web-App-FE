@@ -15,8 +15,6 @@ function NotificationsModal({ isOpen, onClose, onClaimClick }: NotificationsModa
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const notificationsPerPage = 10;
-
-    // Get token from localStorage
     const token = localStorage.getItem('token');
 
     const {
@@ -28,12 +26,8 @@ function NotificationsModal({ isOpen, onClose, onClaimClick }: NotificationsModa
     } = useNotifications({
         token,
         pollInterval: 30000,
-        onNewNotification: () => {
-            // Optional: could show a toast here
-        }
     });
 
-    // Reset pagination when modal opens
     useEffect(() => {
         if (isOpen) {
             setCurrentPage(1);
@@ -83,7 +77,6 @@ function NotificationsModal({ isOpen, onClose, onClaimClick }: NotificationsModa
         return `Hace ${Math.floor(diffInMinutes / 1440)} días`;
     };
 
-    // Filter notifications
     const filteredNotifications = notifications.filter(notification => {
         if (filter === 'unread' && notification.isRead) return false;
         if (filter === 'claims' && !notification.claimId) return false;
@@ -94,7 +87,6 @@ function NotificationsModal({ isOpen, onClose, onClaimClick }: NotificationsModa
         return true;
     });
 
-    // Pagination
     const totalPages = Math.ceil(filteredNotifications.length / notificationsPerPage);
     const paginatedNotifications = filteredNotifications.slice(
         (currentPage - 1) * notificationsPerPage,
@@ -104,12 +96,10 @@ function NotificationsModal({ isOpen, onClose, onClaimClick }: NotificationsModa
     const unreadCount = notifications.filter(n => !n.isRead).length;
 
     const handleNotificationClick = async (notification: Notification) => {
-        // Mark as read
         if (!notification.isRead) {
             await markAsRead(notification.id);
         }
         
-        // Handle navigation
         if (notification.claimId && onClaimClick) {
             onClose();
             onClaimClick(notification.claimId);

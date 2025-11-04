@@ -33,12 +33,10 @@ function NotificationBell({
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
-    
-    // Filtrar notificaciones no leídas
+
     const unreadNotifications = notifications.filter(n => !n.isRead);
     const unreadCount = unreadNotifications.length;
     
-    // Cerrar dropdown al hacer click fuera
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {

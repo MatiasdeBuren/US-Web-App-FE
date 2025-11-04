@@ -57,7 +57,6 @@ export function useDataLoading<T>({
   };
 }
 
-// Specialized hook for array data (common in management components)
 export function useArrayDataLoading<T>({
   loadFn,
   token,

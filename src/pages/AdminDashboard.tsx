@@ -190,13 +190,11 @@ function AdminDashboard() {
         setIsDeletingAccount(true);
         try {
             await deleteUser(token);
-            // Clear localStorage and redirect to login
             localStorage.removeItem("token");
             setShowDeleteConfirm(false);
             setShowProfile(false);
             setShowSuccessToast(true);
-            
-            // Redirect to login after a short delay to show success message
+
             setTimeout(() => {
                 window.location.replace("/#/login");
             }, 2000);

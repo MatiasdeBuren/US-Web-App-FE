@@ -19,7 +19,7 @@ function Login() {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    if (isLoggingIn) return; // Prevent spam clicking
+    if (isLoggingIn) return; 
     
     setIsLoggingIn(true);
     try {

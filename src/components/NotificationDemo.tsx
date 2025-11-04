@@ -1,5 +1,3 @@
-// Demo de cómo usar el sistema de notificaciones
-
 import { useState } from 'react';
 import NotificationBell, { type Notification } from '../components/NotificationBell';
 import useNotifications from '../hooks/useNotifications';
@@ -7,7 +5,6 @@ import useNotifications from '../hooks/useNotifications';
 function NotificationDemo() {
     const [token] = useState<string | null>(localStorage.getItem('token'));
     
-    // Hook de notificaciones con polling cada 30 segundos
     const {
         notifications,
         unreadCount,
@@ -16,20 +13,15 @@ function NotificationDemo() {
         refresh
     } = useNotifications({ 
         token, 
-        pollInterval: 30000 // 30 segundos
+        pollInterval: 30000 
     });
 
-    // Manejar click en notificación
     const handleNotificationClick = (notification: Notification) => {
         console.log('Notificación clickeada:', notification);
-        
-        // Marcar como leída
         markAsRead(notification.id);
         
-        // Si es un reclamo, hacer algo específico
         if (notification.claimId) {
             console.log('Abrir reclamo:', notification.claimId);
-            // Aquí podrías abrir un modal, navegar a una página, etc.
         }
     };
 

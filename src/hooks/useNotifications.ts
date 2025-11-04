@@ -97,7 +97,6 @@ export function useNotifications({ token, pollInterval = 30000, onNewNotificatio
         }
     }, [token, onNewNotification]);
 
-    // Marcar notificación como leída
     const markAsRead = useCallback(async (notificationId: string) => {
         if (!token) return;
 
@@ -159,7 +158,7 @@ export function useNotifications({ token, pollInterval = 30000, onNewNotificatio
         const interval = setInterval(fetchNotifications, pollInterval);
         
         return () => clearInterval(interval);
-    }, [token, pollInterval]); // Removí fetchNotifications de las dependencias
+    }, [token, pollInterval]);
 
 
     const refresh = useCallback(() => {

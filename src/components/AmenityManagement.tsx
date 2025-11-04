@@ -29,12 +29,9 @@ const formatDuration = (minutes: number): string => {
 };
 
 function AmenityManagement({ isOpen, onClose, token }: AmenityManagementProps) {
-    // Toast state
     const [showSuccessToast, setShowSuccessToast] = useState(false);
     const [toastAction, setToastAction] = useState<'created' | 'updated' | 'deleted'>('created');
     const [toastAmenityName, setToastAmenityName] = useState<string>('');
-
-    // Transform form data to proper types for API
     const transformFormDataForCreate = (formData: any) => {
         const capacity = parseInt(formData.capacity);
         const maxDuration = parseInt(formData.maxDuration);

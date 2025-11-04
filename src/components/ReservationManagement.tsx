@@ -11,7 +11,6 @@ interface ReservationManagementProps {
     token: string;
 }
 
-// Filter options for status
 const statusOptions: FilterOption[] = [
   { 
     value: 'all', 
@@ -61,7 +60,6 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
     const [rejectReason, setRejectReason] = useState<string>("");
     const [cancelReason, setCancelReason] = useState<string>("");
     
-    // Modal states
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [showAmenityModal, setShowAmenityModal] = useState(false);
     const [showDateModal, setShowDateModal] = useState(false);
@@ -72,7 +70,6 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
         setProcessingReservationId(reservationId);
         try {
             await approveReservation(token, reservationId);
-            // Refresh reservations list
             await loadReservations();
         } catch (error) {
             console.error("Error approving reservation:", error);
@@ -88,7 +85,6 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
         setProcessingReservationId(reservationId);
         try {
             await rejectReservation(token, reservationId, rejectReason || undefined);
-            // Refresh reservations list
             await loadReservations();
             setRejectingReservationId(null);
             setRejectReason("");
@@ -106,7 +102,6 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
         setProcessingReservationId(reservationId);
         try {
             await cancelReservationAsAdmin(token, reservationId, cancelReason || undefined);
-            // Refresh reservations list
             await loadReservations();
             setCancellingReservationId(null);
             setCancelReason("");
@@ -122,7 +117,7 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
         setLoading(true);
         try {
             const reservationsData = await getAdminReservations(token, { limit: 100 });
-            // Asegurar que siempre sea un array
+
             if (Array.isArray(reservationsData)) {
                 setReservations(reservationsData);
             } else {
@@ -131,8 +126,7 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
             }
         } catch (error) {
             console.error("Error loading reservations:", error);
-            setReservations([]); // Establecer array vacío en caso de error
-            // Mostrar error pero no bloquear la UI
+            setReservations([]);
             console.warn("Failed to load reservations, showing empty list");
         } finally {
             setLoading(false);
@@ -157,7 +151,7 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
     }, [isOpen, token, loadReservations, loadAmenities]);
 
     useEffect(() => {
-        // Filtrar reservas basado en búsqueda, status, amenity y fecha
+        
         let filtered = reservations;
 
         if (searchTerm) {
@@ -176,7 +170,6 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
             filtered = filtered.filter(reservation => reservation.amenity?.name === filterAmenity);
         }
 
-        // Date filtering
         if (dateFilterOption && dateFilterOption.startDate && dateFilterOption.endDate) {
             console.log('🔍 [DATE FILTER DEBUG] Filtering reservations with date range:', {
                 filterOption: dateFilterOption.value,
@@ -186,7 +179,6 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
             
             filtered = filtered.filter(reservation => {
                 const reservationDate = new Date(reservation.startTime);
-                // Normalize to start of day for comparison
                 reservationDate.setHours(0, 0, 0, 0);
                 
                 const startDate = new Date(dateFilterOption.startDate!);
@@ -214,7 +206,6 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
             console.log(`🔍 [DATE FILTER DEBUG] Filtered to ${filtered.length} reservations`);
         }
 
-        // Ordenar por fecha de creación (más recientes primero)
         filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         setFilteredReservations(filtered);
@@ -247,7 +238,6 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
         setDateFilterOption(option);
     };
 
-    // Generate amenity filter options from loaded amenities
     const getAmenityOptions = (): FilterOption[] => {
         const options: FilterOption[] = [
             { 
@@ -270,36 +260,8 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
         return options;
     };
 
-    const getStatusBadgeColor = (status: string) => {
-        switch (status) {
-            case "confirmada": return "bg-green-100 text-green-800 border-green-300";
-            case "pendiente": return "bg-yellow-100 text-yellow-800 border-yellow-300";
-            case "cancelada": return "bg-red-100 text-red-800 border-red-300";
-            case "finalizada": return "bg-blue-100 text-blue-800 border-blue-300";
-            // Legacy English statuses for backward compatibility
-            case "confirmed": return "bg-green-100 text-green-800 border-green-300";
-            case "pending": return "bg-yellow-100 text-yellow-800 border-yellow-300";
-            case "cancelled": return "bg-red-100 text-red-800 border-red-300";
-            default: return "bg-gray-100 text-gray-800 border-gray-300";
-        }
-    };
-
-    const getStatusIcon = (status: string) => {
-        switch (status) {
-            case "confirmada": return "✅";
-            case "pendiente": return "⏳";
-            case "cancelada": return "❌";
-            case "finalizada": return "🏁";
-            // Legacy English statuses for backward compatibility
-            case "confirmed": return "✅";
-            case "pending": return "⏳";
-            case "cancelled": return "❌";
-            default: return "❓";
-        }
-    };
-
     const formatDateTime = (dateString: string) => {
-        // Parse UTC timestamp and convert to local time for display
+        
         const utcDate = new Date(dateString);
         
         return {
@@ -362,20 +324,6 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
                         
                         {/* Filter Buttons */}
                         <div className="flex gap-2">
-                            {/* Amenity Filter Button */}
-                            <button
-                                onClick={() => setShowAmenityModal(true)}
-                                className="flex items-center justify-between px-4 py-2 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-left cursor-pointer min-w-[180px]"
-                            >
-                                <div className="flex items-center gap-2">
-                                    <Filter className="w-4 h-4 text-gray-400" />
-                                    <span className={filterAmenity === 'all' ? 'text-gray-500' : 'text-gray-900 font-medium'}>
-                                        {getCurrentAmenityLabel()}
-                                    </span>
-                                </div>
-                                <ChevronDown className="w-4 h-4 text-gray-400" />
-                            </button>
-
                             {/* Status Filter Button */}
                             <button
                                 onClick={() => setShowStatusModal(true)}
@@ -390,10 +338,24 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
                                 <ChevronDown className="w-4 h-4 text-gray-400" />
                             </button>
 
+                            {/* Amenity Filter Button */}
+                            <button
+                                onClick={() => setShowAmenityModal(true)}
+                                className="flex items-center justify-between px-4 py-2 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-left cursor-pointer min-w-[180px]"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Filter className="w-4 h-4 text-gray-400" />
+                                    <span className={filterAmenity === 'all' ? 'text-gray-500' : 'text-gray-900 font-medium'}>
+                                        {getCurrentAmenityLabel()}
+                                    </span>
+                                </div>
+                                <ChevronDown className="w-4 h-4 text-gray-400" />
+                            </button>
+
                             {/* Date Filter Button */}
                             <button
                                 onClick={() => setShowDateModal(true)}
-                                className="flex items-center justify-between px-4 py-2 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-left cursor-pointer min-w-[160px]"
+                                className="flex items-center justify-between px-4 py-2 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-left cursor-pointer min-w-[180px]"
                             >
                                 <div className="flex items-center gap-2">
                                     <CalendarDays className="w-4 h-4 text-gray-400" />
@@ -432,10 +394,9 @@ function ReservationManagement({ isOpen, onClose, token }: ReservationManagement
                                                         <div>
                                                             <div className="flex items-center gap-3 mb-2">
                                                                 <h3 className="text-lg font-semibold text-gray-800">
-                                                                    {reservation.amenity?.name || 'Amenity desconocida'}
+                                                                    {reservation.amenity?.name || 'Amenidad desconocida'}
                                                                 </h3>
-                                                                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeColor(reservation.status?.name || 'unknown')}`}>
-                                                                    <span>{getStatusIcon(reservation.status?.name || 'unknown')}</span>
+                                                                <div className="px-2 py-1 rounded-full text-xs font-medium border bg-gray-100 text-gray-800 border-gray-300">
                                                                     {reservation.status?.label || reservation.status?.name || 'Desconocido'}
                                                                 </div>
                                                             </div>
