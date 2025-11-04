@@ -59,6 +59,7 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'reservations' | 'claims'>('reservations');
   const [claimsPeriod, setClaimsPeriod] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
+  const [dayOffset, setDayOffset] = useState(0);
   const [amenityStats, setAmenityStats] = useState<AmenityStats[]>([]);
   const [hourlyData, setHourlyData] = useState<HourlyData[]>([]);
   const [monthlyClaimsData, setMonthlyClaimsData] = useState<MonthlyClaimData[]>([]);
@@ -140,7 +141,7 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
       }
     }
     
-    console.log(' [ANALYTICS] Filtered to', filteredReservations.length, 'reservations');
+    console.log('[ANALYTICS] Filtered to', filteredReservations.length, 'reservations');
     
     const processedStats = processReservationData(filteredReservations);
     const processedHourly = processHourlyData(filteredReservations);
@@ -152,7 +153,7 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
   const loadAnalyticsData = React.useCallback(async () => {
     try {
       setLoading(true);
-      console.log(' [ANALYTICS] Loading data...');
+      console.log('[ANALYTICS] Loading data...');
       
       if (activeTab === 'reservations') {
         const reservations = await getAdminReservations(token, { limit: 1000 });
@@ -171,22 +172,22 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
         setAvailableAmenities(uniqueAmenities);
         processAndSetData(reservations);
       } else {
-        const periodParam = claimsPeriod === 'daily' ? 'days=30' : claimsPeriod === 'weekly' ? 'weeks=12' : 'months=6';
-        const claimsStats = await fetch(`${import.meta.env.VITE_API_URL}/admin/claims/stats?period=${claimsPeriod}&${periodParam}`, {
+        const claimsStats = await fetch(`${import.meta.env.VITE_API_URL}/admin/claims/stats?period=${claimsPeriod}&offset=${dayOffset}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         }).then(res => res.json()).catch(() => ({ data: [] }));
         
+        console.log('[CLAIMS STATS]', claimsStats);
         setMonthlyClaimsData(claimsStats.data || []);
       }
     } catch (error) {
-      console.error('❌ [ANALYTICS] Error loading data:', error);
+      console.error('[ANALYTICS] Error loading data:', error);
     } finally {
       setLoading(false);
     }
-  }, [token, activeTab, claimsPeriod, processAndSetData]);
+  }, [token, activeTab, claimsPeriod, dayOffset, processAndSetData]);
 
   useEffect(() => {
     if (isOpen) {
@@ -383,7 +384,10 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
               {activeTab === 'claims' && (
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setClaimsPeriod('daily')}
+                    onClick={() => {
+                      setClaimsPeriod('daily');
+                      setDayOffset(0);
+                    }}
                     className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
                       claimsPeriod === 'daily'
                         ? 'bg-purple-600 text-white'
@@ -393,7 +397,10 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                     Diario
                   </button>
                   <button
-                    onClick={() => setClaimsPeriod('weekly')}
+                    onClick={() => {
+                      setClaimsPeriod('weekly');
+                      setDayOffset(0);
+                    }}
                     className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
                       claimsPeriod === 'weekly'
                         ? 'bg-purple-600 text-white'
@@ -403,7 +410,10 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                     Semanal
                   </button>
                   <button
-                    onClick={() => setClaimsPeriod('monthly')}
+                    onClick={() => {
+                      setClaimsPeriod('monthly');
+                      setDayOffset(0);
+                    }}
                     className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
                       claimsPeriod === 'monthly'
                         ? 'bg-purple-600 text-white'
@@ -690,148 +700,6 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                     </div>
                   )}
                 </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.8 }}
-                  className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
-                >
-                  <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-purple-600" />
-                    Evolución de Reclamos
-                  </h3>
-                  
-                  {monthlyClaimsData.length > 0 ? (
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                          <span className="text-sm text-gray-700">Nuevo</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                          <span className="text-sm text-gray-700">En Progreso</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                          <span className="text-sm text-gray-700">Resuelto</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-gray-500"></div>
-                          <span className="text-sm text-gray-700">Cerrado</span>
-                        </div>
-                      </div>
-
-                      <div className="relative h-80 border-l border-b border-gray-200 pl-8 pb-8">
-                        <div className="absolute left-0 top-0 bottom-8 flex flex-col justify-between text-xs text-gray-500">
-                          {Array.from({ length: 6 }, (_, i) => {
-                            const maxValue = Math.max(...monthlyClaimsData.map(d => d.total), 10);
-                            const value = Math.ceil((maxValue * (5 - i)) / 5);
-                            return (
-                              <div key={i} className="flex items-center">
-                                <span className="w-8 text-right">{value}</span>
-                                <div className="ml-2 w-2 h-px bg-gray-200"></div>
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        <div className="h-full flex items-end justify-around gap-2">
-                          {monthlyClaimsData.map((data, index) => {
-                            const maxValue = Math.max(...monthlyClaimsData.map(d => d.total), 10);
-                            const totalHeight = data.total > 0 ? Math.max((data.total / maxValue) * 100, 5) : 0;
-                            const nuevoPercent = data.total > 0 ? (data.nuevo / data.total) * 100 : 0;
-                            const progresoPercent = data.total > 0 ? (data.en_progreso / data.total) * 100 : 0;
-                            const resueltoPercent = data.total > 0 ? (data.resuelto / data.total) * 100 : 0;
-                            const cerradoPercent = data.total > 0 ? (data.cerrado / data.total) * 100 : 0;
-
-                            return (
-                              <div key={`${data.month}-${index}`} className="flex-1 flex flex-col items-center gap-2">
-                                <div className="relative w-full flex flex-col" style={{ height: `${totalHeight}%`, minHeight: data.total > 0 ? '30px' : '0' }}>
-                                  {data.cerrado > 0 && (
-                                    <motion.div
-                                      initial={{ height: 0 }}
-                                      animate={{ height: `${cerradoPercent}%` }}
-                                      transition={{ delay: index * 0.05, duration: 0.4 }}
-                                      className="bg-gray-500 w-full"
-                                      title={`Cerrado: ${data.cerrado}`}
-                                    />
-                                  )}
-                                  {data.resuelto > 0 && (
-                                    <motion.div
-                                      initial={{ height: 0 }}
-                                      animate={{ height: `${resueltoPercent}%` }}
-                                      transition={{ delay: index * 0.05 + 0.1, duration: 0.4 }}
-                                      className="bg-green-500 w-full"
-                                      title={`Resuelto: ${data.resuelto}`}
-                                    />
-                                  )}
-                                  {data.en_progreso > 0 && (
-                                    <motion.div
-                                      initial={{ height: 0 }}
-                                      animate={{ height: `${progresoPercent}%` }}
-                                      transition={{ delay: index * 0.05 + 0.2, duration: 0.4 }}
-                                      className="bg-yellow-500 w-full"
-                                      title={`En Progreso: ${data.en_progreso}`}
-                                    />
-                                  )}
-                                  {data.nuevo > 0 && (
-                                    <motion.div
-                                      initial={{ height: 0 }}
-                                      animate={{ height: `${nuevoPercent}%` }}
-                                      transition={{ delay: index * 0.05 + 0.3, duration: 0.4 }}
-                                      className="bg-blue-500 w-full"
-                                      title={`Nuevo: ${data.nuevo}`}
-                                    />
-                                  )}
-                                </div>
-                                <div className="text-xs text-gray-600 text-center whitespace-nowrap mt-2">
-                                  {data.label || data.monthLabel || data.month}
-                                </div>
-                                <div className="text-xs font-medium text-gray-900">
-                                  {data.total}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-blue-600">
-                            {monthlyClaimsData.reduce((sum, d) => sum + d.nuevo, 0)}
-                          </div>
-                          <div className="text-sm text-gray-600">Nuevos</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-yellow-600">
-                            {monthlyClaimsData.reduce((sum, d) => sum + d.en_progreso, 0)}
-                          </div>
-                          <div className="text-sm text-gray-600">En Progreso</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-green-600">
-                            {monthlyClaimsData.reduce((sum, d) => sum + d.resuelto, 0)}
-                          </div>
-                          <div className="text-sm text-gray-600">Resueltos</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-gray-600">
-                            {monthlyClaimsData.reduce((sum, d) => sum + d.cerrado, 0)}
-                          </div>
-                          <div className="text-sm text-gray-600">Cerrados</div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 text-gray-500">
-                      <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p>No hay datos de reclamos para mostrar</p>
-                    </div>
-                  )}
-                </motion.div>
                   </>
                 ) : (
                   <motion.div
@@ -839,10 +707,30 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                     animate={{ opacity: 1, y: 0 }}
                     className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
                   >
-                    <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-purple-600" />
-                      Evolución de Reclamos
-                    </h3>
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-purple-600" />
+                        Evolución de Reclamos
+                      </h3>
+                      
+                      {claimsPeriod === 'daily' && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setDayOffset(prev => prev + 7)}
+                            className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
+                          >
+                            Anterior
+                          </button>
+                          <button
+                            onClick={() => setDayOffset(prev => Math.max(0, prev - 7))}
+                            disabled={dayOffset === 0}
+                            className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Siguiente
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     
                     {monthlyClaimsData.length > 0 ? (
                       <div className="space-y-6">
@@ -865,79 +753,74 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                           </div>
                         </div>
 
-                        <div className="relative h-80 border-l border-b border-gray-200 pl-8 pb-8">
-                          <div className="absolute left-0 top-0 bottom-8 flex flex-col justify-between text-xs text-gray-500">
-                            {Array.from({ length: 6 }, (_, i) => {
-                              const maxValue = Math.max(...monthlyClaimsData.map(d => d.total), 10);
-                              const value = Math.ceil((maxValue * (5 - i)) / 5);
-                              return (
-                                <div key={i} className="flex items-center">
-                                  <span className="w-8 text-right">{value}</span>
-                                  <div className="ml-2 w-2 h-px bg-gray-200"></div>
+                        <div className="space-y-4">
+                          {monthlyClaimsData.map((data, index) => {
+                            const maxValue = Math.max(...monthlyClaimsData.map(d => d.total), 1);
+                            return (
+                              <div key={`${data.month}-${index}`} className="space-y-2">
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="font-medium text-gray-700 min-w-[100px]">
+                                    {data.label || data.monthLabel || data.month}
+                                  </span>
+                                  <span className="text-gray-500 ml-auto mr-2">
+                                    Total: {data.total}
+                                  </span>
                                 </div>
-                              );
-                            })}
-                          </div>
-
-                          <div className="h-full flex items-end justify-around gap-2">
-                            {monthlyClaimsData.map((data, index) => {
-                              const maxValue = Math.max(...monthlyClaimsData.map(d => d.total), 10);
-                              const totalHeight = data.total > 0 ? Math.max((data.total / maxValue) * 100, 5) : 0;
-                              const nuevoPercent = data.total > 0 ? (data.nuevo / data.total) * 100 : 0;
-                              const progresoPercent = data.total > 0 ? (data.en_progreso / data.total) * 100 : 0;
-                              const resueltoPercent = data.total > 0 ? (data.resuelto / data.total) * 100 : 0;
-                              const cerradoPercent = data.total > 0 ? (data.cerrado / data.total) * 100 : 0;
-
-                              return (
-                                <div key={`${data.month}-${index}`} className="flex-1 flex flex-col items-center gap-2">
-                                  <div className="relative w-full flex flex-col" style={{ height: `${totalHeight}%`, minHeight: data.total > 0 ? '30px' : '0' }}>
-                                    {data.cerrado > 0 && (
+                                {data.total > 0 ? (
+                                  <div className="flex gap-1 h-8">
+                                    {data.nuevo > 0 && (
                                       <motion.div
-                                        initial={{ height: 0 }}
-                                        animate={{ height: `${cerradoPercent}%` }}
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${Math.max((data.nuevo / maxValue) * 100, 5)}%` }}
                                         transition={{ delay: index * 0.05, duration: 0.4 }}
-                                        className="bg-gray-500 w-full"
-                                        title={`Cerrado: ${data.cerrado}`}
-                                      />
-                                    )}
-                                    {data.resuelto > 0 && (
-                                      <motion.div
-                                        initial={{ height: 0 }}
-                                        animate={{ height: `${resueltoPercent}%` }}
-                                        transition={{ delay: index * 0.05 + 0.1, duration: 0.4 }}
-                                        className="bg-green-500 w-full"
-                                        title={`Resuelto: ${data.resuelto}`}
-                                      />
+                                        className="bg-blue-500 rounded flex items-center justify-center text-white text-xs font-medium min-w-[30px]"
+                                        title={`Nuevo: ${data.nuevo}`}
+                                      >
+                                        <span className="px-1">{data.nuevo}</span>
+                                      </motion.div>
                                     )}
                                     {data.en_progreso > 0 && (
                                       <motion.div
-                                        initial={{ height: 0 }}
-                                        animate={{ height: `${progresoPercent}%` }}
-                                        transition={{ delay: index * 0.05 + 0.2, duration: 0.4 }}
-                                        className="bg-yellow-500 w-full"
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${Math.max((data.en_progreso / maxValue) * 100, 5)}%` }}
+                                        transition={{ delay: index * 0.05 + 0.1, duration: 0.4 }}
+                                        className="bg-yellow-500 rounded flex items-center justify-center text-white text-xs font-medium min-w-[30px]"
                                         title={`En Progreso: ${data.en_progreso}`}
-                                      />
+                                      >
+                                        <span className="px-1">{data.en_progreso}</span>
+                                      </motion.div>
                                     )}
-                                    {data.nuevo > 0 && (
+                                    {data.resuelto > 0 && (
                                       <motion.div
-                                        initial={{ height: 0 }}
-                                        animate={{ height: `${nuevoPercent}%` }}
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${Math.max((data.resuelto / maxValue) * 100, 5)}%` }}
+                                        transition={{ delay: index * 0.05 + 0.2, duration: 0.4 }}
+                                        className="bg-green-500 rounded flex items-center justify-center text-white text-xs font-medium min-w-[30px]"
+                                        title={`Resuelto: ${data.resuelto}`}
+                                      >
+                                        <span className="px-1">{data.resuelto}</span>
+                                      </motion.div>
+                                    )}
+                                    {data.cerrado > 0 && (
+                                      <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${Math.max((data.cerrado / maxValue) * 100, 5)}%` }}
                                         transition={{ delay: index * 0.05 + 0.3, duration: 0.4 }}
-                                        className="bg-blue-500 w-full"
-                                        title={`Nuevo: ${data.nuevo}`}
-                                      />
+                                        className="bg-gray-500 rounded flex items-center justify-center text-white text-xs font-medium min-w-[30px]"
+                                        title={`Cerrado: ${data.cerrado}`}
+                                      >
+                                        <span className="px-1">{data.cerrado}</span>
+                                      </motion.div>
                                     )}
                                   </div>
-                                  <div className="text-xs text-gray-600 text-center whitespace-nowrap mt-2">
-                                    {data.label || data.monthLabel || data.month}
+                                ) : (
+                                  <div className="h-8 flex items-center">
+                                    <span className="text-sm text-gray-400">Sin reclamos</span>
                                   </div>
-                                  <div className="text-xs font-medium text-gray-900">
-                                    {data.total}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
