@@ -158,13 +158,13 @@ export default function RatingModal({
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
-                    className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+                    className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto scrollbar-hidden"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="flex justify-between items-center mb-6">
                         <div>
                             <h2 className="text-2xl font-bold text-gray-800">
-                                {existingRating ? 'Editar calificación' : 'Calificar amenidad'}
+                                {existingRating ? 'Editar calificación' : 'Calificar Amenity'}
                             </h2>
                             <p className="text-gray-600 mt-1">{amenityName}</p>
                         </div>
@@ -177,16 +177,16 @@ export default function RatingModal({
                     </div>
 
                     {existingRating && !isEditing && (
-                        <div className="mb-6 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
+                        <div className="mb-6 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-xl">
                             <div className="flex items-start gap-3">
                                 <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
                                 <div className="flex-1">
                                     <p className="text-sm font-semibold text-yellow-800 mb-2">
-                                        Ya calificaste esta amenidad
+                                        Ya calificaste esta Amenity
                                     </p>
                                     <button
                                         onClick={() => setIsEditing(true)}
-                                        className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-lg transition-colors"
+                                        className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-xl transition-colors"
                                     >
                                         Editar calificación
                                     </button>
@@ -196,13 +196,13 @@ export default function RatingModal({
                     )}
 
                     {error && (
-                        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
                             {error}
                         </div>
                     )}
 
                     <div className="space-y-6">
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                             <p className="text-sm text-blue-800">
                                 La calificación general se calcula automáticamente con el promedio de las categorías.
                             </p>
@@ -252,7 +252,7 @@ export default function RatingModal({
                                 value={comment}
                                 onChange={(e) => setComment(e.target.value)}
                                 placeholder="Comparte tu experiencia..."
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-none"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-none"
                                 rows={4}
                                 maxLength={500}
                                 disabled={existingRating && !isEditing}

@@ -1,5 +1,3 @@
-// Tipos reutilizables para todo el proyecto
-
 export interface UserData {
     user: {
         name: string;
@@ -20,7 +18,7 @@ export interface ReservationData {
 export interface ReservationStatus {
     id: number;
     name: string; // "pendiente", "confirmada", "cancelada", "finalizada"
-    label: string; // Spanish labels for display
+    label: string;
 }
 
 export interface Reservation {
@@ -39,8 +37,8 @@ export interface Amenity {
     name: string;
     capacity: number;
     maxDuration: number;
-    openTime?: string;  // Format: "HH:mm"
-    closeTime?: string; // Format: "HH:mm"
+    openTime?: string;
+    closeTime?: string; 
     isActive: boolean;
-    requiresApproval?: boolean; // Whether this amenity requires admin approval for reservations
+    requiresApproval?: boolean;
 }

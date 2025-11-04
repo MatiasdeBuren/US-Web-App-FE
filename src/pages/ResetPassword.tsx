@@ -31,7 +31,6 @@ function ResetPassword() {
     e.preventDefault();
     const tempErrors: typeof errors = {};
 
-    // Validation
     const passwordValidation = validatePassword(newPassword);
     if (!passwordValidation.isValid) {
       tempErrors.password = passwordValidation.errors[0];

@@ -2,8 +2,8 @@ const API_URL = import.meta.env.VITE_API_URL as string;
 
 export interface ReservationPayload {
   amenityId: number;
-  startTime: string; // ISO string
-  endTime: string;   // ISO string
+  startTime: string;
+  endTime: string;  
 }
 
 export async function createReservation(token: string, payload: ReservationPayload) {

@@ -4,7 +4,6 @@ import {
     Users, 
     Building, 
     Calendar, 
-    Settings,  
     Shield,
     Home,
     Clock,
@@ -190,13 +189,11 @@ function AdminDashboard() {
         setIsDeletingAccount(true);
         try {
             await deleteUser(token);
-            // Clear localStorage and redirect to login
             localStorage.removeItem("token");
             setShowDeleteConfirm(false);
             setShowProfile(false);
             setShowSuccessToast(true);
-            
-            // Redirect to login after a short delay to show success message
+
             setTimeout(() => {
                 window.location.replace("/#/login");
             }, 2000);
@@ -280,7 +277,7 @@ function AdminDashboard() {
                                             <Building className="w-5 h-5 text-white" />
                                         </div>
                                         <div>
-                                            <h3 className="text-white font-semibold text-lg">Apartamentos</h3>
+                                            <h3 className="text-white font-semibold text-lg">Departamentos</h3>
                                             <p className="text-2xl font-bold text-white">{adminStats?.totalApartments || 0}</p>
                                         </div>
                                     </div>
@@ -357,7 +354,7 @@ function AdminDashboard() {
                             <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
                                 <Home className="w-6 h-6 text-white" />
                             </div>
-                            <h3 className="text-xl font-bold text-gray-800">Gestión de Apartamentos</h3>
+                            <h3 className="text-xl font-bold text-gray-800">Gestión de Departamentos</h3>
                         </div>
                         <p className="text-gray-600 mb-4">
                             Administra apartamentos y asignaciones de inquilinos
@@ -468,36 +465,15 @@ function AdminDashboard() {
                             <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-amber-600 rounded-xl flex items-center justify-center">
                                 <Star className="w-6 h-6 text-white fill-white" />
                             </div>
-                            <h3 className="text-xl font-bold text-gray-800">Reseñas de Amenidades</h3>
+                            <h3 className="text-xl font-bold text-gray-800">Reseñas de Amenity</h3>
                         </div>
                         <p className="text-gray-600 mb-4">
                             Ver y analizar las calificaciones de los usuarios
                         </p>
                         <div className="text-sm text-gray-500">
                             • Ver todas las reseñas<br />
-                            • Estadísticas por amenidad<br />
+                            • Estadísticas por Amenity<br />
                             • Filtros avanzados
-                        </div>
-                    </motion.div>
-
-                    <motion.div 
-                        className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                    >
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="w-12 h-12 bg-gradient-to-r from-gray-500 to-slate-600 rounded-xl flex items-center justify-center">
-                                <Settings className="w-6 h-6 text-white" />
-                            </div>
-                            <h3 className="text-xl font-bold text-gray-800">Configuración del Sistema</h3>
-                        </div>
-                        <p className="text-gray-600 mb-4">
-                            Configura parámetros generales del sistema
-                        </p>
-                        <div className="text-sm text-gray-500">
-                            • Configuraciones globales<br />
-                            • Políticas de reservas<br />
-                            • Mantenimiento del sistema
                         </div>
                     </motion.div>
                 </div>
@@ -617,29 +593,10 @@ function AdminDashboard() {
                 token={token || ''}
             />
 
-            {showRatingsView && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden">
-                        <div className="sticky top-0 bg-gradient-to-r from-yellow-500 to-amber-600 px-8 py-6 flex items-center justify-between border-b border-yellow-600">
-                            <div className="flex items-center gap-3">
-                                <Star className="w-8 h-8 text-white fill-white" />
-                                <h2 className="text-2xl font-bold text-white">Reseñas de Amenidades</h2>
-                            </div>
-                            <button
-                                onClick={() => setShowRatingsView(false)}
-                                className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
-                            >
-                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="overflow-y-auto max-h-[calc(90vh-100px)] p-8">
-                            <AdminRatingsView />
-                        </div>
-                    </div>
-                </div>
-            )}
+            <AdminRatingsView
+                isOpen={showRatingsView}
+                onClose={() => setShowRatingsView(false)}
+            />
         </div>
     );
 }

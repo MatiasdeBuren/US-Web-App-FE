@@ -16,13 +16,13 @@ interface FormInputProps {
   min?: string | number;
   max?: string | number;
   step?: string | number;
-  rows?: number; // For textarea
+  rows?: number; 
   maxLength?: number;
   showPasswordToggle?: boolean;
   onFocus?: () => void;
   onBlur?: () => void;
-  className?: string; // For the container div
-  inputClassName?: string; // For the input element itself
+  className?: string;
+  inputClassName?: string;
   showCharacterCount?: boolean;
   helperText?: string;
 }

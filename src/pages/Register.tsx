@@ -62,7 +62,7 @@ function Register() {
     setErrors(tempErrors);
 
     if (Object.keys(tempErrors).length === 0) {
-      if (isRegistering) return; // Prevent spam clicking
+      if (isRegistering) return;
       
       setIsRegistering(true);
       try {

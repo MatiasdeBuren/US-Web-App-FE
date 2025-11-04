@@ -24,11 +24,8 @@ function UserNotificationBell({
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
-    
-    // Filtrar notificaciones recientes (máximo 10)
     const recentNotifications = notifications.slice(0, 10);
 
-    // Cerrar dropdown al hacer click fuera
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -45,7 +42,6 @@ function UserNotificationBell({
         };
     }, [isOpen]);
 
-    // Formatear tiempo relativo
     const formatTimeRelative = (createdAt: string) => {
         const now = new Date();
         const created = new Date(createdAt);
@@ -63,7 +59,6 @@ function UserNotificationBell({
         return created.toLocaleDateString();
     };
 
-    // Obtener ícono según tipo de notificación
     const getNotificationIcon = (type: string) => {
         switch (type) {
             case 'reservation_confirmed':
@@ -81,7 +76,6 @@ function UserNotificationBell({
         }
     };
 
-    // Manejar click en notificación
     const handleNotificationClick = (notification: UserNotification) => {
         if (!notification.isRead) {
             onMarkAsRead(notification.id);
@@ -90,7 +84,6 @@ function UserNotificationBell({
         onNotificationClick(notification);
     };
 
-    // Manejar eliminación de notificación
     const handleDeleteClick = (e: React.MouseEvent, notificationId: string) => {
         e.stopPropagation();
         onDeleteNotification(notificationId);

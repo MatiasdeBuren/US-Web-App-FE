@@ -147,12 +147,16 @@ function UserManagement({ isOpen, onClose, token, currentUserEmail }: UserManage
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div 
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+                onClick={onClose}
+            >
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     className="bg-white rounded-2xl shadow-2xl p-8 max-w-6xl w-full max-h-[90vh] mx-4 overflow-hidden flex flex-col"
+                    onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
                     <div className="flex justify-between items-center mb-6">
@@ -194,7 +198,7 @@ function UserManagement({ isOpen, onClose, token, currentUserEmail }: UserManage
                     </div>
 
                     {/* Users List */}
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto scrollbar-hidden">
                         {loading ? (
                             <div className="flex justify-center items-center h-40">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>

@@ -18,18 +18,16 @@ function AdminTimePicker({
 }: AdminTimePickerProps) {
     const [isOpen, setIsOpen] = useState(false);
 
-    // Generar opciones de tiempo: solo horas en punto y media hora
     const generateTimeOptions = () => {
         const options = [];
         for (let hour = 0; hour < 24; hour++) {
-            // Hora en punto
+            
             const hourStr = hour.toString().padStart(2, '0');
             options.push({
                 value: `${hourStr}:00`,
                 label: `${hourStr}:00`
             });
-            
-            // Media hora
+
             options.push({
                 value: `${hourStr}:30`,
                 label: `${hourStr}:30`
@@ -43,7 +41,6 @@ function AdminTimePicker({
     const formatDisplayTime = (time: string) => {
         if (!time) return placeholder;
         
-        // Convert 24h to 12h format for better UX
         const [hours, minutes] = time.split(':');
         const hour = parseInt(hours);
         const period = hour >= 12 ? 'PM' : 'AM';

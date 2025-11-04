@@ -134,7 +134,6 @@ const DateFilterModal = ({
   const handleCustomDateSubmit = () => {
     if (!customStartDate) return;
     
-    // Create dates in local timezone to avoid timezone issues
     const startDate = new Date(customStartDate + 'T00:00:00');
     startDate.setHours(0, 0, 0, 0);
     

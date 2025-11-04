@@ -94,7 +94,6 @@ const statusIcons = {
 };
 
 function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
-  // Main data state
   const [claims, setClaims] = useState<Claim[]>([]);
   const [filteredClaims, setFilteredClaims] = useState<Claim[]>([]);
   const [loading, setLoading] = useState(false);
@@ -104,7 +103,6 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
   const [filterDate, setFilterDate] = useState<string>('all');
   const [dateFilterOption, setDateFilterOption] = useState<DateFilterOption | null>(null);
   
-  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalClaims, setTotalClaims] = useState(0);
@@ -126,7 +124,6 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
   const [toastSubject, setToastSubject] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
-  // Utility functions
   const getCurrentCategoryLabel = () => {
     if (selectedCategory === 'all') return 'Todas las categorías';
     return categoryLabels[selectedCategory as keyof typeof categoryLabels];
@@ -147,10 +144,9 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
     setDateFilterOption(option);
   };
 
-  // Load claims
   const loadClaims = useCallback(async () => {
     try {
-      console.log('🔄 [CLAIMS LOAD DEBUG] Loading claims...');
+      console.log(' [CLAIMS LOAD DEBUG] Loading claims...');
       setLoading(true);
       const response = await getAdminClaims(token, {
         page: currentPage,
@@ -160,32 +156,28 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
         search: searchTerm || undefined
       });
       
-      console.log('🔄 [CLAIMS LOAD DEBUG] Loaded claims:', response.claims.length);
+      console.log(' [CLAIMS LOAD DEBUG] Loaded claims:', response.claims.length);
       response.claims.forEach(claim => {
         if (claim.adminNotes) {
-          console.log(`🔄 [CLAIMS LOAD DEBUG] Claim ${claim.id} has adminNotes:`, claim.adminNotes);
+          console.log(` [CLAIMS LOAD DEBUG] Claim ${claim.id} has adminNotes:`, claim.adminNotes);
         }
       });
-      
-      // Sort claims: prioritize by opinion count, then finalized claims go to the bottom
+
       const sortedClaims = response.claims.sort((a, b) => {
-        // Priority order: 
-        // 1. Finalized claims (resolved/rejected) go to the bottom
+
         const aFinalized = a.status?.name === 'resuelto' || a.status?.name === 'rechazado';
         const bFinalized = b.status?.name === 'resuelto' || b.status?.name === 'rechazado';
         
         if (aFinalized && !bFinalized) return 1;
         if (!aFinalized && bFinalized) return -1;
-        
-        // 2. Within each group (active vs finalized), sort by opinion count (most opinions first)
+
         const aOpinionCount = (a.adhesion_counts?.support || 0) + (a.adhesion_counts?.disagree || 0);
         const bOpinionCount = (b.adhesion_counts?.support || 0) + (b.adhesion_counts?.disagree || 0);
         
         if (aOpinionCount !== bOpinionCount) {
-          return bOpinionCount - aOpinionCount; // More opinions first
+          return bOpinionCount - aOpinionCount;
         }
-        
-        // 3. If same opinion count, sort by updated date (newest first)
+
         return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
       });
       
@@ -201,14 +193,12 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
     }
   }, [token, currentPage, selectedCategory, selectedStatus, searchTerm]);
 
-  // Load claims when modal opens or filters change
   useEffect(() => {
     if (isOpen) {
       loadClaims();
     }
   }, [isOpen, loadClaims]);
 
-  // Filter claims by date when claims change or date filter changes
   useEffect(() => {
     if (claims.length === 0) {
       setFilteredClaims([]);
@@ -217,7 +207,6 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
 
     let filtered = claims;
 
-    // Apply date filtering
     if (dateFilterOption && dateFilterOption.value !== 'all') {
       const now = new Date();
       let startDate: Date | null = null;
@@ -263,7 +252,6 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
           break;
         }
         case 'custom': {
-          // For custom dates, we'll use the startDate and endDate from the dateFilterOption
           if (dateFilterOption.startDate && dateFilterOption.endDate) {
             startDate = new Date(dateFilterOption.startDate);
             endDate = new Date(dateFilterOption.endDate);
@@ -276,7 +264,7 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
       }
 
       if (startDate && endDate) {
-        console.log('🔍 [CLAIMS DATE FILTER DEBUG] Filtering claims with date range:', {
+        console.log(' [CLAIMS DATE FILTER DEBUG] Filtering claims with date range:', {
           filterOption: dateFilterOption.value,
           startDate,
           endDate
@@ -284,7 +272,6 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
         
         filtered = filtered.filter(claim => {
           const claimDate = new Date(claim.createdAt);
-          // Normalize to start of day for comparison
           claimDate.setHours(0, 0, 0, 0);
           
           const normalizedStartDate = new Date(startDate!);
@@ -296,7 +283,7 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
           const isInRange = claimDate >= normalizedStartDate && claimDate <= normalizedEndDate;
           
           if (dateFilterOption.value === 'custom') {
-            console.log('🔍 [CUSTOM CLAIMS FILTER] Checking claim:', {
+            console.log(' [CUSTOM CLAIMS FILTER] Checking claim:', {
               claimId: claim.id,
               createdAt: claim.createdAt,
               normalizedClaimDate: claimDate,
@@ -309,14 +296,13 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
           return isInRange;
         });
         
-        console.log(`🔍 [CLAIMS DATE FILTER DEBUG] Filtered to ${filtered.length} claims`);
+        console.log(` [CLAIMS DATE FILTER DEBUG] Filtered to ${filtered.length} claims`);
       }
     }
 
     setFilteredClaims(filtered);
   }, [claims, dateFilterOption]);
 
-  // Handle status update
   const handleStatusUpdate = async (claim: Claim, newStatus: string, adminNotes?: string) => {
     try {
       console.log('📝 [ADMIN NOTES DEBUG] Updating claim:', claim.id);
@@ -343,7 +329,6 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
     }
   };
 
-  // Handle delete
   const handleDelete = async () => {
     if (!claimToDelete) return;
     

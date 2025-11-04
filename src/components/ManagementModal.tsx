@@ -14,7 +14,6 @@ interface ManagementModalProps<T extends BaseItem> {
   onClose: () => void;
   token: string;
   
-  // API functions
   loadItems: (token: string) => Promise<T[]>;
   createItem: (token: string, data: any) => Promise<T>;
   updateItem: (token: string, id: number, data: any) => Promise<T>;
@@ -24,23 +23,19 @@ interface ManagementModalProps<T extends BaseItem> {
   renderCreateForm: (formData: any, setFormData: (data: any) => void, onSubmit: (e: React.FormEvent) => void, processing: boolean) => React.ReactNode;
   renderEditForm: (item: T, formData: any, setFormData: (data: any) => void, onSubmit: (e: React.FormEvent) => void, processing: boolean) => React.ReactNode;
   
-  // Configuration
   searchFields: (keyof T)[];
   initialFormData: any;
   getFormDataFromItem: (item: T) => any;
   
-  // Optional
   additionalFilters?: React.ReactNode;
   customFilter?: (items: T[], searchTerm: string, filters?: any) => T[];
   emptyStateMessage?: string;
   createButtonText?: string;
   
-  // Custom success messages
   createSuccessMessage?: string;
   updateSuccessMessage?: string;
   deleteSuccessMessage?: string;
   
-  // Custom success callbacks (if provided, these will override the default toast)
   onCreateSuccess?: (item: T) => void;
   onUpdateSuccess?: (item: T) => void;
   onDeleteSuccess?: (deletedId: number) => void;
@@ -129,11 +124,9 @@ function ManagementModal<T extends BaseItem>({
 
     try {
       const newItem = await createItem(token, formData);
-      // Refresh the entire list to ensure we have complete data
       const itemsData = await loadItems(token);
       setItems(Array.isArray(itemsData) ? itemsData : []);
       
-      // Use custom callback if provided, otherwise show default toast
       if (onCreateSuccess) {
         onCreateSuccess(newItem);
       } else {
@@ -157,11 +150,9 @@ function ManagementModal<T extends BaseItem>({
 
     try {
       const updatedItem = await updateItem(token, selectedItem.id, formData);
-      // Refresh the entire list to ensure we have complete data (same as handleCreate)
       const itemsData = await loadItems(token);
       setItems(Array.isArray(itemsData) ? itemsData : []);
       
-      // Use custom callback if provided, otherwise show default toast
       if (onUpdateSuccess) {
         onUpdateSuccess(updatedItem);
       } else {
@@ -193,8 +184,7 @@ function ManagementModal<T extends BaseItem>({
     try {
       await deleteItem(token, itemToDelete.id);
       setItems(prev => prev.filter(item => item.id !== itemToDelete.id));
-      
-      // Use custom callback if provided, otherwise show default toast
+
       if (onDeleteSuccess) {
         onDeleteSuccess(itemToDelete.id);
       } else {
@@ -205,7 +195,6 @@ function ManagementModal<T extends BaseItem>({
     } catch (error) {
       console.error("Error deleting item:", error);
       
-      // Handle specific error messages
       let errorMessage = `Error al eliminar ${title.toLowerCase()}`;
       if (error instanceof Error) {
         const message = error.message.toLowerCase();
@@ -297,7 +286,7 @@ function ManagementModal<T extends BaseItem>({
               </div>
 
               {/* Items List */}
-              <div className="flex-1 overflow-y-auto p-6">
+              <div className="flex-1 overflow-y-auto p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {loading ? (
                   <div className="text-center py-8">
                     <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
