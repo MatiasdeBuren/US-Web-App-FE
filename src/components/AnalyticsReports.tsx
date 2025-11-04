@@ -44,10 +44,24 @@ interface HourlyData {
   amenities: { [key: string]: number };
 }
 
+interface MonthlyClaimData {
+  month?: string;
+  monthLabel?: string;
+  label?: string;
+  nuevo: number;
+  en_progreso: number;
+  resuelto: number;
+  cerrado: number;
+  total: number;
+}
+
 const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, token }) => {
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'reservations' | 'claims'>('reservations');
+  const [claimsPeriod, setClaimsPeriod] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
   const [amenityStats, setAmenityStats] = useState<AmenityStats[]>([]);
   const [hourlyData, setHourlyData] = useState<HourlyData[]>([]);
+  const [monthlyClaimsData, setMonthlyClaimsData] = useState<MonthlyClaimData[]>([]);
   const [allReservations, setAllReservations] = useState<any[]>([]);
   const [selectedAmenity, setSelectedAmenity] = useState<string>('all');
   const [dateFilterOption, setDateFilterOption] = useState<DateFilterOption | null>(null);
@@ -138,32 +152,41 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
   const loadAnalyticsData = React.useCallback(async () => {
     try {
       setLoading(true);
-      console.log(' [ANALYTICS] Loading reservations data...');
+      console.log(' [ANALYTICS] Loading data...');
       
-      const reservations = await getAdminReservations(token, { limit: 1000 }); // Get more data for analysis
-      
-      console.log('[ANALYTICS] Processing', reservations.length, 'reservations');
-
-      setAllReservations(reservations);
-      
-      const uniqueAmenities = Array.from(
-        new Set(reservations.map(r => r.amenity?.id).filter(Boolean))
-      ).map(id => {
-        const reservation = reservations.find(r => r.amenity?.id === id);
-        return {
-          id: id!,
-          name: reservation?.amenity?.name || 'Desconocido'
-        };
-      });
-      setAvailableAmenities(uniqueAmenities);
-
-      processAndSetData(reservations);
+      if (activeTab === 'reservations') {
+        const reservations = await getAdminReservations(token, { limit: 1000 });
+        console.log('[ANALYTICS] Processing', reservations.length, 'reservations');
+        setAllReservations(reservations);
+        
+        const uniqueAmenities = Array.from(
+          new Set(reservations.map(r => r.amenity?.id).filter(Boolean))
+        ).map(id => {
+          const reservation = reservations.find(r => r.amenity?.id === id);
+          return {
+            id: id!,
+            name: reservation?.amenity?.name || 'Desconocido'
+          };
+        });
+        setAvailableAmenities(uniqueAmenities);
+        processAndSetData(reservations);
+      } else {
+        const periodParam = claimsPeriod === 'daily' ? 'days=30' : claimsPeriod === 'weekly' ? 'weeks=12' : 'months=6';
+        const claimsStats = await fetch(`${import.meta.env.VITE_API_URL}/admin/claims/stats?period=${claimsPeriod}&${periodParam}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }).then(res => res.json()).catch(() => ({ data: [] }));
+        
+        setMonthlyClaimsData(claimsStats.data || []);
+      }
     } catch (error) {
       console.error('❌ [ANALYTICS] Error loading data:', error);
     } finally {
       setLoading(false);
     }
-  }, [token, processAndSetData]);
+  }, [token, activeTab, claimsPeriod, processAndSetData]);
 
   useEffect(() => {
     if (isOpen) {
@@ -333,10 +356,72 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
 
           {/* Filters Section */}
           <div className="flex-shrink-0 p-6 border-b border-gray-100">
-            <div className="flex gap-4 items-center">
-              <h3 className="text-lg font-medium text-gray-900">Filtros</h3>
-              
-              <div className="flex gap-2 ml-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setActiveTab('reservations')}
+                  className={`px-4 py-2 rounded-xl font-medium transition-all ${
+                    activeTab === 'reservations'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Reservas
+                </button>
+                <button
+                  onClick={() => setActiveTab('claims')}
+                  className={`px-4 py-2 rounded-xl font-medium transition-all ${
+                    activeTab === 'claims'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Reclamos
+                </button>
+              </div>
+
+              {activeTab === 'claims' && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setClaimsPeriod('daily')}
+                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                      claimsPeriod === 'daily'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Diario
+                  </button>
+                  <button
+                    onClick={() => setClaimsPeriod('weekly')}
+                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                      claimsPeriod === 'weekly'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Semanal
+                  </button>
+                  <button
+                    onClick={() => setClaimsPeriod('monthly')}
+                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                      claimsPeriod === 'monthly'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Mensual
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {activeTab === 'reservations' && (
+              <>
+                <div className="flex gap-4 items-center">
+                  <h3 className="text-lg font-medium text-gray-900">Filtros</h3>
+                  
+                  <div className="flex gap-2 ml-auto">
                 {/* Amenity Filter Button */}
                 <button
                   onClick={() => setShowAmenityFilterModal(true)}
@@ -387,6 +472,8 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                 </div>
               </div>
             )}
+              </>
+            )}
           </div>
 
           {/* Content */}
@@ -395,11 +482,13 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
               <div className="flex items-center justify-center py-20">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Cargando datos de análisis...</p>
+                  <p className="text-gray-600">Cargando datos...</p>
                 </div>
               </div>
             ) : (
               <div className="space-y-8">
+                {activeTab === 'reservations' ? (
+                  <>
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   <motion.div
@@ -601,6 +690,291 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                     </div>
                   )}
                 </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 }}
+                  className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
+                >
+                  <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-purple-600" />
+                    Evolución de Reclamos
+                  </h3>
+                  
+                  {monthlyClaimsData.length > 0 ? (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                          <span className="text-sm text-gray-700">Nuevo</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                          <span className="text-sm text-gray-700">En Progreso</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                          <span className="text-sm text-gray-700">Resuelto</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                          <span className="text-sm text-gray-700">Cerrado</span>
+                        </div>
+                      </div>
+
+                      <div className="relative h-80 border-l border-b border-gray-200 pl-8 pb-8">
+                        <div className="absolute left-0 top-0 bottom-8 flex flex-col justify-between text-xs text-gray-500">
+                          {Array.from({ length: 6 }, (_, i) => {
+                            const maxValue = Math.max(...monthlyClaimsData.map(d => d.total), 10);
+                            const value = Math.ceil((maxValue * (5 - i)) / 5);
+                            return (
+                              <div key={i} className="flex items-center">
+                                <span className="w-8 text-right">{value}</span>
+                                <div className="ml-2 w-2 h-px bg-gray-200"></div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <div className="h-full flex items-end justify-around gap-2">
+                          {monthlyClaimsData.map((data, index) => {
+                            const maxValue = Math.max(...monthlyClaimsData.map(d => d.total), 10);
+                            const totalHeight = (data.total / maxValue) * 100;
+                            const nuevoHeight = (data.nuevo / data.total) * 100;
+                            const progresoHeight = (data.en_progreso / data.total) * 100;
+                            const resueltoHeight = (data.resuelto / data.total) * 100;
+                            const cerradoHeight = (data.cerrado / data.total) * 100;
+
+                            return (
+                              <div key={data.month} className="flex-1 flex flex-col items-center gap-2">
+                                <div className="relative w-full flex flex-col-reverse" style={{ height: `${totalHeight}%`, minHeight: data.total > 0 ? '20px' : '0' }}>
+                                  {data.nuevo > 0 && (
+                                    <motion.div
+                                      initial={{ height: 0 }}
+                                      animate={{ height: `${nuevoHeight}%` }}
+                                      transition={{ delay: index * 0.1, duration: 0.5 }}
+                                      className="bg-blue-500 w-full"
+                                      title={`Nuevo: ${data.nuevo}`}
+                                    />
+                                  )}
+                                  {data.en_progreso > 0 && (
+                                    <motion.div
+                                      initial={{ height: 0 }}
+                                      animate={{ height: `${progresoHeight}%` }}
+                                      transition={{ delay: index * 0.1 + 0.1, duration: 0.5 }}
+                                      className="bg-yellow-500 w-full"
+                                      title={`En Progreso: ${data.en_progreso}`}
+                                    />
+                                  )}
+                                  {data.resuelto > 0 && (
+                                    <motion.div
+                                      initial={{ height: 0 }}
+                                      animate={{ height: `${resueltoHeight}%` }}
+                                      transition={{ delay: index * 0.1 + 0.2, duration: 0.5 }}
+                                      className="bg-green-500 w-full"
+                                      title={`Resuelto: ${data.resuelto}`}
+                                    />
+                                  )}
+                                  {data.cerrado > 0 && (
+                                    <motion.div
+                                      initial={{ height: 0 }}
+                                      animate={{ height: `${cerradoHeight}%` }}
+                                      transition={{ delay: index * 0.1 + 0.3, duration: 0.5 }}
+                                      className="bg-gray-500 w-full"
+                                      title={`Cerrado: ${data.cerrado}`}
+                                    />
+                                  )}
+                                </div>
+                                <div className="text-xs text-gray-600 text-center transform -rotate-45 origin-top-left whitespace-nowrap mt-4">
+                                  {data.monthLabel || data.label}
+                                </div>
+                                <div className="text-xs font-medium text-gray-900">
+                                  {data.total}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-600">
+                            {monthlyClaimsData.reduce((sum, d) => sum + d.nuevo, 0)}
+                          </div>
+                          <div className="text-sm text-gray-600">Nuevos</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-yellow-600">
+                            {monthlyClaimsData.reduce((sum, d) => sum + d.en_progreso, 0)}
+                          </div>
+                          <div className="text-sm text-gray-600">En Progreso</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-green-600">
+                            {monthlyClaimsData.reduce((sum, d) => sum + d.resuelto, 0)}
+                          </div>
+                          <div className="text-sm text-gray-600">Resueltos</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-gray-600">
+                            {monthlyClaimsData.reduce((sum, d) => sum + d.cerrado, 0)}
+                          </div>
+                          <div className="text-sm text-gray-600">Cerrados</div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-gray-500">
+                      <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No hay datos de reclamos para mostrar</p>
+                    </div>
+                  )}
+                </motion.div>
+                  </>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
+                  >
+                    <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-purple-600" />
+                      Evolución de Reclamos
+                    </h3>
+                    
+                    {monthlyClaimsData.length > 0 ? (
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                            <span className="text-sm text-gray-700">Nuevo</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                            <span className="text-sm text-gray-700">En Progreso</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                            <span className="text-sm text-gray-700">Resuelto</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                            <span className="text-sm text-gray-700">Cerrado</span>
+                          </div>
+                        </div>
+
+                        <div className="relative h-80 border-l border-b border-gray-200 pl-8 pb-8">
+                          <div className="absolute left-0 top-0 bottom-8 flex flex-col justify-between text-xs text-gray-500">
+                            {Array.from({ length: 6 }, (_, i) => {
+                              const maxValue = Math.max(...monthlyClaimsData.map(d => d.total), 10);
+                              const value = Math.ceil((maxValue * (5 - i)) / 5);
+                              return (
+                                <div key={i} className="flex items-center">
+                                  <span className="w-8 text-right">{value}</span>
+                                  <div className="ml-2 w-2 h-px bg-gray-200"></div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          <div className="h-full flex items-end justify-around gap-2">
+                            {monthlyClaimsData.map((data, index) => {
+                              const maxValue = Math.max(...monthlyClaimsData.map(d => d.total), 10);
+                              const totalHeight = (data.total / maxValue) * 100;
+                              const nuevoHeight = (data.nuevo / data.total) * 100;
+                              const progresoHeight = (data.en_progreso / data.total) * 100;
+                              const resueltoHeight = (data.resuelto / data.total) * 100;
+                              const cerradoHeight = (data.cerrado / data.total) * 100;
+
+                              return (
+                                <div key={data.month || index} className="flex-1 flex flex-col items-center gap-2">
+                                  <div className="relative w-full flex flex-col-reverse" style={{ height: `${totalHeight}%`, minHeight: data.total > 0 ? '20px' : '0' }}>
+                                    {data.nuevo > 0 && (
+                                      <motion.div
+                                        initial={{ height: 0 }}
+                                        animate={{ height: `${nuevoHeight}%` }}
+                                        transition={{ delay: index * 0.1, duration: 0.5 }}
+                                        className="bg-blue-500 w-full"
+                                        title={`Nuevo: ${data.nuevo}`}
+                                      />
+                                    )}
+                                    {data.en_progreso > 0 && (
+                                      <motion.div
+                                        initial={{ height: 0 }}
+                                        animate={{ height: `${progresoHeight}%` }}
+                                        transition={{ delay: index * 0.1 + 0.1, duration: 0.5 }}
+                                        className="bg-yellow-500 w-full"
+                                        title={`En Progreso: ${data.en_progreso}`}
+                                      />
+                                    )}
+                                    {data.resuelto > 0 && (
+                                      <motion.div
+                                        initial={{ height: 0 }}
+                                        animate={{ height: `${resueltoHeight}%` }}
+                                        transition={{ delay: index * 0.1 + 0.2, duration: 0.5 }}
+                                        className="bg-green-500 w-full"
+                                        title={`Resuelto: ${data.resuelto}`}
+                                      />
+                                    )}
+                                    {data.cerrado > 0 && (
+                                      <motion.div
+                                        initial={{ height: 0 }}
+                                        animate={{ height: `${cerradoHeight}%` }}
+                                        transition={{ delay: index * 0.1 + 0.3, duration: 0.5 }}
+                                        className="bg-gray-500 w-full"
+                                        title={`Cerrado: ${data.cerrado}`}
+                                      />
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-gray-600 text-center transform -rotate-45 origin-top-left whitespace-nowrap mt-4">
+                                    {data.label || data.monthLabel}
+                                  </div>
+                                  <div className="text-xs font-medium text-gray-900">
+                                    {data.total}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-blue-600">
+                              {monthlyClaimsData.reduce((sum, d) => sum + d.nuevo, 0)}
+                            </div>
+                            <div className="text-sm text-gray-600">Nuevos</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-yellow-600">
+                              {monthlyClaimsData.reduce((sum, d) => sum + d.en_progreso, 0)}
+                            </div>
+                            <div className="text-sm text-gray-600">En Progreso</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-green-600">
+                              {monthlyClaimsData.reduce((sum, d) => sum + d.resuelto, 0)}
+                            </div>
+                            <div className="text-sm text-gray-600">Resueltos</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-gray-600">
+                              {monthlyClaimsData.reduce((sum, d) => sum + d.cerrado, 0)}
+                            </div>
+                            <div className="text-sm text-gray-600">Cerrados</div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-gray-500">
+                        <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>No hay datos de reclamos para mostrar</p>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
               </div>
             )}
           </div>
