@@ -740,54 +740,54 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                         <div className="h-full flex items-end justify-around gap-2">
                           {monthlyClaimsData.map((data, index) => {
                             const maxValue = Math.max(...monthlyClaimsData.map(d => d.total), 10);
-                            const totalHeight = (data.total / maxValue) * 100;
-                            const nuevoHeight = (data.nuevo / data.total) * 100;
-                            const progresoHeight = (data.en_progreso / data.total) * 100;
-                            const resueltoHeight = (data.resuelto / data.total) * 100;
-                            const cerradoHeight = (data.cerrado / data.total) * 100;
+                            const totalHeight = data.total > 0 ? Math.max((data.total / maxValue) * 100, 5) : 0;
+                            const nuevoPercent = data.total > 0 ? (data.nuevo / data.total) * 100 : 0;
+                            const progresoPercent = data.total > 0 ? (data.en_progreso / data.total) * 100 : 0;
+                            const resueltoPercent = data.total > 0 ? (data.resuelto / data.total) * 100 : 0;
+                            const cerradoPercent = data.total > 0 ? (data.cerrado / data.total) * 100 : 0;
 
                             return (
-                              <div key={data.month} className="flex-1 flex flex-col items-center gap-2">
-                                <div className="relative w-full flex flex-col-reverse" style={{ height: `${totalHeight}%`, minHeight: data.total > 0 ? '20px' : '0' }}>
-                                  {data.nuevo > 0 && (
+                              <div key={`${data.month}-${index}`} className="flex-1 flex flex-col items-center gap-2">
+                                <div className="relative w-full flex flex-col" style={{ height: `${totalHeight}%`, minHeight: data.total > 0 ? '30px' : '0' }}>
+                                  {data.cerrado > 0 && (
                                     <motion.div
                                       initial={{ height: 0 }}
-                                      animate={{ height: `${nuevoHeight}%` }}
-                                      transition={{ delay: index * 0.1, duration: 0.5 }}
-                                      className="bg-blue-500 w-full"
-                                      title={`Nuevo: ${data.nuevo}`}
-                                    />
-                                  )}
-                                  {data.en_progreso > 0 && (
-                                    <motion.div
-                                      initial={{ height: 0 }}
-                                      animate={{ height: `${progresoHeight}%` }}
-                                      transition={{ delay: index * 0.1 + 0.1, duration: 0.5 }}
-                                      className="bg-yellow-500 w-full"
-                                      title={`En Progreso: ${data.en_progreso}`}
+                                      animate={{ height: `${cerradoPercent}%` }}
+                                      transition={{ delay: index * 0.05, duration: 0.4 }}
+                                      className="bg-gray-500 w-full"
+                                      title={`Cerrado: ${data.cerrado}`}
                                     />
                                   )}
                                   {data.resuelto > 0 && (
                                     <motion.div
                                       initial={{ height: 0 }}
-                                      animate={{ height: `${resueltoHeight}%` }}
-                                      transition={{ delay: index * 0.1 + 0.2, duration: 0.5 }}
+                                      animate={{ height: `${resueltoPercent}%` }}
+                                      transition={{ delay: index * 0.05 + 0.1, duration: 0.4 }}
                                       className="bg-green-500 w-full"
                                       title={`Resuelto: ${data.resuelto}`}
                                     />
                                   )}
-                                  {data.cerrado > 0 && (
+                                  {data.en_progreso > 0 && (
                                     <motion.div
                                       initial={{ height: 0 }}
-                                      animate={{ height: `${cerradoHeight}%` }}
-                                      transition={{ delay: index * 0.1 + 0.3, duration: 0.5 }}
-                                      className="bg-gray-500 w-full"
-                                      title={`Cerrado: ${data.cerrado}`}
+                                      animate={{ height: `${progresoPercent}%` }}
+                                      transition={{ delay: index * 0.05 + 0.2, duration: 0.4 }}
+                                      className="bg-yellow-500 w-full"
+                                      title={`En Progreso: ${data.en_progreso}`}
+                                    />
+                                  )}
+                                  {data.nuevo > 0 && (
+                                    <motion.div
+                                      initial={{ height: 0 }}
+                                      animate={{ height: `${nuevoPercent}%` }}
+                                      transition={{ delay: index * 0.05 + 0.3, duration: 0.4 }}
+                                      className="bg-blue-500 w-full"
+                                      title={`Nuevo: ${data.nuevo}`}
                                     />
                                   )}
                                 </div>
-                                <div className="text-xs text-gray-600 text-center transform -rotate-45 origin-top-left whitespace-nowrap mt-4">
-                                  {data.monthLabel || data.label}
+                                <div className="text-xs text-gray-600 text-center whitespace-nowrap mt-2">
+                                  {data.label || data.monthLabel || data.month}
                                 </div>
                                 <div className="text-xs font-medium text-gray-900">
                                   {data.total}
@@ -882,54 +882,54 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                           <div className="h-full flex items-end justify-around gap-2">
                             {monthlyClaimsData.map((data, index) => {
                               const maxValue = Math.max(...monthlyClaimsData.map(d => d.total), 10);
-                              const totalHeight = (data.total / maxValue) * 100;
-                              const nuevoHeight = (data.nuevo / data.total) * 100;
-                              const progresoHeight = (data.en_progreso / data.total) * 100;
-                              const resueltoHeight = (data.resuelto / data.total) * 100;
-                              const cerradoHeight = (data.cerrado / data.total) * 100;
+                              const totalHeight = data.total > 0 ? Math.max((data.total / maxValue) * 100, 5) : 0;
+                              const nuevoPercent = data.total > 0 ? (data.nuevo / data.total) * 100 : 0;
+                              const progresoPercent = data.total > 0 ? (data.en_progreso / data.total) * 100 : 0;
+                              const resueltoPercent = data.total > 0 ? (data.resuelto / data.total) * 100 : 0;
+                              const cerradoPercent = data.total > 0 ? (data.cerrado / data.total) * 100 : 0;
 
                               return (
-                                <div key={data.month || index} className="flex-1 flex flex-col items-center gap-2">
-                                  <div className="relative w-full flex flex-col-reverse" style={{ height: `${totalHeight}%`, minHeight: data.total > 0 ? '20px' : '0' }}>
-                                    {data.nuevo > 0 && (
+                                <div key={`${data.month}-${index}`} className="flex-1 flex flex-col items-center gap-2">
+                                  <div className="relative w-full flex flex-col" style={{ height: `${totalHeight}%`, minHeight: data.total > 0 ? '30px' : '0' }}>
+                                    {data.cerrado > 0 && (
                                       <motion.div
                                         initial={{ height: 0 }}
-                                        animate={{ height: `${nuevoHeight}%` }}
-                                        transition={{ delay: index * 0.1, duration: 0.5 }}
-                                        className="bg-blue-500 w-full"
-                                        title={`Nuevo: ${data.nuevo}`}
-                                      />
-                                    )}
-                                    {data.en_progreso > 0 && (
-                                      <motion.div
-                                        initial={{ height: 0 }}
-                                        animate={{ height: `${progresoHeight}%` }}
-                                        transition={{ delay: index * 0.1 + 0.1, duration: 0.5 }}
-                                        className="bg-yellow-500 w-full"
-                                        title={`En Progreso: ${data.en_progreso}`}
+                                        animate={{ height: `${cerradoPercent}%` }}
+                                        transition={{ delay: index * 0.05, duration: 0.4 }}
+                                        className="bg-gray-500 w-full"
+                                        title={`Cerrado: ${data.cerrado}`}
                                       />
                                     )}
                                     {data.resuelto > 0 && (
                                       <motion.div
                                         initial={{ height: 0 }}
-                                        animate={{ height: `${resueltoHeight}%` }}
-                                        transition={{ delay: index * 0.1 + 0.2, duration: 0.5 }}
+                                        animate={{ height: `${resueltoPercent}%` }}
+                                        transition={{ delay: index * 0.05 + 0.1, duration: 0.4 }}
                                         className="bg-green-500 w-full"
                                         title={`Resuelto: ${data.resuelto}`}
                                       />
                                     )}
-                                    {data.cerrado > 0 && (
+                                    {data.en_progreso > 0 && (
                                       <motion.div
                                         initial={{ height: 0 }}
-                                        animate={{ height: `${cerradoHeight}%` }}
-                                        transition={{ delay: index * 0.1 + 0.3, duration: 0.5 }}
-                                        className="bg-gray-500 w-full"
-                                        title={`Cerrado: ${data.cerrado}`}
+                                        animate={{ height: `${progresoPercent}%` }}
+                                        transition={{ delay: index * 0.05 + 0.2, duration: 0.4 }}
+                                        className="bg-yellow-500 w-full"
+                                        title={`En Progreso: ${data.en_progreso}`}
+                                      />
+                                    )}
+                                    {data.nuevo > 0 && (
+                                      <motion.div
+                                        initial={{ height: 0 }}
+                                        animate={{ height: `${nuevoPercent}%` }}
+                                        transition={{ delay: index * 0.05 + 0.3, duration: 0.4 }}
+                                        className="bg-blue-500 w-full"
+                                        title={`Nuevo: ${data.nuevo}`}
                                       />
                                     )}
                                   </div>
-                                  <div className="text-xs text-gray-600 text-center transform -rotate-45 origin-top-left whitespace-nowrap mt-4">
-                                    {data.label || data.monthLabel}
+                                  <div className="text-xs text-gray-600 text-center whitespace-nowrap mt-2">
+                                    {data.label || data.monthLabel || data.month}
                                   </div>
                                   <div className="text-xs font-medium text-gray-900">
                                     {data.total}
