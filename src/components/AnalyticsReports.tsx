@@ -713,23 +713,23 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                         Evolución de Reclamos
                       </h3>
                       
-                      {claimsPeriod === 'daily' && (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => setDayOffset(prev => prev + 7)}
-                            className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
-                          >
-                            Anterior
-                          </button>
-                          <button
-                            onClick={() => setDayOffset(prev => Math.max(0, prev - 7))}
-                            disabled={dayOffset === 0}
-                            className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Siguiente
-                          </button>
-                        </div>
-                      )}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setDayOffset(prev => prev + (claimsPeriod === 'daily' ? 7 : claimsPeriod === 'weekly' ? 4 : 12))}
+                          className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm flex items-center gap-1"
+                        >
+                          <span>←</span>
+                          <span>Anterior</span>
+                        </button>
+                        <button
+                          onClick={() => setDayOffset(prev => Math.max(0, prev - (claimsPeriod === 'daily' ? 7 : claimsPeriod === 'weekly' ? 4 : 12)))}
+                          disabled={dayOffset === 0}
+                          className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                        >
+                          <span>Siguiente</span>
+                          <span>→</span>
+                        </button>
+                      </div>
                     </div>
                     
                     {monthlyClaimsData.length > 0 ? (
@@ -753,77 +753,114 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                           </div>
                         </div>
 
-                        <div className="space-y-4">
-                          {monthlyClaimsData.map((data, index) => {
+                        <div className="relative h-96 mt-6">
+                          {(() => {
                             const maxValue = Math.max(...monthlyClaimsData.map(d => d.total), 1);
+                            const step = maxValue <= 4 ? 1 : Math.ceil(maxValue / 4);
+                            const maxYValue = Math.max(Math.ceil(maxValue / step) * step, 1);
+                            const numTicks = Math.ceil(maxYValue / step) + 1;
+                            
                             return (
-                              <div key={`${data.month}-${index}`} className="space-y-2">
-                                <div className="flex items-center justify-between text-sm">
-                                  <span className="font-medium text-gray-700 min-w-[100px]">
-                                    {data.label || data.monthLabel || data.month}
-                                  </span>
-                                  <span className="text-gray-500 ml-auto mr-2">
-                                    Total: {data.total}
-                                  </span>
+                              <>
+                                <div className="absolute left-0 top-0 bottom-12 w-12 flex flex-col justify-between text-xs text-gray-500 pr-2">
+                                  {Array.from({ length: numTicks }, (_, i) => {
+                                    const value = (numTicks - 1 - i) * step;
+                                    return (
+                                      <div key={i} className="flex items-center justify-end">
+                                        <span>{value}</span>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
-                                {data.total > 0 ? (
-                                  <div className="flex gap-1 h-8">
-                                    {data.nuevo > 0 && (
-                                      <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${Math.max((data.nuevo / maxValue) * 100, 5)}%` }}
-                                        transition={{ delay: index * 0.05, duration: 0.4 }}
-                                        className="bg-blue-500 rounded flex items-center justify-center text-white text-xs font-medium min-w-[30px]"
-                                        title={`Nuevo: ${data.nuevo}`}
-                                      >
-                                        <span className="px-1">{data.nuevo}</span>
-                                      </motion.div>
-                                    )}
-                                    {data.en_progreso > 0 && (
-                                      <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${Math.max((data.en_progreso / maxValue) * 100, 5)}%` }}
-                                        transition={{ delay: index * 0.05 + 0.1, duration: 0.4 }}
-                                        className="bg-yellow-500 rounded flex items-center justify-center text-white text-xs font-medium min-w-[30px]"
-                                        title={`En Progreso: ${data.en_progreso}`}
-                                      >
-                                        <span className="px-1">{data.en_progreso}</span>
-                                      </motion.div>
-                                    )}
-                                    {data.resuelto > 0 && (
-                                      <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${Math.max((data.resuelto / maxValue) * 100, 5)}%` }}
-                                        transition={{ delay: index * 0.05 + 0.2, duration: 0.4 }}
-                                        className="bg-green-500 rounded flex items-center justify-center text-white text-xs font-medium min-w-[30px]"
-                                        title={`Resuelto: ${data.resuelto}`}
-                                      >
-                                        <span className="px-1">{data.resuelto}</span>
-                                      </motion.div>
-                                    )}
-                                    {data.cerrado > 0 && (
-                                      <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${Math.max((data.cerrado / maxValue) * 100, 5)}%` }}
-                                        transition={{ delay: index * 0.05 + 0.3, duration: 0.4 }}
-                                        className="bg-gray-500 rounded flex items-center justify-center text-white text-xs font-medium min-w-[30px]"
-                                        title={`Cerrado: ${data.cerrado}`}
-                                      >
-                                        <span className="px-1">{data.cerrado}</span>
-                                      </motion.div>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <div className="h-8 flex items-center">
-                                    <span className="text-sm text-gray-400">Sin reclamos</span>
-                                  </div>
-                                )}
-                              </div>
+                                
+                                <div className="absolute left-12 top-0 right-0 bottom-12 flex items-end justify-around gap-4 border-l border-b border-gray-200 pl-4">
+                                  {monthlyClaimsData.map((data, index) => {
+                                    const barHeightPx = (data.total / maxYValue) * 100; 
+                                    
+                                    return (
+                                      <div key={`${data.month}-${index}`} className="flex-1 flex flex-col items-center max-w-[100px] relative" style={{ height: '100%' }}>
+                                        <div className="w-full flex-1 flex flex-col justify-end items-center pb-12">
+                                          {data.total > 0 && (
+                                            <>
+                                              {/* Barra apilada */}
+                                              <div 
+                                                className="w-full rounded overflow-hidden flex flex-col-reverse"
+                                                style={{ 
+                                                  height: `${barHeightPx}%`
+                                                }}
+                                              >
+                                                {/* Nuevo (arriba) */}
+                                                {data.nuevo > 0 && (
+                                                  <div
+                                                    className="bg-blue-500 flex items-center justify-center text-white text-xs font-medium w-full"
+                                                    style={{ 
+                                                      flex: data.nuevo
+                                                    }}
+                                                    title={`Nuevo: ${data.nuevo}`}
+                                                  >
+                                                    <span>{data.nuevo}</span>
+                                                  </div>
+                                                )}
+                                                {/* En Progreso */}
+                                                {data.en_progreso > 0 && (
+                                                  <div
+                                                    className="bg-yellow-500 flex items-center justify-center text-white text-xs font-medium w-full"
+                                                    style={{ 
+                                                      flex: data.en_progreso
+                                                    }}
+                                                    title={`En Progreso: ${data.en_progreso}`}
+                                                  >
+                                                    <span>{data.en_progreso}</span>
+                                                  </div>
+                                                )}
+                                                {/* Resuelto */}
+                                                {data.resuelto > 0 && (
+                                                  <div
+                                                    className="bg-green-500 flex items-center justify-center text-white text-xs font-medium w-full"
+                                                    style={{ 
+                                                      flex: data.resuelto
+                                                    }}
+                                                    title={`Resuelto: ${data.resuelto}`}
+                                                  >
+                                                    <span>{data.resuelto}</span>
+                                                  </div>
+                                                )}
+                                                {/* Cerrado (abajo) */}
+                                                {data.cerrado > 0 && (
+                                                  <div
+                                                    className="bg-gray-500 flex items-center justify-center text-white text-xs font-medium w-full"
+                                                    style={{ 
+                                                      flex: data.cerrado
+                                                    }}
+                                                    title={`Cerrado: ${data.cerrado}`}
+                                                  >
+                                                    <span>{data.cerrado}</span>
+                                                  </div>
+                                                )}
+                                              </div>
+                                              
+                                              {/* Total */}
+                                              <div className="text-xs font-medium text-gray-900 mt-1">
+                                                {data.total}
+                                              </div>
+                                            </>
+                                          )}
+                                        </div>
+                                        
+                                        {/* Label */}
+                                        <div className="absolute bottom-0 left-0 right-0 text-xs text-gray-600 text-center whitespace-nowrap">
+                                          {data.label || data.monthLabel || data.month}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </>
                             );
-                          })}
+                          })()}
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100 mt-6">
                           <div className="text-center">
                             <div className="text-2xl font-bold text-blue-600">
                               {monthlyClaimsData.reduce((sum, d) => sum + d.nuevo, 0)}
