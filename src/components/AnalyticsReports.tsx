@@ -44,10 +44,25 @@ interface HourlyData {
   amenities: { [key: string]: number };
 }
 
+interface MonthlyClaimData {
+  month?: string;
+  monthLabel?: string;
+  label?: string;
+  nuevo: number;
+  en_progreso: number;
+  resuelto: number;
+  cerrado: number;
+  total: number;
+}
+
 const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, token }) => {
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'reservations' | 'claims'>('reservations');
+  const [claimsPeriod, setClaimsPeriod] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
+  const [dayOffset, setDayOffset] = useState(0);
   const [amenityStats, setAmenityStats] = useState<AmenityStats[]>([]);
   const [hourlyData, setHourlyData] = useState<HourlyData[]>([]);
+  const [monthlyClaimsData, setMonthlyClaimsData] = useState<MonthlyClaimData[]>([]);
   const [allReservations, setAllReservations] = useState<any[]>([]);
   const [selectedAmenity, setSelectedAmenity] = useState<string>('all');
   const [dateFilterOption, setDateFilterOption] = useState<DateFilterOption | null>(null);
@@ -126,7 +141,7 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
       }
     }
     
-    console.log(' [ANALYTICS] Filtered to', filteredReservations.length, 'reservations');
+    console.log('[ANALYTICS] Filtered to', filteredReservations.length, 'reservations');
     
     const processedStats = processReservationData(filteredReservations);
     const processedHourly = processHourlyData(filteredReservations);
@@ -138,32 +153,41 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
   const loadAnalyticsData = React.useCallback(async () => {
     try {
       setLoading(true);
-      console.log(' [ANALYTICS] Loading reservations data...');
+      console.log('[ANALYTICS] Loading data...');
       
-      const reservations = await getAdminReservations(token, { limit: 1000 }); // Get more data for analysis
-      
-      console.log('[ANALYTICS] Processing', reservations.length, 'reservations');
-
-      setAllReservations(reservations);
-      
-      const uniqueAmenities = Array.from(
-        new Set(reservations.map(r => r.amenity?.id).filter(Boolean))
-      ).map(id => {
-        const reservation = reservations.find(r => r.amenity?.id === id);
-        return {
-          id: id!,
-          name: reservation?.amenity?.name || 'Desconocido'
-        };
-      });
-      setAvailableAmenities(uniqueAmenities);
-
-      processAndSetData(reservations);
+      if (activeTab === 'reservations') {
+        const reservations = await getAdminReservations(token, { limit: 1000 });
+        console.log('[ANALYTICS] Processing', reservations.length, 'reservations');
+        setAllReservations(reservations);
+        
+        const uniqueAmenities = Array.from(
+          new Set(reservations.map(r => r.amenity?.id).filter(Boolean))
+        ).map(id => {
+          const reservation = reservations.find(r => r.amenity?.id === id);
+          return {
+            id: id!,
+            name: reservation?.amenity?.name || 'Desconocido'
+          };
+        });
+        setAvailableAmenities(uniqueAmenities);
+        processAndSetData(reservations);
+      } else {
+        const claimsStats = await fetch(`${import.meta.env.VITE_API_URL}/admin/claims/stats?period=${claimsPeriod}&offset=${dayOffset}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }).then(res => res.json()).catch(() => ({ data: [] }));
+        
+        console.log('[CLAIMS STATS]', claimsStats);
+        setMonthlyClaimsData(claimsStats.data || []);
+      }
     } catch (error) {
-      console.error('❌ [ANALYTICS] Error loading data:', error);
+      console.error('[ANALYTICS] Error loading data:', error);
     } finally {
       setLoading(false);
     }
-  }, [token, processAndSetData]);
+  }, [token, activeTab, claimsPeriod, dayOffset, processAndSetData]);
 
   useEffect(() => {
     if (isOpen) {
@@ -333,10 +357,81 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
 
           {/* Filters Section */}
           <div className="flex-shrink-0 p-6 border-b border-gray-100">
-            <div className="flex gap-4 items-center">
-              <h3 className="text-lg font-medium text-gray-900">Filtros</h3>
-              
-              <div className="flex gap-2 ml-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
+                <button
+                  onClick={() => setActiveTab('reservations')}
+                  className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${
+                    activeTab === 'reservations'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Reservas
+                </button>
+                <button
+                  onClick={() => setActiveTab('claims')}
+                  className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${
+                    activeTab === 'claims'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Reclamos
+                </button>
+              </div>
+
+              {activeTab === 'claims' && (
+                <div className="flex gap-1 p-1 bg-purple-50 rounded-lg">
+                  <button
+                    onClick={() => {
+                      setClaimsPeriod('daily');
+                      setDayOffset(0);
+                    }}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                      claimsPeriod === 'daily'
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'text-purple-700 hover:text-purple-900'
+                    }`}
+                  >
+                    Diario
+                  </button>
+                  <button
+                    onClick={() => {
+                      setClaimsPeriod('weekly');
+                      setDayOffset(0);
+                    }}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                      claimsPeriod === 'weekly'
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'text-purple-700 hover:text-purple-900'
+                    }`}
+                  >
+                    Semanal
+                  </button>
+                  <button
+                    onClick={() => {
+                      setClaimsPeriod('monthly');
+                      setDayOffset(0);
+                    }}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                      claimsPeriod === 'monthly'
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'text-purple-700 hover:text-purple-900'
+                    }`}
+                  >
+                    Mensual
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {activeTab === 'reservations' && (
+              <>
+                <div className="flex gap-4 items-center">
+                  <h3 className="text-lg font-medium text-gray-900">Filtros</h3>
+                  
+                  <div className="flex gap-2 ml-auto">
                 {/* Amenity Filter Button */}
                 <button
                   onClick={() => setShowAmenityFilterModal(true)}
@@ -387,6 +482,8 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                 </div>
               </div>
             )}
+              </>
+            )}
           </div>
 
           {/* Content */}
@@ -395,11 +492,13 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
               <div className="flex items-center justify-center py-20">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Cargando datos de análisis...</p>
+                  <p className="text-gray-600">Cargando datos...</p>
                 </div>
               </div>
             ) : (
               <div className="space-y-8">
+                {activeTab === 'reservations' ? (
+                  <>
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   <motion.div
@@ -601,6 +700,201 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                     </div>
                   )}
                 </motion.div>
+                  </>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-purple-600" />
+                        Evolución de Reclamos
+                      </h3>
+                      
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setDayOffset(prev => prev + (claimsPeriod === 'daily' ? 7 : claimsPeriod === 'weekly' ? 4 : 12))}
+                          className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm flex items-center gap-1"
+                        >
+                          <span>←</span>
+                          <span>Anterior</span>
+                        </button>
+                        <button
+                          onClick={() => setDayOffset(prev => Math.max(0, prev - (claimsPeriod === 'daily' ? 7 : claimsPeriod === 'weekly' ? 4 : 12)))}
+                          disabled={dayOffset === 0}
+                          className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                        >
+                          <span>Siguiente</span>
+                          <span>→</span>
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {monthlyClaimsData.length > 0 ? (
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                            <span className="text-sm text-gray-700">Nuevo</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                            <span className="text-sm text-gray-700">En Progreso</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                            <span className="text-sm text-gray-700">Resuelto</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                            <span className="text-sm text-gray-700">Cerrado</span>
+                          </div>
+                        </div>
+
+                        <div className="relative h-96 mt-6">
+                          {(() => {
+                            const maxValue = Math.max(...monthlyClaimsData.map(d => d.total), 1);
+                            const step = maxValue <= 4 ? 1 : Math.ceil(maxValue / 4);
+                            const maxYValue = Math.max(Math.ceil(maxValue / step) * step, 1);
+                            const numTicks = Math.ceil(maxYValue / step) + 1;
+                            
+                            return (
+                              <>
+                                <div className="absolute left-0 top-0 bottom-12 w-12 flex flex-col justify-between text-xs text-gray-500 pr-2">
+                                  {Array.from({ length: numTicks }, (_, i) => {
+                                    const value = (numTicks - 1 - i) * step;
+                                    return (
+                                      <div key={i} className="flex items-center justify-end">
+                                        <span>{value}</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                
+                                <div className="absolute left-12 top-0 right-0 bottom-12 flex items-end justify-around gap-4 border-l border-b border-gray-200 pl-4">
+                                  {monthlyClaimsData.map((data, index) => {
+                                    const barHeightPx = (data.total / maxYValue) * 100; 
+                                    
+                                    return (
+                                      <div key={`${data.month}-${index}`} className="flex-1 flex flex-col items-center max-w-[100px] relative" style={{ height: '100%' }}>
+                                        <div className="w-full flex-1 flex flex-col justify-end items-center pb-12">
+                                          {data.total > 0 && (
+                                            <>
+                                              {/* Barra apilada */}
+                                              <div 
+                                                className="w-full rounded overflow-hidden flex flex-col-reverse"
+                                                style={{ 
+                                                  height: `${barHeightPx}%`
+                                                }}
+                                              >
+                                                {/* Nuevo (arriba) */}
+                                                {data.nuevo > 0 && (
+                                                  <div
+                                                    className="bg-blue-500 flex items-center justify-center text-white text-xs font-medium w-full"
+                                                    style={{ 
+                                                      flex: data.nuevo
+                                                    }}
+                                                    title={`Nuevo: ${data.nuevo}`}
+                                                  >
+                                                    <span>{data.nuevo}</span>
+                                                  </div>
+                                                )}
+                                                {/* En Progreso */}
+                                                {data.en_progreso > 0 && (
+                                                  <div
+                                                    className="bg-yellow-500 flex items-center justify-center text-white text-xs font-medium w-full"
+                                                    style={{ 
+                                                      flex: data.en_progreso
+                                                    }}
+                                                    title={`En Progreso: ${data.en_progreso}`}
+                                                  >
+                                                    <span>{data.en_progreso}</span>
+                                                  </div>
+                                                )}
+                                                {/* Resuelto */}
+                                                {data.resuelto > 0 && (
+                                                  <div
+                                                    className="bg-green-500 flex items-center justify-center text-white text-xs font-medium w-full"
+                                                    style={{ 
+                                                      flex: data.resuelto
+                                                    }}
+                                                    title={`Resuelto: ${data.resuelto}`}
+                                                  >
+                                                    <span>{data.resuelto}</span>
+                                                  </div>
+                                                )}
+                                                {/* Cerrado (abajo) */}
+                                                {data.cerrado > 0 && (
+                                                  <div
+                                                    className="bg-gray-500 flex items-center justify-center text-white text-xs font-medium w-full"
+                                                    style={{ 
+                                                      flex: data.cerrado
+                                                    }}
+                                                    title={`Cerrado: ${data.cerrado}`}
+                                                  >
+                                                    <span>{data.cerrado}</span>
+                                                  </div>
+                                                )}
+                                              </div>
+                                              
+                                              {/* Total */}
+                                              <div className="text-xs font-medium text-gray-900 mt-1">
+                                                {data.total}
+                                              </div>
+                                            </>
+                                          )}
+                                        </div>
+                                        
+                                        {/* Label */}
+                                        <div className="absolute bottom-0 left-0 right-0 text-xs text-gray-600 text-center whitespace-nowrap">
+                                          {data.label || data.monthLabel || data.month}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100 mt-6">
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-blue-600">
+                              {monthlyClaimsData.reduce((sum, d) => sum + d.nuevo, 0)}
+                            </div>
+                            <div className="text-sm text-gray-600">Nuevos</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-yellow-600">
+                              {monthlyClaimsData.reduce((sum, d) => sum + d.en_progreso, 0)}
+                            </div>
+                            <div className="text-sm text-gray-600">En Progreso</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-green-600">
+                              {monthlyClaimsData.reduce((sum, d) => sum + d.resuelto, 0)}
+                            </div>
+                            <div className="text-sm text-gray-600">Resueltos</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-gray-600">
+                              {monthlyClaimsData.reduce((sum, d) => sum + d.cerrado, 0)}
+                            </div>
+                            <div className="text-sm text-gray-600">Cerrados</div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-gray-500">
+                        <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>No hay datos de reclamos para mostrar</p>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
               </div>
             )}
           </div>
