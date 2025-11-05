@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  X, 
-  BarChart3, 
-  Clock, 
-  Calendar, 
-  TrendingUp, 
+import {
+  X,
+  BarChart3,
+  Clock,
+  Calendar,
+  TrendingUp,
   Activity,
   PieChart,
   RefreshCw,
@@ -48,6 +48,8 @@ interface MonthlyClaimData {
   month?: string;
   monthLabel?: string;
   label?: string;
+  weekStart?: string;
+  weekEnd?: string;
   nuevo: number;
   en_progreso: number;
   resuelto: number;
@@ -69,16 +71,17 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
   const [showDateFilterModal, setShowDateFilterModal] = useState(false);
   const [showAmenityFilterModal, setShowAmenityFilterModal] = useState(false);
   const [availableAmenities, setAvailableAmenities] = useState<Array<{id: number, name: string}>>([]);
+  const [isLoadingClaims, setIsLoadingClaims] = useState(false);
 
   const processAndSetData = React.useCallback((reservations: any[]) => {
     let filteredReservations = [...reservations];
-    
+
     if (selectedAmenity !== 'all') {
-      filteredReservations = filteredReservations.filter(r => 
+      filteredReservations = filteredReservations.filter(r =>
         r.amenity?.name === selectedAmenity
       );
     }
-    
+
     if (dateFilterOption && dateFilterOption.value !== 'all') {
       const now = new Date();
       let startDate: Date | null = null;
@@ -140,12 +143,12 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
         });
       }
     }
-    
+
     console.log('[ANALYTICS] Filtered to', filteredReservations.length, 'reservations');
-    
+
     const processedStats = processReservationData(filteredReservations);
     const processedHourly = processHourlyData(filteredReservations);
-    
+
     setAmenityStats(processedStats);
     setHourlyData(processedHourly);
   }, [selectedAmenity, dateFilterOption]);
@@ -154,12 +157,12 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
     try {
       setLoading(true);
       console.log('[ANALYTICS] Loading data...');
-      
+
       if (activeTab === 'reservations') {
         const reservations = await getAdminReservations(token, { limit: 1000 });
         console.log('[ANALYTICS] Processing', reservations.length, 'reservations');
         setAllReservations(reservations);
-        
+
         const uniqueAmenities = Array.from(
           new Set(reservations.map(r => r.amenity?.id).filter(Boolean))
         ).map(id => {
@@ -172,15 +175,42 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
         setAvailableAmenities(uniqueAmenities);
         processAndSetData(reservations);
       } else {
+        setIsLoadingClaims(true);
+        console.log('[CLAIMS] Fetching stats - Period:', claimsPeriod, 'Offset:', dayOffset);
         const claimsStats = await fetch(`${import.meta.env.VITE_API_URL}/admin/claims/stats?period=${claimsPeriod}&offset=${dayOffset}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-        }).then(res => res.json()).catch(() => ({ data: [] }));
+        }).then(res => res.json()).catch((err) => {
+          console.error('[CLAIMS] Fetch error:', err);
+          return { data: [] };
+        });
+
+        console.log('[CLAIMS STATS] Response:', {
+          period: claimsStats.period,
+          offset: claimsStats.offset,
+          totalClaims: claimsStats.totalClaims,
+          dataLength: claimsStats.data?.length || 0,
+          weekRanges: claimsStats.data?.map((d: any) => `${d.weekStart || d.month} - ${d.weekEnd || ''}: ${d.total} claims`) || []
+        });
         
-        console.log('[CLAIMS STATS]', claimsStats);
-        setMonthlyClaimsData(claimsStats.data || []);
+        
+        if (claimsStats.data && Array.isArray(claimsStats.data)) {
+          const sumWeeklyTotals = claimsStats.data.reduce((sum: number, week: any) => sum + (week.total || 0), 0);
+          if (sumWeeklyTotals !== claimsStats.totalClaims) {
+            console.warn(`⚠️ [CLAIMS] Data mismatch: Sum of weekly totals (${sumWeeklyTotals}) ≠ Total claims (${claimsStats.totalClaims})`);
+          }
+        }
+        
+
+        if (claimsStats && Array.isArray(claimsStats.data)) {
+          setMonthlyClaimsData(claimsStats.data);
+        } else {
+          console.warn('[CLAIMS] Invalid response format or empty data');
+          setMonthlyClaimsData([]);
+        }
+        setIsLoadingClaims(false);
       }
     } catch (error) {
       console.error('[ANALYTICS] Error loading data:', error);
@@ -195,6 +225,11 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
     }
   }, [isOpen, loadAnalyticsData]);
 
+
+  useEffect(() => {
+    setDayOffset(0);
+  }, [claimsPeriod]);
+
   useEffect(() => {
     if (allReservations.length > 0) {
       processAndSetData(allReservations);
@@ -203,14 +238,14 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
 
   const processReservationData = (reservations: any[]): AmenityStats[] => {
     const amenityMap = new Map<string, any>();
-    
+
     reservations.forEach(reservation => {
       const amenityName = reservation.amenity?.name || 'Desconocido';
       const startTime = new Date(reservation.startTime);
       const endTime = new Date(reservation.endTime);
       const hour = startTime.getHours();
       const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-      
+
       if (!amenityMap.has(amenityName)) {
         amenityMap.set(amenityName, {
           id: reservation.amenity?.id || 0,
@@ -221,14 +256,14 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
           reservations: []
         });
       }
-      
+
       const stats = amenityMap.get(amenityName);
       stats.totalReservations++;
       stats.hourlyCount[hour]++;
       stats.totalDuration += duration;
       stats.reservations.push(reservation);
     });
-    
+
     const result: AmenityStats[] = Array.from(amenityMap.values()).map(stats => {
       const hourlyWithIndex = stats.hourlyCount.map((count: number, hour: number) => ({ hour, count }));
       const peakHours = hourlyWithIndex
@@ -239,10 +274,10 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
           ...h,
           label: `${h.hour.toString().padStart(2, '0')}:00`
         }));
-      
+
       const utilizationRate = stats.totalReservations > 0 ? Math.min((stats.totalReservations / 30) * 100, 100) : 0;
       const averageDuration = stats.totalReservations > 0 ? stats.totalDuration / stats.totalReservations : 0;
-      
+
       return {
         id: stats.id,
         name: stats.name,
@@ -252,13 +287,13 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
         averageDuration: Math.round(averageDuration * 10) / 10
       };
     });
-    
+
     return result.sort((a, b) => b.totalReservations - a.totalReservations);
   };
 
   const processHourlyData = (reservations: any[]): HourlyData[] => {
     const hourlyMap = new Map<number, any>();
-    
+
     for (let hour = 0; hour < 24; hour++) {
       hourlyMap.set(hour, {
         hour: `${hour.toString().padStart(2, '0')}:00`,
@@ -266,17 +301,17 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
         amenities: {}
       });
     }
-    
+
     reservations.forEach(reservation => {
       const startTime = new Date(reservation.startTime);
       const hour = startTime.getHours();
       const amenityName = reservation.amenity?.name || 'Desconocido';
-      
+
       const hourData = hourlyMap.get(hour);
       hourData.count++;
       hourData.amenities[amenityName] = (hourData.amenities[amenityName] || 0) + 1;
     });
-    
+
     return Array.from(hourlyMap.values());
   };
 
@@ -286,7 +321,7 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
 
   const getCurrentDateLabel = () => {
     if (!dateFilterOption || dateFilterOption.value === 'all') return 'Todas las fechas';
-    
+
     switch (dateFilterOption.value) {
       case 'today': return 'Hoy';
       case 'last-7-days': return 'Últimos 7 días';
@@ -294,7 +329,7 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
       case 'last-30-days': return 'Últimos 30 días';
       case 'last-90-days': return 'Últimos 90 días';
       case 'this-year': return 'Este año';
-      case 'custom': 
+      case 'custom':
         if (dateFilterOption.startDate && dateFilterOption.endDate) {
           const start = new Date(dateFilterOption.startDate).toLocaleDateString('es-ES');
           const end = new Date(dateFilterOption.endDate).toLocaleDateString('es-ES');
@@ -314,7 +349,7 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
 
   return (
     <AnimatePresence>
-      <div 
+      <div
         className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50"
         onClick={onClose}
       >
@@ -336,7 +371,7 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                 <p className="text-gray-600">Métricas detalladas de amenities y reservas</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <button
                 onClick={loadAnalyticsData}
@@ -345,7 +380,7 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
               >
                 <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
               </button>
-              
+
               <button
                 onClick={onClose}
                 className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -361,21 +396,19 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
               <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
                 <button
                   onClick={() => setActiveTab('reservations')}
-                  className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${
-                    activeTab === 'reservations'
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                  className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${activeTab === 'reservations'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                    }`}
                 >
                   Reservas
                 </button>
                 <button
                   onClick={() => setActiveTab('claims')}
-                  className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${
-                    activeTab === 'claims'
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                  className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${activeTab === 'claims'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                    }`}
                 >
                   Reclamos
                 </button>
@@ -388,11 +421,10 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                       setClaimsPeriod('daily');
                       setDayOffset(0);
                     }}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
-                      claimsPeriod === 'daily'
-                        ? 'bg-purple-600 text-white shadow-sm'
-                        : 'text-purple-700 hover:text-purple-900'
-                    }`}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${claimsPeriod === 'daily'
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'text-purple-700 hover:text-purple-900'
+                      }`}
                   >
                     Diario
                   </button>
@@ -401,11 +433,10 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                       setClaimsPeriod('weekly');
                       setDayOffset(0);
                     }}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
-                      claimsPeriod === 'weekly'
-                        ? 'bg-purple-600 text-white shadow-sm'
-                        : 'text-purple-700 hover:text-purple-900'
-                    }`}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${claimsPeriod === 'weekly'
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'text-purple-700 hover:text-purple-900'
+                      }`}
                   >
                     Semanal
                   </button>
@@ -414,11 +445,10 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                       setClaimsPeriod('monthly');
                       setDayOffset(0);
                     }}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
-                      claimsPeriod === 'monthly'
-                        ? 'bg-purple-600 text-white shadow-sm'
-                        : 'text-purple-700 hover:text-purple-900'
-                    }`}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${claimsPeriod === 'monthly'
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'text-purple-700 hover:text-purple-900'
+                      }`}
                   >
                     Mensual
                   </button>
@@ -430,58 +460,58 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
               <>
                 <div className="flex gap-4 items-center">
                   <h3 className="text-lg font-medium text-gray-900">Filtros</h3>
-                  
-                  <div className="flex gap-2 ml-auto">
-                {/* Amenity Filter Button */}
-                <button
-                  onClick={() => setShowAmenityFilterModal(true)}
-                  className="flex items-center justify-between px-4 py-2 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-left cursor-pointer min-w-[200px]"
-                >
-                  <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-gray-400" />
-                    <span className={selectedAmenity === 'all' ? 'text-gray-500' : 'text-gray-900 font-medium'}>
-                      {getCurrentAmenityLabel()}
-                    </span>
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
-                </button>
 
-                {/* Date Filter Button */}
-                <button
-                  onClick={() => setShowDateFilterModal(true)}
-                  className="flex items-center justify-between px-4 py-2 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-left cursor-pointer min-w-[180px]"
-                >
-                  <div className="flex items-center gap-2">
-                    <CalendarDays className="w-4 h-4 text-gray-400" />
-                    <span className={!dateFilterOption || dateFilterOption.value === 'all' ? 'text-gray-500' : 'text-gray-900 font-medium'}>
-                      {getCurrentDateLabel()}
-                    </span>
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
-                </button>
-              </div>
-            </div>
-            
-            {/* Current View Indicator */}
-            {(selectedAmenity !== 'all' || (dateFilterOption && dateFilterOption.value !== 'all')) && (
-              <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="font-medium text-blue-900">Viendo:</span>
-                  <div className="flex items-center gap-4">
-                    {selectedAmenity !== 'all' && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-lg font-medium">
-                        {selectedAmenity}
-                      </span>
-                    )}
-                    {dateFilterOption && dateFilterOption.value !== 'all' && (
-                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded-lg font-medium">
-                        {getCurrentDateLabel()}
-                      </span>
-                    )}
+                  <div className="flex gap-2 ml-auto">
+                    {/* Amenity Filter Button */}
+                    <button
+                      onClick={() => setShowAmenityFilterModal(true)}
+                      className="flex items-center justify-between px-4 py-2 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-left cursor-pointer min-w-[200px]"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Filter className="w-4 h-4 text-gray-400" />
+                        <span className={selectedAmenity === 'all' ? 'text-gray-500' : 'text-gray-900 font-medium'}>
+                          {getCurrentAmenityLabel()}
+                        </span>
+                      </div>
+                      <ChevronDown className="w-4 h-4 text-gray-400" />
+                    </button>
+
+                    {/* Date Filter Button */}
+                    <button
+                      onClick={() => setShowDateFilterModal(true)}
+                      className="flex items-center justify-between px-4 py-2 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-left cursor-pointer min-w-[180px]"
+                    >
+                      <div className="flex items-center gap-2">
+                        <CalendarDays className="w-4 h-4 text-gray-400" />
+                        <span className={!dateFilterOption || dateFilterOption.value === 'all' ? 'text-gray-500' : 'text-gray-900 font-medium'}>
+                          {getCurrentDateLabel()}
+                        </span>
+                      </div>
+                      <ChevronDown className="w-4 h-4 text-gray-400" />
+                    </button>
                   </div>
                 </div>
-              </div>
-            )}
+
+                {/* Current View Indicator */}
+                {(selectedAmenity !== 'all' || (dateFilterOption && dateFilterOption.value !== 'all')) && (
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="font-medium text-blue-900">Viendo:</span>
+                      <div className="flex items-center gap-4">
+                        {selectedAmenity !== 'all' && (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-lg font-medium">
+                            {selectedAmenity}
+                          </span>
+                        )}
+                        {dateFilterOption && dateFilterOption.value !== 'all' && (
+                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded-lg font-medium">
+                            {getCurrentDateLabel()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -499,207 +529,205 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
               <div className="space-y-8">
                 {activeTab === 'reservations' ? (
                   <>
-                {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-2xl"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-blue-600 font-medium">
-                          {selectedAmenity === 'all' ? 'Total Reservas' : `Reservas - ${selectedAmenity}`}
-                        </p>
-                        <p className="text-3xl font-bold text-blue-900">
-                          {amenityStats.reduce((sum, a) => sum + a.totalReservations, 0)}
-                        </p>
-                        {selectedAmenity !== 'all' && (
-                          <p className="text-sm text-blue-600 mt-1">
-                            {((amenityStats.reduce((sum, a) => sum + a.totalReservations, 0) / Math.max(allReservations.length, 1)) * 100).toFixed(1)}% del total
-                          </p>
-                        )}
-                      </div>
-                      <Calendar className="w-8 h-8 text-blue-600" />
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-2xl"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-green-600 font-medium">Amenities Activos</p>
-                        <p className="text-3xl font-bold text-green-900">{amenityStats.length}</p>
-                      </div>
-                      <Activity className="w-8 h-8 text-green-600" />
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-2xl"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-purple-600 font-medium">Utilización Promedio</p>
-                        <p className="text-3xl font-bold text-purple-900">
-                          {amenityStats.length > 0 
-                            ? Math.round(amenityStats.reduce((sum, a) => sum + a.utilizationRate, 0) / amenityStats.length)
-                            : 0}%
-                        </p>
-                      </div>
-                      <TrendingUp className="w-8 h-8 text-purple-600" />
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-2xl"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-orange-600 font-medium">Hora Pico</p>
-                        <p className="text-3xl font-bold text-orange-900">
-                          {(() => {
-                            if (hourlyData.length === 0) return '--';
-                            const maxCount = Math.max(...hourlyData.map(h => h.count));
-                            const peakHours = hourlyData.filter(h => h.count === maxCount);
-                            if (peakHours.length === 1) return peakHours[0].hour;
-                            return peakHours.map(h => h.hour).join(', ');
-                          })()}
-                        </p>
-                      </div>
-                      <Clock className="w-8 h-8 text-orange-600" />
-                    </div>
-                  </motion.div>
-                </div>
-
-                {/* Hourly Usage Chart */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
-                >
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-blue-600" />
-                      Horarios Más Concurridos
-                    </h3>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    {hourlyData.map((hour, index) => (
-                      <div key={hour.hour} className="flex items-center gap-4">
-                        <div className="w-16 text-sm font-medium text-gray-600">{hour.hour}</div>
-                        <div className="flex-1 flex items-center">
-                          <div className="flex-1 bg-gray-100 rounded-full h-8 relative overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${(hour.count / getMaxCount()) * 100}%` }}
-                              transition={{ delay: index * 0.05, duration: 0.8, ease: "easeOut" }}
-                              className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-end pr-2"
-                            >
-                              {hour.count > 0 && (
-                                <span className="text-white text-xs font-medium">
-                                  {hour.count}
-                                </span>
-                              )}
-                            </motion.div>
-                          </div>
-                        </div>
-                        <div className="w-16 text-sm text-gray-500 text-right">
-                          {hour.count} reservas
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-
-                {/* Amenity Statistics */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                  className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
-                >
-                  <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                    <PieChart className="w-5 h-5 text-green-600" />
-                    Estadísticas por Amenity
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {amenityStats.map((amenity, index) => (
+                    {/* Summary Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                       <motion.div
-                        key={amenity.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 * index }}
-                        className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-2xl"
                       >
-                        <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center justify-between">
                           <div>
-                            <h4 className="font-bold text-gray-900 text-lg">{amenity.name}</h4>
-                            <p className="text-gray-600 text-sm">{amenity.totalReservations} reservas totales</p>
+                            <p className="text-blue-600 font-medium">
+                              {selectedAmenity === 'all' ? 'Total Reservas' : `Reservas - ${selectedAmenity}`}
+                            </p>
+                            <p className="text-3xl font-bold text-blue-900">
+                              {amenityStats.reduce((sum, a) => sum + a.totalReservations, 0)}
+                            </p>
+                            {selectedAmenity !== 'all' && (
+                              <p className="text-sm text-blue-600 mt-1">
+                                {((amenityStats.reduce((sum, a) => sum + a.totalReservations, 0) / Math.max(allReservations.length, 1)) * 100).toFixed(1)}% del total
+                              </p>
+                            )}
                           </div>
-                          <div className="text-right">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              amenity.utilizationRate >= 80 ? 'bg-red-100 text-red-700' :
-                              amenity.utilizationRate >= 60 ? 'bg-yellow-100 text-yellow-700' :
-                              amenity.utilizationRate >= 40 ? 'bg-green-100 text-green-700' :
-                              'bg-gray-100 text-gray-700'
-                            }`}>
-                              {amenity.utilizationRate}% uso
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-3">
-                          <div>
-                            <p className="text-sm font-medium text-gray-700 mb-2">Horarios Pico:</p>
-                            <div className="flex gap-2 flex-wrap">
-                              {amenity.peakHours.slice(0, 3).map((peak, idx) => (
-                                <span
-                                  key={peak.hour}
-                                  className={`px-2 py-1 rounded-lg text-xs font-medium ${
-                                    idx === 0 ? 'bg-red-100 text-red-700' :
-                                    idx === 1 ? 'bg-orange-100 text-orange-700' :
-                                    'bg-yellow-100 text-yellow-700'
-                                  }`}
-                                >
-                                  {peak.label} ({peak.count})
-                                </span>
-                              ))}
-                              {amenity.peakHours.length === 0 && (
-                                <span className="text-gray-500 text-xs">Sin datos suficientes</span>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-                            <span className="text-sm text-gray-600">Duración promedio:</span>
-                            <span className="font-medium text-gray-900">{amenity.averageDuration}h</span>
-                          </div>
+                          <Calendar className="w-8 h-8 text-blue-600" />
                         </div>
                       </motion.div>
-                    ))}
-                  </div>
-                  
-                  {amenityStats.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p>No hay datos suficientes para mostrar estadísticas</p>
+
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-2xl"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-green-600 font-medium">Amenities Activos</p>
+                            <p className="text-3xl font-bold text-green-900">{amenityStats.length}</p>
+                          </div>
+                          <Activity className="w-8 h-8 text-green-600" />
+                        </div>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-2xl"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-purple-600 font-medium">Utilización Promedio</p>
+                            <p className="text-3xl font-bold text-purple-900">
+                              {amenityStats.length > 0
+                                ? Math.round(amenityStats.reduce((sum, a) => sum + a.utilizationRate, 0) / amenityStats.length)
+                                : 0}%
+                            </p>
+                          </div>
+                          <TrendingUp className="w-8 h-8 text-purple-600" />
+                        </div>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-2xl"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-orange-600 font-medium">Hora Pico</p>
+                            <p className="text-3xl font-bold text-orange-900">
+                              {(() => {
+                                if (hourlyData.length === 0) return '--';
+                                const maxCount = Math.max(...hourlyData.map(h => h.count));
+                                const peakHours = hourlyData.filter(h => h.count === maxCount);
+                                if (peakHours.length === 1) return peakHours[0].hour;
+                                return peakHours.map(h => h.hour).join(', ');
+                              })()}
+                            </p>
+                          </div>
+                          <Clock className="w-8 h-8 text-orange-600" />
+                        </div>
+                      </motion.div>
                     </div>
-                  )}
-                </motion.div>
+
+                    {/* Hourly Usage Chart */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
+                    >
+                      <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                          <Clock className="w-5 h-5 text-blue-600" />
+                          Horarios Más Concurridos
+                        </h3>
+                      </div>
+
+                      <div className="space-y-2">
+                        {hourlyData.map((hour, index) => (
+                          <div key={hour.hour} className="flex items-center gap-4">
+                            <div className="w-16 text-sm font-medium text-gray-600">{hour.hour}</div>
+                            <div className="flex-1 flex items-center">
+                              <div className="flex-1 bg-gray-100 rounded-full h-8 relative overflow-hidden">
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${(hour.count / getMaxCount()) * 100}%` }}
+                                  transition={{ delay: index * 0.05, duration: 0.8, ease: "easeOut" }}
+                                  className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-end pr-2"
+                                >
+                                  {hour.count > 0 && (
+                                    <span className="text-white text-xs font-medium">
+                                      {hour.count}
+                                    </span>
+                                  )}
+                                </motion.div>
+                              </div>
+                            </div>
+                            <div className="w-16 text-sm text-gray-500 text-right">
+                              {hour.count} reservas
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+
+                    {/* Amenity Statistics */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 }}
+                      className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
+                    >
+                      <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                        <PieChart className="w-5 h-5 text-green-600" />
+                        Estadísticas por Amenity
+                      </h3>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {amenityStats.map((amenity, index) => (
+                          <motion.div
+                            key={amenity.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 * index }}
+                            className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow"
+                          >
+                            <div className="flex items-start justify-between mb-4">
+                              <div>
+                                <h4 className="font-bold text-gray-900 text-lg">{amenity.name}</h4>
+                                <p className="text-gray-600 text-sm">{amenity.totalReservations} reservas totales</p>
+                              </div>
+                              <div className="text-right">
+                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${amenity.utilizationRate >= 80 ? 'bg-red-100 text-red-700' :
+                                  amenity.utilizationRate >= 60 ? 'bg-yellow-100 text-yellow-700' :
+                                    amenity.utilizationRate >= 40 ? 'bg-green-100 text-green-700' :
+                                      'bg-gray-100 text-gray-700'
+                                  }`}>
+                                  {amenity.utilizationRate}% uso
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="space-y-3">
+                              <div>
+                                <p className="text-sm font-medium text-gray-700 mb-2">Horarios Pico:</p>
+                                <div className="flex gap-2 flex-wrap">
+                                  {amenity.peakHours.slice(0, 3).map((peak, idx) => (
+                                    <span
+                                      key={peak.hour}
+                                      className={`px-2 py-1 rounded-lg text-xs font-medium ${idx === 0 ? 'bg-red-100 text-red-700' :
+                                        idx === 1 ? 'bg-orange-100 text-orange-700' :
+                                          'bg-yellow-100 text-yellow-700'
+                                        }`}
+                                    >
+                                      {peak.label} ({peak.count})
+                                    </span>
+                                  ))}
+                                  {amenity.peakHours.length === 0 && (
+                                    <span className="text-gray-500 text-xs">Sin datos suficientes</span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                                <span className="text-sm text-gray-600">Duración promedio:</span>
+                                <span className="font-medium text-gray-900">{amenity.averageDuration}h</span>
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+
+                      {amenityStats.length === 0 && (
+                        <div className="text-center py-12 text-gray-500">
+                          <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                          <p>No hay datos suficientes para mostrar estadísticas</p>
+                        </div>
+                      )}
+                    </motion.div>
                   </>
                 ) : (
                   <motion.div
@@ -711,19 +739,27 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                       <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                         <TrendingUp className="w-5 h-5 text-purple-600" />
                         Evolución de Reclamos
+                        {dayOffset > 0 && (
+                          <span className="ml-2 text-xs font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                            {claimsPeriod === 'weekly' ? `${dayOffset} semanas atrás` : 
+                             claimsPeriod === 'monthly' ? `${dayOffset} meses atrás` : 
+                             `${dayOffset} días atrás`}
+                          </span>
+                        )}
                       </h3>
-                      
+
                       <div className="flex gap-2">
                         <button
-                          onClick={() => setDayOffset(prev => prev + (claimsPeriod === 'daily' ? 7 : claimsPeriod === 'weekly' ? 4 : 12))}
-                          className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm flex items-center gap-1"
+                          onClick={() => setDayOffset(prev => prev + (claimsPeriod === 'daily' ? 1 : claimsPeriod === 'weekly' ? 7 : 30))}
+                          disabled={isLoadingClaims}
+                          className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <span>←</span>
                           <span>Anterior</span>
                         </button>
                         <button
-                          onClick={() => setDayOffset(prev => Math.max(0, prev - (claimsPeriod === 'daily' ? 7 : claimsPeriod === 'weekly' ? 4 : 12)))}
-                          disabled={dayOffset === 0}
+                          onClick={() => setDayOffset(prev => Math.max(0, prev - (claimsPeriod === 'daily' ? 1 : claimsPeriod === 'weekly' ? 7 : 30)))}
+                          disabled={dayOffset === 0 || isLoadingClaims}
                           className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                         >
                           <span>Siguiente</span>
@@ -731,9 +767,18 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                         </button>
                       </div>
                     </div>
-                    
+
                     {monthlyClaimsData.length > 0 ? (
                       <div className="space-y-6">
+                        {isLoadingClaims && (
+                          <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10 rounded-2xl">
+                            <div className="flex flex-col items-center gap-2">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                              <p className="text-sm text-gray-600">Cargando datos...</p>
+                            </div>
+                          </div>
+                        )}
+                        
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                           <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full bg-blue-500"></div>
@@ -759,9 +804,10 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                             const step = maxValue <= 4 ? 1 : Math.ceil(maxValue / 4);
                             const maxYValue = Math.max(Math.ceil(maxValue / step) * step, 1);
                             const numTicks = Math.ceil(maxYValue / step) + 1;
-                            
+
                             return (
-                              <>
+                              <div className="relative h-full">
+                                {/* Eje Y */}
                                 <div className="absolute left-0 top-0 bottom-12 w-12 flex flex-col justify-between text-xs text-gray-500 pr-2">
                                   {Array.from({ length: numTicks }, (_, i) => {
                                     const value = (numTicks - 1 - i) * step;
@@ -772,92 +818,117 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ isOpen, onClose, to
                                     );
                                   })}
                                 </div>
-                                
-                                <div className="absolute left-12 top-0 right-0 bottom-12 flex items-end justify-around gap-4 border-l border-b border-gray-200 pl-4">
+
+                                {/* Área de barras */}
+                                <div className="absolute left-12 top-0 right-0 bottom-20 flex items-end justify-around border-l border-b border-gray-200 px-6 pb-2">
                                   {monthlyClaimsData.map((data, index) => {
-                                    const barHeightPx = (data.total / maxYValue) * 100; 
-                                    
+                                    const barHeightPercent = (data.total / maxYValue) * 100;
+
                                     return (
-                                      <div key={`${data.month}-${index}`} className="flex-1 flex flex-col items-center max-w-[100px] relative" style={{ height: '100%' }}>
-                                        <div className="w-full flex-1 flex flex-col justify-end items-center pb-12">
-                                          {data.total > 0 && (
-                                            <>
-                                              {/* Barra apilada */}
-                                              <div 
-                                                className="w-full rounded overflow-hidden flex flex-col-reverse"
-                                                style={{ 
-                                                  height: `${barHeightPx}%`
-                                                }}
+                                      <div
+                                        key={`${data.month}-${index}`}
+                                        className="flex flex-col items-center justify-end w-16"
+                                        style={{ height: '100%' }}
+                                      >
+                                        {/* Total arriba */}
+                                        {data.total > 0 && (
+                                          <div className="text-sm font-semibold text-gray-900 mb-1">
+                                            {data.total}
+                                          </div>
+                                        )}
+
+                                        {/* Barra apilada */}
+                                        {data.total > 0 ? (
+                                          <div
+                                            className="w-full flex flex-col-reverse rounded-md overflow-hidden shadow-sm"
+                                            style={{
+                                              height: `${barHeightPercent}%`,
+                                              backgroundColor: '#f3f4f6',
+                                            }}
+                                          >
+                                            {data.nuevo > 0 && (
+                                              <div
+                                                className="bg-blue-500 text-white text-xs font-medium flex items-center justify-center"
+                                                style={{ flex: data.nuevo }}
                                               >
-                                                {/* Nuevo (arriba) */}
-                                                {data.nuevo > 0 && (
-                                                  <div
-                                                    className="bg-blue-500 flex items-center justify-center text-white text-xs font-medium w-full"
-                                                    style={{ 
-                                                      flex: data.nuevo
-                                                    }}
-                                                    title={`Nuevo: ${data.nuevo}`}
-                                                  >
-                                                    <span>{data.nuevo}</span>
-                                                  </div>
-                                                )}
-                                                {/* En Progreso */}
-                                                {data.en_progreso > 0 && (
-                                                  <div
-                                                    className="bg-yellow-500 flex items-center justify-center text-white text-xs font-medium w-full"
-                                                    style={{ 
-                                                      flex: data.en_progreso
-                                                    }}
-                                                    title={`En Progreso: ${data.en_progreso}`}
-                                                  >
-                                                    <span>{data.en_progreso}</span>
-                                                  </div>
-                                                )}
-                                                {/* Resuelto */}
-                                                {data.resuelto > 0 && (
-                                                  <div
-                                                    className="bg-green-500 flex items-center justify-center text-white text-xs font-medium w-full"
-                                                    style={{ 
-                                                      flex: data.resuelto
-                                                    }}
-                                                    title={`Resuelto: ${data.resuelto}`}
-                                                  >
-                                                    <span>{data.resuelto}</span>
-                                                  </div>
-                                                )}
-                                                {/* Cerrado (abajo) */}
-                                                {data.cerrado > 0 && (
-                                                  <div
-                                                    className="bg-gray-500 flex items-center justify-center text-white text-xs font-medium w-full"
-                                                    style={{ 
-                                                      flex: data.cerrado
-                                                    }}
-                                                    title={`Cerrado: ${data.cerrado}`}
-                                                  >
-                                                    <span>{data.cerrado}</span>
-                                                  </div>
-                                                )}
+                                                {data.nuevo}
                                               </div>
-                                              
-                                              {/* Total */}
-                                              <div className="text-xs font-medium text-gray-900 mt-1">
-                                                {data.total}
+                                            )}
+                                            {data.en_progreso > 0 && (
+                                              <div
+                                                className="bg-yellow-500 text-white text-xs font-medium flex items-center justify-center"
+                                                style={{ flex: data.en_progreso }}
+                                              >
+                                                {data.en_progreso}
                                               </div>
-                                            </>
-                                          )}
-                                        </div>
-                                        
-                                        {/* Label */}
-                                        <div className="absolute bottom-0 left-0 right-0 text-xs text-gray-600 text-center whitespace-nowrap">
-                                          {data.label || data.monthLabel || data.month}
-                                        </div>
+                                            )}
+                                            {data.resuelto > 0 && (
+                                              <div
+                                                className="bg-green-500 text-white text-xs font-medium flex items-center justify-center"
+                                                style={{ flex: data.resuelto }}
+                                              >
+                                                {data.resuelto}
+                                              </div>
+                                            )}
+                                            {data.cerrado > 0 && (
+                                              <div
+                                                className="bg-gray-500 text-white text-xs font-medium flex items-center justify-center"
+                                                style={{ flex: data.cerrado }}
+                                              >
+                                                {data.cerrado}
+                                              </div>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <div className="h-full flex items-end justify-center text-gray-400 text-sm">
+                                            —
+                                          </div>
+                                        )}
                                       </div>
                                     );
                                   })}
                                 </div>
-                              </>
+
+                                {/* Etiquetas del eje X debajo del gráfico */}
+                                <div className="absolute left-12 right-0 bottom-4 flex justify-around text-xs text-gray-700">
+                                  {monthlyClaimsData.map((data, index) => {
+                                    let labelText = '';
+                                    
+                                    if (claimsPeriod === 'weekly') {
+                                      if (data.weekStart && data.weekEnd) {
+                                        const start = new Date(data.weekStart);
+                                        const end = new Date(data.weekEnd);
+                                        const startDay = start.getDate();
+                                        const endDay = end.getDate();
+                                        const startMonth = start.toLocaleDateString('es-ES', { month: 'short' });
+                                        const endMonth = end.toLocaleDateString('es-ES', { month: 'short' });
+                                        
+                                        if (startMonth === endMonth) {
+                                          labelText = `${startDay}-${endDay}\n${startMonth}`;
+                                        } else {
+                                          labelText = `${startDay} ${startMonth}\n${endDay} ${endMonth}`;
+                                        }
+                                      } else {
+                                        labelText = data.label || `Semana ${index + 1}`;
+                                      }
+                                    } else if (claimsPeriod === 'monthly') {
+                                      labelText = data.monthLabel || data.label || data.month || `Mes ${index + 1}`;
+                                    } else {
+                                      labelText = data.label || `Día ${index + 1}`;
+                                    }
+                                    
+                                    return (
+                                      <div key={`${data.monthLabel || data.label || index}`} className="w-16 text-center whitespace-pre-line leading-tight">
+                                        {labelText}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
                             );
                           })()}
+
+
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100 mt-6">
