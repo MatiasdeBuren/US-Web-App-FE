@@ -5,8 +5,12 @@ import {
   Clock,
   TrendingUp,
   Activity,
-  PieChart
+  PieChart,
+  CalendarDays,
+  ChevronDown,
+  Filter
 } from 'lucide-react';
+import DateFilterModal, { type DateFilterOption } from './DateFilterModal';
 
 interface MonthlyClaimData {
   month?: string;
@@ -32,6 +36,16 @@ const ClaimsAnalytics: React.FC<ClaimsAnalyticsProps> = ({ token }) => {
   const [monthlyClaimsData, setMonthlyClaimsData] = useState<MonthlyClaimData[]>([]);
   const [claimsMetrics, setClaimsMetrics] = useState<any>(null);
   const [isLoadingClaims, setIsLoadingClaims] = useState(false);
+  
+  const [metricsDateFilter, setMetricsDateFilter] = useState<DateFilterOption | null>(null);
+  const [showMetricsDateFilterModal, setShowMetricsDateFilterModal] = useState(false);
+
+  const getCurrentMetricsDateLabel = () => {
+    if (!metricsDateFilter || metricsDateFilter.value === 'all') {
+      return 'Todas las fechas';
+    }
+    return metricsDateFilter.label;
+  };
 
   const loadClaimsData = React.useCallback(async () => {
     setIsLoadingClaims(true);
@@ -64,7 +78,83 @@ const ClaimsAnalytics: React.FC<ClaimsAnalyticsProps> = ({ token }) => {
         }
       } else {
         console.log('[CLAIMS METRICS] Fetching metrics data');
-        const metricsData = await fetch(`${import.meta.env.VITE_API_URL}/admin/claims/metrics`, {
+        
+        let metricsUrl = `${import.meta.env.VITE_API_URL}/admin/claims/metrics`;
+        const params = new URLSearchParams();
+        
+        if (metricsDateFilter && metricsDateFilter.value !== 'all') {
+          const now = new Date();
+          let startDate: Date | null = null;
+          let endDate: Date | null = null;
+
+          switch (metricsDateFilter.value) {
+            case 'today': {
+              startDate = new Date(now);
+              startDate.setHours(0, 0, 0, 0);
+              endDate = new Date(now);
+              endDate.setHours(23, 59, 59, 999);
+              break;
+            }
+            case 'yesterday': {
+              startDate = new Date(now);
+              startDate.setDate(startDate.getDate() - 1);
+              startDate.setHours(0, 0, 0, 0);
+              endDate = new Date(startDate);
+              endDate.setHours(23, 59, 59, 999);
+              break;
+            }
+            case 'last7days': {
+              startDate = new Date(now);
+              startDate.setDate(startDate.getDate() - 7);
+              startDate.setHours(0, 0, 0, 0);
+              endDate = new Date(now);
+              endDate.setHours(23, 59, 59, 999);
+              break;
+            }
+            case 'last30days': {
+              startDate = new Date(now);
+              startDate.setDate(startDate.getDate() - 30);
+              startDate.setHours(0, 0, 0, 0);
+              endDate = new Date(now);
+              endDate.setHours(23, 59, 59, 999);
+              break;
+            }
+            case 'thisMonth': {
+              startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+              endDate = new Date(now);
+              endDate.setHours(23, 59, 59, 999);
+              break;
+            }
+            case 'lastMonth': {
+              startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+              endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+              endDate.setHours(23, 59, 59, 999);
+              break;
+            }
+            case 'custom':
+              if (metricsDateFilter.startDate) {
+                startDate = metricsDateFilter.startDate;
+              }
+              if (metricsDateFilter.endDate) {
+                endDate = metricsDateFilter.endDate;
+              }
+              break;
+          }
+
+          if (startDate) {
+            params.append('startDate', startDate.toISOString());
+          }
+          if (endDate) {
+            params.append('endDate', endDate.toISOString());
+          }
+        }
+
+        const queryString = params.toString();
+        if (queryString) {
+          metricsUrl += `?${queryString}`;
+        }
+
+        const metricsData = await fetch(metricsUrl, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -83,7 +173,7 @@ const ClaimsAnalytics: React.FC<ClaimsAnalyticsProps> = ({ token }) => {
     } finally {
       setIsLoadingClaims(false);
     }
-  }, [token, claimsSubTab, claimsPeriod, dayOffset]);
+  }, [token, claimsSubTab, claimsPeriod, dayOffset, metricsDateFilter]);
 
   useEffect(() => {
     loadClaimsData();
@@ -411,6 +501,48 @@ const ClaimsAnalytics: React.FC<ClaimsAnalyticsProps> = ({ token }) => {
       ) : (
         /* Metrics Tab */
         <div className="space-y-6">
+          {/* Date Filter for Metrics */}
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">Métricas de Reclamos</h3>
+            <button
+              onClick={() => setShowMetricsDateFilterModal(true)}
+              className="flex items-center justify-between px-4 py-2 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors text-left cursor-pointer min-w-[200px]"
+            >
+              <div className="flex items-center gap-2">
+                <CalendarDays className="w-4 h-4 text-gray-400" />
+                <span className={!metricsDateFilter || metricsDateFilter.value === 'all' ? 'text-gray-500' : 'text-gray-900 font-medium'}>
+                  {getCurrentMetricsDateLabel()}
+                </span>
+              </div>
+              <ChevronDown className="w-4 h-4 text-gray-400" />
+            </button>
+          </div>
+
+          {/* Active Filter Indicator */}
+          {metricsDateFilter && metricsDateFilter.value !== 'all' && (
+            <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Filter className="w-4 h-4 text-purple-600" />
+                    <span className="text-sm font-semibold text-purple-900">
+                      Filtro activo: {metricsDateFilter.label}
+                    </span>
+                  </div>
+                  <p className="text-xs text-purple-700 ml-6">
+                    Mostrando solo reclamos resueltos en este período
+                  </p>
+                </div>
+                <button
+                  onClick={() => setMetricsDateFilter(null)}
+                  className="text-xs text-purple-600 hover:text-purple-800 font-medium whitespace-nowrap px-3 py-1 rounded-md hover:bg-purple-100 transition-colors"
+                >
+                  Limpiar filtro
+                </button>
+              </div>
+            </div>
+          )}
+
           {isLoadingClaims ? (
             <div className="flex items-center justify-center py-20">
               <div className="text-center">
@@ -581,6 +713,16 @@ const ClaimsAnalytics: React.FC<ClaimsAnalyticsProps> = ({ token }) => {
           )}
         </div>
       )}
+
+      {/* Date Filter Modal for Metrics */}
+      <DateFilterModal
+        isVisible={showMetricsDateFilterModal}
+        onClose={() => setShowMetricsDateFilterModal(false)}
+        onDateFilterSelect={setMetricsDateFilter}
+        selectedValue={metricsDateFilter?.value || 'all'}
+        title="Filtrar Métricas por Fecha"
+        subtitle="Selecciona un rango de fechas para calcular las métricas"
+      />
     </>
   );
 };
