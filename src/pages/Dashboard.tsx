@@ -21,7 +21,6 @@ function Dashboard() {
         }
         setToken(savedToken);
 
-        // Fetch user data to determine role - IMPORTANTE: El backend debe validar permisos
         fetch(`${API_URL}/dashboard`, {
             headers: {
                 Authorization: `Bearer ${savedToken}`,
@@ -39,7 +38,6 @@ function Dashboard() {
         })
         .catch((error) => {
             console.error('Auth error:', error);
-            // Si hay error de autenticación, redirigir al login
             localStorage.removeItem("token");
             setToken(null);
         })
@@ -56,16 +54,14 @@ function Dashboard() {
         );
     }
 
-    if (!token) return <Navigate to="/login" />;
+    if (!token) return <Navigate to="/login" replace />;
 
-    // Determine which dashboard to show based on user role
     const userRole = userData?.user?.role || "tenant";
 
     if (userRole === "admin") {
         return <AdminDashboard />;
     }
 
-    // Default to tenant dashboard for "tenant", "owner", or any other role
     return <TenantDashboard />;
 }
 

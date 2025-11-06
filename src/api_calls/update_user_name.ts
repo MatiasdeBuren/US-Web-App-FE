@@ -4,7 +4,6 @@ export interface UpdateUserPayload {
   name?: string;
   email?: string;
   password?: string;
-  // agrega aquí otros campos editables del usuario según tu backend
 }
 
 export async function updateUserName(token: string, payload: UpdateUserPayload) {

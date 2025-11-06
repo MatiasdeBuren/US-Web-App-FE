@@ -1,7 +1,5 @@
-// API calls para funcionalidades de administrador
 const API_URL = import.meta.env.VITE_API_URL as string;
 
-// Tipos para las respuestas de admin
 export interface AdminStats {
     totalUsers: number;
     totalApartments: number;
@@ -22,7 +20,6 @@ export interface AdminUser {
         floor: number;
         rooms?: number;
     };
-    // Backend returns both formats, so we support both
     _count?: {
         reservations: number;
     };
@@ -35,6 +32,10 @@ export interface AdminAmenity {
     name: string;
     capacity: number;
     maxDuration: number;
+    openTime?: string;
+    closeTime?: string;
+    isActive: boolean;
+    requiresApproval?: boolean;
     createdAt: string;
     updatedAt: string;
     _count?: {
@@ -77,7 +78,11 @@ export interface AdminReservation {
     id: number;
     startTime: string;
     endTime: string;
-    status: string;
+    status: {
+        id: number;
+        name: string;
+        label: string;
+    };
     createdAt: string;
     user?: {
         id: number;
@@ -96,7 +101,6 @@ export interface AdminReservation {
     };
 }
 
-// GET /admin/stats - Obtener estadísticas del sistema
 export async function getAdminStats(token: string): Promise<AdminStats> {
     try {
         const response = await fetch(`${API_URL}/admin/stats`, {
@@ -118,7 +122,6 @@ export async function getAdminStats(token: string): Promise<AdminStats> {
 
         const data = await response.json();
         
-        // Validar que la respuesta tenga la estructura esperada
         return {
             totalUsers: data.totalUsers || 0,
             totalApartments: data.totalApartments || 0,
@@ -132,7 +135,6 @@ export async function getAdminStats(token: string): Promise<AdminStats> {
     }
 }
 
-// GET /admin/users - Obtener todos los usuarios
 export async function getAdminUsers(token: string): Promise<AdminUser[]> {
     try {
         const response = await fetch(`${API_URL}/admin/users`, {
@@ -158,7 +160,7 @@ export async function getAdminUsers(token: string): Promise<AdminUser[]> {
         if (data && Array.isArray(data.users)) {
             return data.users;
         } else if (Array.isArray(data)) {
-            // Fallback: si es un array directo
+            
             return data;
         } else {
             console.error('API did not return expected users structure:', data);
@@ -170,7 +172,6 @@ export async function getAdminUsers(token: string): Promise<AdminUser[]> {
     }
 }
 
-// PUT /admin/users/:id/role - Cambiar role de un usuario
 export async function updateUserRole(token: string, userId: number, role: string): Promise<AdminUser> {
     const response = await fetch(`${API_URL}/admin/users/${userId}/role`, {
         method: 'PUT',
@@ -189,7 +190,6 @@ export async function updateUserRole(token: string, userId: number, role: string
     return response.json();
 }
 
-// GET /admin/reservations - Obtener todas las reservas
 export async function getAdminReservations(
     token: string, 
     params?: {
@@ -242,13 +242,15 @@ export async function getAdminReservations(
     }
 }
 
-// POST /admin/amenities - Crear nuevo amenity
 export async function createAmenity(
     token: string, 
     amenityData: {
         name: string;
         capacity: number;
         maxDuration: number;
+        openTime?: string;
+        closeTime?: string;
+        isActive?: boolean;
     }
 ): Promise<AdminAmenity> {
     try {
@@ -281,8 +283,6 @@ export async function createAmenity(
         throw error;
     }
 }
-
-// PUT /admin/amenities/:id - Actualizar amenity
 export async function updateAmenity(
     token: string, 
     amenityId: number,
@@ -290,6 +290,9 @@ export async function updateAmenity(
         name?: string;
         capacity?: number;
         maxDuration?: number;
+        openTime?: string;
+        closeTime?: string;
+        isActive?: boolean;
     }
 ): Promise<AdminAmenity> {
     try {
@@ -326,11 +329,6 @@ export async function updateAmenity(
     }
 }
 
-// ================================
-// APARTMENT MANAGEMENT FUNCTIONS
-// ================================
-
-// GET /admin/apartments - Obtener todos los apartamentos
 export async function getAdminApartments(token: string): Promise<AdminApartment[]> {
     try {
         const response = await fetch(`${API_URL}/admin/apartments`, {
@@ -367,7 +365,6 @@ export async function getAdminApartments(token: string): Promise<AdminApartment[
     }
 }
 
-// POST /admin/apartments - Crear nuevo apartamento
 export async function createApartment(
     token: string, 
     apartmentData: {
@@ -409,8 +406,6 @@ export async function createApartment(
         throw error;
     }
 }
-
-// PUT /admin/apartments/:id - Actualizar apartamento
 export async function updateApartment(
     token: string, 
     apartmentId: number,
@@ -442,7 +437,7 @@ export async function updateApartment(
                 throw new Error('Token de autenticación inválido.');
             }
             if (response.status === 404) {
-                throw new Error('Apartamento no encontrado.');
+                throw new Error('Departamento no encontrado.');
             }
             if (response.status === 409) {
                 throw new Error('Ya existe un apartamento con esa unidad.');
@@ -458,7 +453,6 @@ export async function updateApartment(
     }
 }
 
-// DELETE /admin/apartments/:id - Eliminar apartamento
 export async function deleteApartment(token: string, apartmentId: number): Promise<void> {
     try {
         const response = await fetch(`${API_URL}/admin/apartments/${apartmentId}`, {
@@ -477,7 +471,7 @@ export async function deleteApartment(token: string, apartmentId: number): Promi
                 throw new Error('Token de autenticación inválido.');
             }
             if (response.status === 404) {
-                throw new Error('Apartamento no encontrado.');
+                throw new Error('Departamento no encontrado.');
             }
             if (response.status === 409) {
                 throw new Error('No se puede eliminar: el apartamento tiene reservas activas o usuarios asignados.');
@@ -491,11 +485,7 @@ export async function deleteApartment(token: string, apartmentId: number): Promi
     }
 }
 
-// ================================
-// AMENITY MANAGEMENT FUNCTIONS
-// ================================
 
-// GET /admin/amenities - Obtener todos los amenities
 export async function getAdminAmenities(token: string): Promise<AdminAmenity[]> {
     try {
         const response = await fetch(`${API_URL}/admin/amenities`, {
@@ -532,7 +522,7 @@ export async function getAdminAmenities(token: string): Promise<AdminAmenity[]> 
     }
 }
 
-// DELETE /admin/amenities/:id - Eliminar amenity
+
 export async function deleteAmenity(token: string, amenityId: number): Promise<void> {
     try {
         const response = await fetch(`${API_URL}/admin/amenities/${amenityId}`, {
@@ -565,7 +555,6 @@ export async function deleteAmenity(token: string, amenityId: number): Promise<v
     }
 }
 
-// GET /admin/amenities/:id/reservations - Obtener reservas de un amenity específico
 export async function getAmenityReservations(
     token: string, 
     amenityId: number,
@@ -611,6 +600,158 @@ export async function getAmenityReservations(
         };
     } catch (error) {
         console.error('Error in getAmenityReservations:', error);
+        throw error;
+    }
+}
+
+
+export async function getPendingReservations(token: string): Promise<AdminReservation[]> {
+    try {
+        const response = await fetch(`${API_URL}/admin/reservations/pending`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 403) {
+                throw new Error('Acceso denegado. Se requieren permisos de administrador.');
+            }
+            if (response.status === 401) {
+                throw new Error('Token de autenticación inválido.');
+            }
+            throw new Error(`Error del servidor: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (data && Array.isArray(data.reservations)) {
+            return data.reservations;
+        } else if (Array.isArray(data)) {
+            return data;
+        } else {
+            console.error('API did not return expected reservations structure:', data);
+            return [];
+        }
+    } catch (error) {
+        console.error('Error in getPendingReservations:', error);
+        throw error;
+    }
+}
+
+export async function approveReservation(token: string, reservationId: number): Promise<AdminReservation> {
+    try {
+        const response = await fetch(`${API_URL}/admin/reservations/${reservationId}/approve`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 403) {
+                throw new Error('Acceso denegado. Se requieren permisos de administrador.');
+            }
+            if (response.status === 401) {
+                throw new Error('Token de autenticación inválido.');
+            }
+            if (response.status === 404) {
+                throw new Error('Reserva no encontrada.');
+            }
+            if (response.status === 400) {
+                const error = await response.json();
+                throw new Error(error.message || 'No se puede aprobar esta reserva.');
+            }
+            const error = await response.json();
+            throw new Error(error.message || `Error al aprobar reserva: ${response.status}`);
+        }
+
+        return response.json();
+    } catch (error) {
+        console.error('Error in approveReservation:', error);
+        throw error;
+    }
+}
+
+export async function rejectReservation(
+    token: string, 
+    reservationId: number,
+    reason?: string
+): Promise<AdminReservation> {
+    try {
+        const response = await fetch(`${API_URL}/admin/reservations/${reservationId}/reject`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ reason })
+        });
+
+        if (!response.ok) {
+            if (response.status === 403) {
+                throw new Error('Acceso denegado. Se requieren permisos de administrador.');
+            }
+            if (response.status === 401) {
+                throw new Error('Token de autenticación inválido.');
+            }
+            if (response.status === 404) {
+                throw new Error('Reserva no encontrada.');
+            }
+            if (response.status === 400) {
+                const error = await response.json();
+                throw new Error(error.message || 'No se puede rechazar esta reserva.');
+            }
+            const error = await response.json();
+            throw new Error(error.message || `Error al rechazar reserva: ${response.status}`);
+        }
+
+        return response.json();
+    } catch (error) {
+        console.error('Error in rejectReservation:', error);
+        throw error;
+    }
+}
+
+
+export async function cancelReservationAsAdmin(
+    token: string, 
+    reservationId: number,
+    reason?: string
+): Promise<AdminReservation> {
+    try {
+        const response = await fetch(`${API_URL}/admin/reservations/${reservationId}/cancel`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ reason })
+        });
+
+        if (!response.ok) {
+            if (response.status === 403) {
+                throw new Error('Acceso denegado. Se requieren permisos de administrador.');
+            }
+            if (response.status === 401) {
+                throw new Error('Token de autenticación inválido.');
+            }
+            if (response.status === 404) {
+                throw new Error('Reserva no encontrada.');
+            }
+            if (response.status === 400) {
+                const error = await response.json();
+                throw new Error(error.message || 'No se puede cancelar esta reserva.');
+            }
+            const error = await response.json();
+            throw new Error(error.message || `Error al cancelar reserva: ${response.status}`);
+        }
+
+        return response.json();
+    } catch (error) {
+        console.error('Error in cancelReservationAsAdmin:', error);
         throw error;
     }
 }

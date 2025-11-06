@@ -30,22 +30,27 @@ function ModernDatePicker({
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
     const [hasInitialized, setHasInitialized] = useState(false);
 
-    // Parse the selected date or use today as default
     const selected = selectedDate ? new Date(selectedDate + "T00:00:00") : null;
-    
-    // Only initialize the month/year from selected date on first mount or when selected date changes from empty to having a value
+
     useEffect(() => {
-        if (selected && !hasInitialized) {
+        if (!isOpen) {
+            const now = new Date();
+            setCurrentMonth(now.getMonth());
+            setCurrentYear(now.getFullYear());
+            setHasInitialized(false);
+        }
+    }, [isOpen]);
+    
+    useEffect(() => {
+        if (selected && !hasInitialized && isOpen) {
             setCurrentMonth(selected.getMonth());
             setCurrentYear(selected.getFullYear());
             setHasInitialized(true);
         } else if (!selected && hasInitialized) {
-            // Reset flag when date is cleared
             setHasInitialized(false);
         }
-    }, [selected, hasInitialized]);
+    }, [selected, hasInitialized, isOpen]);
 
-    // Get formatted date string for display
     const getDisplayDate = () => {
         if (!selectedDate) return "Seleccionar fecha";
         
@@ -58,7 +63,6 @@ function ModernDatePicker({
         });
     };
 
-    // Get days for the current month view
     const getDaysInMonth = useMemo(() => {
         const firstDay = new Date(currentYear, currentMonth, 1);
         const lastDay = new Date(currentYear, currentMonth + 1, 0);
@@ -67,7 +71,6 @@ function ModernDatePicker({
 
         const days = [];
 
-        // Add empty cells for days before the first day of the month
         for (let i = 0; i < startingDayOfWeek; i++) {
             const prevMonthDay = new Date(currentYear, currentMonth, -startingDayOfWeek + i + 1);
             days.push({
@@ -77,7 +80,6 @@ function ModernDatePicker({
             });
         }
 
-        // Add days of the current month
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(currentYear, currentMonth, day);
             const dateString = date.toISOString().split('T')[0];
@@ -95,8 +97,7 @@ function ModernDatePicker({
             });
         }
 
-        // Add empty cells to complete the grid
-        const remainingCells = 42 - days.length; // 6 rows × 7 days
+        const remainingCells = 42 - days.length;
         for (let i = 1; i <= remainingCells; i++) {
             const nextMonthDay = new Date(currentYear, currentMonth + 1, i);
             days.push({

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, userEvent, waitFor } from '../utils/test-utils';
+import '@testing-library/jest-dom';
 import ApartmentManagement from '../../components/ApartmentManagement';
 import { mockApartments, mockUsers } from '../utils/test-utils';
 
@@ -39,7 +40,7 @@ describe('ApartmentManagement', () => {
   it('renders apartment management modal when open', async () => {
     render(<ApartmentManagement {...defaultProps} />);
     
-    expect(screen.getByText('Gestión de Apartamentos')).toBeInTheDocument();
+    expect(screen.getByText('Gestión de Departamentos')).toBeInTheDocument();
     expect(screen.getByText('Administrar apartamentos del edificio')).toBeInTheDocument();
     
     await waitFor(() => {
@@ -51,7 +52,7 @@ describe('ApartmentManagement', () => {
   it('does not render when closed', () => {
     render(<ApartmentManagement {...defaultProps} isOpen={false} />);
     
-    expect(screen.queryByText('Gestión de Apartamentos')).not.toBeInTheDocument();
+    expect(screen.queryByText('Gestión de Departamentos')).not.toBeInTheDocument();
   });
 
   it('loads apartments and users on open', async () => {
@@ -74,7 +75,7 @@ describe('ApartmentManagement', () => {
     
     // Since this test depends on complex state management and the other tests 
     // verify the component works correctly, we'll just verify the basic rendering
-    expect(screen.getByText('Gestión de Apartamentos')).toBeInTheDocument();
+    expect(screen.getByText('Gestión de Departamentos')).toBeInTheDocument();
   });
 
   it('filters apartments by search term', async () => {
@@ -129,10 +130,10 @@ describe('ApartmentManagement', () => {
     const user = userEvent.setup();
     render(<ApartmentManagement {...defaultProps} />);
     
-    const createButton = screen.getByText('Crear Apartamento');
+    const createButton = screen.getByText('Crear Departamento');
     await user.click(createButton);
     
-    expect(screen.getByText('Crear Nuevo Apartamento')).toBeInTheDocument();
+    expect(screen.getByText('Crear Nuevo Departamento')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Ej: 101, 102A, etc.')).toBeInTheDocument();
     expect(screen.getByText('Piso *')).toBeInTheDocument();
     expect(screen.getByText('Habitaciones *')).toBeInTheDocument();
@@ -145,7 +146,7 @@ describe('ApartmentManagement', () => {
     render(<ApartmentManagement {...defaultProps} />);
     
     // Open create modal
-    const createButton = screen.getByText('Crear Apartamento');
+    const createButton = screen.getByText('Crear Departamento');
     await user.click(createButton);
     
     // Fill form
@@ -163,7 +164,7 @@ describe('ApartmentManagement', () => {
     await user.type(screen.getByPlaceholderText(/observaciones/i), 'New apartment');
     
     // Submit  
-    const submitButton = screen.getAllByText('Crear Apartamento')[1]; // Second one is the submit button
+    const submitButton = screen.getAllByText('Crear Departamento')[1]; // Second one is the submit button
     await user.click(submitButton);
     
     await waitFor(() => {
@@ -189,7 +190,7 @@ describe('ApartmentManagement', () => {
     const editButtons = screen.getAllByText('Editar');
     await user.click(editButtons[0]);
     
-    expect(screen.getByText('Editar Apartamento 101')).toBeInTheDocument();
+    expect(screen.getByText('Editar Departamento 101')).toBeInTheDocument();
     expect(screen.getByDisplayValue('101')).toBeInTheDocument();
     expect(screen.getByDisplayValue('1')).toBeInTheDocument();
     expect(screen.getByDisplayValue('2')).toBeInTheDocument();

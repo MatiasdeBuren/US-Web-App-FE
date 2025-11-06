@@ -20,25 +20,71 @@ function ReservationList({
     cancellingId,
     hidingId
 }: ReservationListProps) {
-    // Separate active and cancelled/denied reservations
-    const activeReservations = reservations.filter(r => r.status !== "cancelled" && r.status !== "denied");
-    const inactiveReservations = reservations.filter(r => r.status === "cancelled" || r.status === "denied");
+    console.log('ReservationList - All reservations:', reservations.map(r => ({
+        id: r.id,
+        status: r.status,
+        startTime: r.startTime,
+        amenityName: r.amenity?.name
+    })));
 
-    // Pagination state for active reservations
+    const isReservationPast = (reservation: Reservation): boolean => {
+        const now = new Date();
+        const reservationEndDate = new Date(reservation.endTime);
+        return reservationEndDate < now;
+    };
+
+    const isReservationCancelled = (reservation: Reservation): boolean => {
+        const cancelledStatuses = ["cancelada", "cancelled", "canceled", "denied"];
+        return cancelledStatuses.includes(reservation.status?.name?.toLowerCase() || '');
+    };
+
+    const isReservationFinished = (reservation: Reservation): boolean => {
+        const finishedStatuses = ["finalizada", "finished", "completed"];
+        return finishedStatuses.includes(reservation.status?.name?.toLowerCase() || '');
+    };
+
+    const activeReservations = reservations.filter(r => 
+        (r.status?.name === "confirmada" || r.status?.name === "pendiente") && 
+        !isReservationPast(r) &&
+        !isReservationCancelled(r) &&
+        !isReservationFinished(r)
+    );
+    
+    const inactiveReservations = reservations.filter(r => 
+        isReservationCancelled(r) || 
+        isReservationPast(r) ||
+        isReservationFinished(r)
+    );
+
+
+    console.log('ReservationList - Active reservations:', activeReservations.map(r => ({
+        id: r.id,
+        status: r.status,
+        startTime: r.startTime
+    })));
+    console.log('ReservationList - Inactive reservations:', inactiveReservations.map(r => ({
+        id: r.id,
+        status: r.status,
+        startTime: r.startTime,
+        isCancelled: isReservationCancelled(r),
+        isPast: isReservationPast(r)
+    })));
+
+
     const [activeCurrentPage, setActiveCurrentPage] = useState(1);
     const activeTotalPages = Math.ceil(activeReservations.length / ITEMS_PER_PAGE);
     const activeStartIndex = (activeCurrentPage - 1) * ITEMS_PER_PAGE;
     const activeEndIndex = activeStartIndex + ITEMS_PER_PAGE;
     const activeCurrentItems = activeReservations.slice(activeStartIndex, activeEndIndex);
 
-    // Pagination state for inactive reservations
+
     const [inactiveCurrentPage, setInactiveCurrentPage] = useState(1);
     const inactiveTotalPages = Math.ceil(inactiveReservations.length / ITEMS_PER_PAGE);
     const inactiveStartIndex = (inactiveCurrentPage - 1) * ITEMS_PER_PAGE;
     const inactiveEndIndex = inactiveStartIndex + ITEMS_PER_PAGE;
     const inactiveCurrentItems = inactiveReservations.slice(inactiveStartIndex, inactiveEndIndex);
 
-    // Pagination component
+
     const PaginationControls = ({ 
         currentPage, 
         totalPages, 

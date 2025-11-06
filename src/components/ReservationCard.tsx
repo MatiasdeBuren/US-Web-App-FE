@@ -17,10 +17,9 @@ function ReservationCard({
     isCancelling = false,
     isHiding = false
 }: ReservationCardProps) {
-    // Status configuration - Neutral color scheme with subtle accent colors
-    const getStatusConfig = (status: string) => {
-        switch (status) {
-            case "confirmed":
+    const getStatusConfig = (statusName: string) => {
+        switch (statusName) {
+            case "confirmada":
                 return {
                     accentColor: "from-emerald-500 to-emerald-600",
                     bgColor: "bg-white",
@@ -28,10 +27,9 @@ function ReservationCard({
                     textColor: "text-gray-700",
                     statusTextColor: "text-emerald-600",
                     icon: CheckCircle,
-                    label: "Confirmada",
                     dotColor: "bg-emerald-500"
                 };
-            case "pending":
+            case "pendiente":
                 return {
                     accentColor: "from-amber-500 to-amber-600",
                     bgColor: "bg-white",
@@ -39,10 +37,9 @@ function ReservationCard({
                     textColor: "text-gray-700",
                     statusTextColor: "text-amber-600",
                     icon: AlertCircle,
-                    label: "Pendiente",
                     dotColor: "bg-amber-500"
                 };
-            case "cancelled":
+            case "cancelada":
                 return {
                     accentColor: "from-gray-500 to-gray-600",
                     bgColor: "bg-gray-50",
@@ -50,7 +47,6 @@ function ReservationCard({
                     textColor: "text-gray-600",
                     statusTextColor: "text-gray-600",
                     icon: XCircle,
-                    label: "Cancelada",
                     dotColor: "bg-gray-500"
                 };
             case "denied":
@@ -61,8 +57,17 @@ function ReservationCard({
                     textColor: "text-gray-600",
                     statusTextColor: "text-gray-600",
                     icon: XCircle,
-                    label: "Denegada",
                     dotColor: "bg-gray-600"
+                };
+            case "finalizada":
+                return {
+                    accentColor: "from-blue-500 to-blue-600",
+                    bgColor: "bg-blue-50",
+                    borderColor: "border-blue-200",
+                    textColor: "text-gray-700",
+                    statusTextColor: "text-blue-600",
+                    icon: CheckCircle,
+                    dotColor: "bg-blue-500"
                 };
             default:
                 return {
@@ -72,41 +77,58 @@ function ReservationCard({
                     textColor: "text-gray-700",
                     statusTextColor: "text-gray-600",
                     icon: AlertCircle,
-                    label: "Desconocido",
                     dotColor: "bg-gray-400"
                 };
         }
     };
 
-    const statusConfig = getStatusConfig(reservation.status);
+    const statusConfig = getStatusConfig(reservation.status?.name || 'unknown');
+    const statusLabel = reservation.status?.label || 'Desconocido';
 
-    // Format dates
-    const startDate = new Date(reservation.startTime);
-    const endDate = new Date(reservation.endTime);
-    
-    const formatDate = (date: Date) => {
-        return date.toLocaleDateString("es-ES", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric"
-        });
+    const parseLocalTime = (timestamp: string) => {
+        const utcDate = new Date(timestamp);
+        
+        return {
+            formatDate: () => {
+                return utcDate.toLocaleDateString("es-ES", {
+                    weekday: "long",
+                    year: "numeric", 
+                    month: "long",
+                    day: "numeric"
+                });
+            },
+            formatTime: () => {
+                return utcDate.toLocaleTimeString("es-ES", {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+            }
+        };
     };
 
-    const formatTime = (date: Date) => {
-        return date.toLocaleTimeString("es-ES", {
-            hour: "2-digit",
-            minute: "2-digit"
-        });
+    const startTime = parseLocalTime(reservation.startTime);
+    const endTime = parseLocalTime(reservation.endTime);
+    
+    const formatDate = (parsedTime: ReturnType<typeof parseLocalTime>) => {
+        return parsedTime.formatDate();
+    };
+
+    const formatTime = (parsedTime: ReturnType<typeof parseLocalTime>) => {
+        return parsedTime.formatTime();
     };
 
     const getDuration = () => {
-        const diffMs = endDate.getTime() - startDate.getTime();
-        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-        const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        const startDate = new Date(reservation.startTime);
+        const endDate = new Date(reservation.endTime);
+        const diffMilliseconds = endDate.getTime() - startDate.getTime();
+        const diffMinutes = Math.floor(diffMilliseconds / (1000 * 60));
+        
+        const diffHours = Math.floor(diffMinutes / 60);
+        const remainingMinutes = diffMinutes % 60;
         
         if (diffHours > 0) {
-            return diffMinutes > 0 ? `${diffHours}h ${diffMinutes}min` : `${diffHours}h`;
+            return remainingMinutes > 0 ? `${diffHours}h ${remainingMinutes}min` : `${diffHours}h`;
         }
         return `${diffMinutes}min`;
     };
@@ -115,14 +137,27 @@ function ReservationCard({
         onCancel(reservation.id);
     };
 
-    const isActive = reservation.status !== "cancelled" && reservation.status !== "denied";
+    const isReservationPast = (): boolean => {
+        const now = new Date();
+        const reservationEndDate = new Date(reservation.endTime);
+        return reservationEndDate < now;
+    };
+
+    const isReservationCancelled = (): boolean => {
+        const cancelledStatuses = ["cancelada", "cancelled", "canceled", "denied"];
+        return cancelledStatuses.includes(reservation.status?.name?.toLowerCase() || '');
+    };
+
+    const isActive = (reservation.status?.name === "confirmada" || reservation.status?.name === "pendiente") && 
+                     !isReservationPast() && 
+                     !isReservationCancelled();
 
     return (
         <div className={`relative overflow-hidden rounded-2xl border ${statusConfig.borderColor} ${statusConfig.bgColor} shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300`}>
             {/* Status Indicator - Minimal dot and text */}
             <div className="absolute top-4 right-4 flex items-center gap-2">
                 <div className={`w-3 h-3 rounded-full ${statusConfig.dotColor} shadow-sm`}></div>
-                <span className={`${statusConfig.statusTextColor} font-semibold text-sm`}>{statusConfig.label}</span>
+                <span className={`${statusConfig.statusTextColor} font-semibold text-sm`}>{statusLabel}</span>
             </div>
 
             <div className="p-6 pt-16">
@@ -143,7 +178,7 @@ function ReservationCard({
                         <Calendar className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
                         <div>
                             <p className="font-semibold text-gray-800 capitalize">
-                                {formatDate(startDate)}
+                                {formatDate(startTime)}
                             </p>
                         </div>
                     </div>
@@ -154,7 +189,7 @@ function ReservationCard({
                         <div className="flex-1">
                             <div className="flex items-center gap-2">
                                 <span className="font-semibold text-gray-800">
-                                    {formatTime(startDate)} - {formatTime(endDate)}
+                                    {formatTime(startTime)} - {formatTime(endTime)}
                                 </span>
                                 <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
                                     {getDuration()}
@@ -174,7 +209,7 @@ function ReservationCard({
                             loadingText="Cancelando..."
                         >
                             <X className="w-4 h-4" />
-                            Cancelar reserva
+                            {reservation.status?.name === "pendiente" ? "Cancelar solicitud" : "Cancelar reserva"}
                         </LoadingButton>
                     ) : (
                         <LoadingButton

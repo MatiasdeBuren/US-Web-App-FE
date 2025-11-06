@@ -4,7 +4,7 @@ export interface Reservation {
   id: number;
   amenityId: number;
   userId: number;
-  user?: { id: number; name: string }; // <--- user object from backend
+  user?: { id: number; name: string }; 
   startTime: string;
   endTime: string;
   status: string;

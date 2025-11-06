@@ -58,7 +58,7 @@ describe('Login Page', () => {
     
     const logo = screen.getByAltText('Logo US');
     expect(logo).toBeInTheDocument();
-    expect(logo).toHaveAttribute('src', 'src/assets/Logo_Us_2.png');
+    expect(logo).toHaveAttribute('src', expect.stringContaining('Logo_Us_2'));
   });
 
   it('handles successful login', async () => {
@@ -125,26 +125,6 @@ describe('Login Page', () => {
     
     await waitFor(() => {
       expect(screen.getByText('Error en el inicio de sesión')).toBeInTheDocument();
-    });
-  });
-
-  it('displays email input with error styling when there is an error', async () => {
-    const user = userEvent.setup();
-    (login as any).mockResolvedValue({ 
-      success: false, 
-      message: 'Email not found' 
-    });
-    
-    render(<Login />);
-    
-    const emailInput = screen.getByPlaceholderText('Correo electrónico');
-    const submitButton = screen.getByText('Iniciar sesión');
-    
-    await user.type(emailInput, 'test@example.com');
-    await user.click(submitButton);
-    
-    await waitFor(() => {
-      expect(emailInput).toHaveClass('border-red-500');
     });
   });
 

@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Search, Crown, Home, AlertTriangle } from "lucide-react";
+import { Users, Search, Crown, Home, AlertTriangle, ChevronDown, UserCheck, User } from "lucide-react";
 import { getAdminUsers, updateUserRole, type AdminUser } from "../api_calls/admin";
+import ClaimSuccessToast from './ClaimSuccessToast';
+import ClaimErrorToast from './ClaimErrorToast';
+import GenericFilterModal, { type FilterOption } from "./GenericFilterModal";
 
-// Helper function to safely get reservation count from user object
 const getReservationCount = (user: AdminUser): number => {
     return user._count?.reservations ?? user.reservationCount ?? 0;
 };
@@ -12,15 +14,50 @@ interface UserManagementProps {
     isOpen: boolean;
     onClose: () => void;
     token: string;
+    currentUserEmail?: string;
 }
 
-function UserManagement({ isOpen, onClose, token }: UserManagementProps) {
+function UserManagement({ isOpen, onClose, token, currentUserEmail }: UserManagementProps) {
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [filteredUsers, setFilteredUsers] = useState<AdminUser[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterRole, setFilterRole] = useState<string>("all");
     const [updatingUserId, setUpdatingUserId] = useState<number | null>(null);
+    
+    const [showRoleFilter, setShowRoleFilter] = useState(false);
+    
+    const [showSuccessToast, setShowSuccessToast] = useState(false);
+    const [showErrorToast, setShowErrorToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState<string>('');
+    const [errorMessage, setErrorMessage] = useState<string>('');
+
+    const roleFilterOptions: FilterOption[] = [
+        {
+            value: "all",
+            label: "Todos los roles",
+            description: "Mostrar usuarios con todos los roles",
+            icon: Users
+        },
+        {
+            value: "admin",
+            label: "Administradores",
+            description: "Usuarios con permisos de administración",
+            icon: UserCheck
+        },
+        {
+            value: "owner",
+            label: "Propietarios",
+            description: "Usuarios propietarios de apartamentos",
+            icon: Crown
+        },
+        {
+            value: "tenant",
+            label: "Inquilinos",
+            description: "Usuarios inquilinos de apartamentos",
+            icon: User
+        }
+    ];
 
     useEffect(() => {
         if (isOpen && token) {
@@ -29,7 +66,6 @@ function UserManagement({ isOpen, onClose, token }: UserManagementProps) {
     }, [isOpen, token]);
 
     useEffect(() => {
-        // Filtrar usuarios basado en búsqueda y role
         let filtered = users;
 
         if (searchTerm) {
@@ -50,7 +86,6 @@ function UserManagement({ isOpen, onClose, token }: UserManagementProps) {
         setLoading(true);
         try {
             const usersData = await getAdminUsers(token);
-            // Asegurar que siempre sea un array
             if (Array.isArray(usersData)) {
                 setUsers(usersData);
             } else {
@@ -59,8 +94,7 @@ function UserManagement({ isOpen, onClose, token }: UserManagementProps) {
             }
         } catch (error) {
             console.error("Error loading users:", error);
-            setUsers([]); // Establecer array vacío en caso de error
-            // Mostrar error pero no bloquear la UI
+            setUsers([]);
             console.warn("Failed to load users, showing empty list");
         } finally {
             setLoading(false);
@@ -76,15 +110,16 @@ function UserManagement({ isOpen, onClose, token }: UserManagementProps) {
         try {
             const updatedUser = await updateUserRole(token, userId, newRole);
             
-            // Actualizar la lista local
             setUsers(prev => prev.map(user => 
                 user.id === userId ? { ...user, role: updatedUser.role } : user
             ));
             
-            alert("Role actualizado exitosamente");
+            setToastMessage("Role actualizado exitosamente");
+            setShowSuccessToast(true);
         } catch (error) {
             console.error("Error updating role:", error);
-            alert("Error al actualizar role: " + (error instanceof Error ? error.message : "Error desconocido"));
+            setErrorMessage("Error al actualizar role: " + (error instanceof Error ? error.message : "Error desconocido"));
+            setShowErrorToast(true);
         } finally {
             setUpdatingUserId(null);
         }
@@ -112,12 +147,16 @@ function UserManagement({ isOpen, onClose, token }: UserManagementProps) {
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div 
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+                onClick={onClose}
+            >
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     className="bg-white rounded-2xl shadow-2xl p-8 max-w-6xl w-full max-h-[90vh] mx-4 overflow-hidden flex flex-col"
+                    onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
                     <div className="flex justify-between items-center mb-6">
@@ -147,20 +186,19 @@ function UserManagement({ isOpen, onClose, token }: UserManagementProps) {
                                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                         </div>
-                        <select
-                            value={filterRole}
-                            onChange={(e) => setFilterRole(e.target.value)}
-                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        
+                        {/* Role Filter Button */}
+                        <button
+                            onClick={() => setShowRoleFilter(true)}
+                            className="px-4 py-2 border border-gray-300 rounded-lg hover:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors flex items-center gap-2 bg-white"
                         >
-                            <option value="all">Todos los roles</option>
-                            <option value="admin">Administradores</option>
-                            <option value="owner">Propietarios</option>
-                            <option value="tenant">Inquilinos</option>
-                        </select>
+                            {roleFilterOptions.find(option => option.value === filterRole)?.label || 'Todos los roles'}
+                            <ChevronDown className="w-4 h-4 text-gray-500" />
+                        </button>
                     </div>
 
                     {/* Users List */}
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto scrollbar-hidden">
                         {loading ? (
                             <div className="flex justify-center items-center h-40">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -193,16 +231,28 @@ function UserManagement({ isOpen, onClose, token }: UserManagementProps) {
                                             </div>
                                             
                                             <div className="flex items-center gap-3">
-                                                <select
-                                                    value={user.role}
-                                                    onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                                                    disabled={updatingUserId === user.id}
-                                                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 cursor-pointer"
-                                                >
-                                                    <option value="tenant">Inquilino</option>
-                                                    <option value="owner">Propietario</option>
-                                                    <option value="admin">Administrador</option>
-                                                </select>
+                                                {currentUserEmail === user.email ? (
+                                                    // Si es el usuario actual, mostrar badge sin posibilidad de edición
+                                                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg">
+                                                        <span className="text-sm text-gray-600 font-medium">Tu cuenta</span>
+                                                        <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getRoleBadgeColor(user.role)}`}>
+                                                            {getRoleIcon(user.role)}
+                                                            {user.role}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    // Para otros usuarios, permitir cambiar rol
+                                                    <select
+                                                        value={user.role}
+                                                        onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                                                        disabled={updatingUserId === user.id}
+                                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 cursor-pointer"
+                                                    >
+                                                        <option value="tenant">Inquilino</option>
+                                                        <option value="owner">Propietario</option>
+                                                        <option value="admin">Administrador</option>
+                                                    </select>
+                                                )}
                                                 
                                                 {updatingUserId === user.id && (
                                                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
@@ -246,6 +296,37 @@ function UserManagement({ isOpen, onClose, token }: UserManagementProps) {
                     </div>
                 </motion.div>
             </div>
+
+            {/* Role Filter Modal */}
+            <GenericFilterModal
+                isVisible={showRoleFilter}
+                onClose={() => setShowRoleFilter(false)}
+                title="Filtrar por Rol"
+                options={roleFilterOptions}
+                selectedValue={filterRole}
+                onValueSelect={(value: string) => {
+                    setFilterRole(value);
+                    setShowRoleFilter(false);
+                }}
+                headerIcon={Users}
+                headerIconColor="text-blue-600"
+                maxWidth="2xl"
+            />
+
+            {/* Success Toast */}
+            <ClaimSuccessToast
+                isVisible={showSuccessToast}
+                onComplete={() => setShowSuccessToast(false)}
+                action="updated"
+                claimSubject={toastMessage}
+            />
+
+            {/* Error Toast */}
+            <ClaimErrorToast
+                isVisible={showErrorToast}
+                onComplete={() => setShowErrorToast(false)}
+                errorMessage={errorMessage}
+            />
         </AnimatePresence>
     );
 }

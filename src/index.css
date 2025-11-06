@@ -35,3 +35,33 @@
 .scrollbar-hidden::-webkit-scrollbar {
   display: none;  /* Safari and Chrome */
 }
+
+/* Remove spinner arrows from number inputs */
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.no-spinner[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Ensure all interactive buttons have cursor pointer */
+button:not(:disabled):not([disabled]):not(.cursor-not-allowed) {
+  cursor: pointer;
+}
+
+/* Ensure clickable elements have cursor pointer */
+[role="button"]:not(:disabled):not([disabled]):not(.cursor-not-allowed),
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Ensure disabled buttons have appropriate cursor */
+button:disabled,
+button[disabled],
+.cursor-not-allowed {
+  cursor: not-allowed;
+}

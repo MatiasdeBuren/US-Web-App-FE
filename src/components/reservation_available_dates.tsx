@@ -10,35 +10,28 @@ interface Reservation {
   endTime: string;
   status?: string;
   createdAt?: string;
-  user?: { id: number; name: string }; // <--- user object from backend
+  user?: { id: number; name: string };
 }
 interface AvailabilityViewerProps {
   amenityId: number;
   amenityName: string;
   capacity: number;
+  openTime?: string; 
+  closeTime?: string; 
   fetchReservations: (amenityId: number) => Promise<Reservation[]>;
   isLoading?: boolean;
 }
 
-// Config: rango visible (ajustable)
-const VISIBLE_START_HOUR = 8; // 08:00
-const VISIBLE_END_HOUR = 20; // 20:00
-const TOTAL_MINUTES = (VISIBLE_END_HOUR - VISIBLE_START_HOUR) * 60;
-
 function getDayKey(d: Date) {
-  // Usar toLocaleDateString para evitar problemas de zona horaria
+
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
-function clamp(n: number, a: number, b: number) {
-  return Math.max(a, Math.min(b, n));
-}
-
 function getColorByRatio(ratio: number) {
-  // ratio: 0..1 (ocupación actual vs capacidad máxima)
+
   if (ratio >= 1) return "bg-red-500 text-white border-red-600";
   if (ratio >= 0.8) return "bg-orange-500 text-white border-orange-600";
   if (ratio >= 0.5) return "bg-yellow-400 text-black border-yellow-500";
@@ -49,6 +42,8 @@ export default function AvailabilityTimelineViewer({
   amenityId,
   amenityName,
   capacity,
+  openTime,
+  closeTime,
   fetchReservations,
   isLoading = false,
 }: AvailabilityViewerProps) {
@@ -62,13 +57,34 @@ export default function AvailabilityTimelineViewer({
     day: string;
   } | null>(null);
 
-  // Generate days for current week + weekOffset
+
+  const { VISIBLE_START_HOUR, VISIBLE_END_HOUR, TOTAL_MINUTES } = useMemo(() => {
+
+    const parseHour = (timeStr?: string) => timeStr ? parseInt(timeStr.split(':')[0]) : null;
+    
+    const startHour = parseHour(openTime) ?? 8; 
+    const endHour = parseHour(closeTime) ?? 20; 
+    
+
+    const finalStartHour = Math.max(6, Math.min(startHour, 22));
+    const finalEndHour = Math.min(23, Math.max(endHour, finalStartHour + 2));
+    
+    const totalMinutes = (finalEndHour - finalStartHour) * 60;
+    
+    return {
+      VISIBLE_START_HOUR: finalStartHour,
+      VISIBLE_END_HOUR: finalEndHour,
+      TOTAL_MINUTES: totalMinutes
+    };
+  }, [openTime, closeTime]);
+
+
   const days = useMemo(() => {
     const today = new Date();
     const currentWeekStart = new Date(today);
-    currentWeekStart.setDate(today.getDate() - today.getDay()); // Start of current week (Sunday)
+    currentWeekStart.setDate(today.getDate() - today.getDay());
     
-    // Add week offset
+
     currentWeekStart.setDate(currentWeekStart.getDate() + (weekOffset * 7));
     
     const result = [];
@@ -84,12 +100,12 @@ export default function AvailabilityTimelineViewer({
     return result;
   }, [weekOffset]);
 
-  // Load reservations when modal opens or week changes
+
   useEffect(() => {
     if (open && !isLoading) {
       setIsLoadingReservations(true);
       
-      // Get date range for current week
+
       const endOfWeek = new Date(days[6].date);
       endOfWeek.setHours(23, 59, 59, 999);
       
@@ -102,11 +118,19 @@ export default function AvailabilityTimelineViewer({
     }
   }, [open, amenityId, fetchReservations, isLoading, weekOffset, days]);
 
-  // Clear reservations when amenity changes to prevent showing old data
+  
   useEffect(() => {
     setReservations([]);
     setSelectedSlot(null);
+    setWeekOffset(0); 
   }, [amenityId]);
+
+
+  useEffect(() => {
+    if (!open) {
+      setWeekOffset(0);
+    }
+  }, [open]);
 
   const reservationsByDay = useMemo(() => {
     const result: Record<string, Reservation[]> = {};
@@ -119,7 +143,6 @@ export default function AvailabilityTimelineViewer({
       const dayKey = getDayKey(startDate);
 
       if (result[dayKey]) {
-        // Prevent duplicates: prefer matching by id, otherwise by start/end/user
         const exists = result[dayKey].some((existing) => {
           if (res.id !== undefined && existing.id !== undefined) {
             return existing.id === res.id;
@@ -140,163 +163,6 @@ export default function AvailabilityTimelineViewer({
     return result;
   }, [reservations, days]);
 
-  // Helper function to split reservations across hour boundaries
-  const splitReservationByHours = (reservation: Reservation) => {
-    const startDate = new Date(reservation.startTime);
-    const endDate = new Date(reservation.endTime);
-    const startMinutes = startDate.getHours() * 60 + startDate.getMinutes();
-    const endMinutes = endDate.getHours() * 60 + endDate.getMinutes();
-    
-    const segments: Array<{
-      res: Reservation;
-      segmentStart: number; // minutes from day start
-      segmentEnd: number;   // minutes from day start
-      originalStart: number; // original reservation start
-      originalEnd: number;   // original reservation end
-    }> = [];
-    
-    // If reservation doesn't cross hour boundaries, return as single segment
-    const startHour = Math.floor(startMinutes / 60);
-    const endHour = Math.floor((endMinutes - 1) / 60); // -1 to handle exact hour endings correctly
-    
-    if (startHour === endHour) {
-      // Single hour segment
-      segments.push({
-        res: reservation,
-        segmentStart: startMinutes,
-        segmentEnd: endMinutes,
-        originalStart: startMinutes,
-        originalEnd: endMinutes
-      });
-    } else {
-      // Multiple hour segments
-      for (let hour = startHour; hour <= endHour; hour++) {
-        const hourStartMinutes = hour * 60;
-        const hourEndMinutes = (hour + 1) * 60;
-        
-        // Calculate the actual time this reservation occupies in this hour
-        const segmentStart = Math.max(startMinutes, hourStartMinutes);
-        const segmentEnd = Math.min(endMinutes, hourEndMinutes);
-        
-        // Only create segment if there's actual time in this hour
-        if (segmentStart < segmentEnd) {
-          segments.push({
-            res: reservation,
-            segmentStart,
-            segmentEnd,
-            originalStart: startMinutes,
-            originalEnd: endMinutes
-          });
-        }
-      }
-    }
-    
-    return segments;
-  };
-
-  const timeSlotData = useMemo(() => {
-    const result: Record<string, Array<{ 
-      res: Reservation; 
-      topPct: number; 
-      heightPct: number; 
-      overlapCount: number; 
-      colIndex: number; 
-      colCount: number;
-      segmentStart: number;
-      segmentEnd: number;
-      originalStart: number;
-      originalEnd: number;
-    }>> = {};
-
-    days.forEach(({ key: day }) => {
-      const dayReservations = reservationsByDay[day] || [];
-
-      // Split each reservation into hour segments
-      const allSegments: Array<{
-        res: Reservation;
-        segmentStart: number;
-        segmentEnd: number;
-        originalStart: number;
-        originalEnd: number;
-      }> = [];
-
-      dayReservations.forEach((res) => {
-        const segments = splitReservationByHours(res);
-        allSegments.push(...segments);
-      });
-
-      // Convert segments to intervals with clamping
-      const intervals = allSegments.map((segment) => {
-        // Clamp to visible range
-        const clampedStart = clamp(segment.segmentStart, VISIBLE_START_HOUR * 60, VISIBLE_END_HOUR * 60);
-        const clampedEnd = clamp(segment.segmentEnd, VISIBLE_START_HOUR * 60, VISIBLE_END_HOUR * 60);
-
-        return {
-          res: segment.res,
-          start: clampedStart - VISIBLE_START_HOUR * 60, // Relative to visible start
-          end: clampedEnd - VISIBLE_START_HOUR * 60,
-          segmentStart: segment.segmentStart,
-          segmentEnd: segment.segmentEnd,
-          originalStart: segment.originalStart,
-          originalEnd: segment.originalEnd,
-          colIndex: 0, // Will be calculated below
-        };
-      }).filter(interval => interval.start < interval.end); // Only keep valid intervals
-
-      // Sort by start time
-      intervals.sort((a, b) => a.start - b.start);
-
-      // Calculate overlap columns
-      const columns: Array<{ end: number }> = [];
-      intervals.forEach((interval) => {
-        // Find the first column that doesn't overlap
-        let colIndex = 0;
-        while (colIndex < columns.length && columns[colIndex].end > interval.start) {
-          colIndex++;
-        }
-        
-        interval.colIndex = colIndex;
-        
-        // Update or add column
-        if (colIndex >= columns.length) {
-          columns.push({ end: interval.end });
-        } else {
-          columns[colIndex].end = interval.end;
-        }
-      });
-
-      // Calculate rendering data
-      const colCount = columns.length;
-      const dayRendered = intervals.map((it) => {
-        // Count concurrent reservations at this time
-        const concurrent = intervals.filter((other) =>
-          other.start < it.end && other.end > it.start
-        ).length;
-
-        const duration = Math.max(1, it.end - it.start); // minutes, visible at least 1
-        const topPct = (it.start / TOTAL_MINUTES) * 100;
-        const heightPct = (duration / TOTAL_MINUTES) * 100;
-
-        return {
-          res: it.res,
-          topPct,
-          heightPct,
-          overlapCount: concurrent,
-          colIndex: it.colIndex,
-          colCount,
-          segmentStart: it.segmentStart,
-          segmentEnd: it.segmentEnd,
-          originalStart: it.originalStart,
-          originalEnd: it.originalEnd,
-        };
-      });
-
-      result[day] = dayRendered.sort((a, b) => new Date(a.res.startTime).getTime() - new Date(b.res.startTime).getTime());
-    });
-
-    return result;
-  }, [reservationsByDay, days]);
-
   return (
     <>
       <button
@@ -315,8 +181,14 @@ export default function AvailabilityTimelineViewer({
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4">
-          <div className="bg-white rounded-xl shadow-2xl p-3 sm:p-6 max-w-7xl w-full max-h-[95vh] sm:max-h-[90vh] mx-2 sm:mx-4 overflow-hidden flex flex-col">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4"
+          onClick={() => setOpen(false)}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-2xl p-3 sm:p-6 max-w-7xl w-full max-h-[95vh] sm:max-h-[90vh] mx-2 sm:mx-4 overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center mb-4 sm:mb-6">
               <h2 className="text-lg sm:text-2xl font-bold text-gray-800 truncate pr-4">
                 Disponibilidad Timeline - {amenityName}
@@ -363,10 +235,10 @@ export default function AvailabilityTimelineViewer({
             </div>
 
             <div className="flex-1 overflow-auto">
-              <div className="grid grid-cols-8 gap-2 min-h-[700px]"> {/* Increased from 600px to 700px */}
+              <div className="grid grid-cols-8 gap-2 min-h-[1050px]"> {/* Increased by 50% from 700px to 1050px */}
                 {/* Time labels */}
                 <div className="flex flex-col">
-                  <div className="h-16 flex items-center justify-center font-bold text-gray-700 border-b border-gray-200">
+                  <div className="h-24 flex items-center justify-center font-bold text-gray-700 border-b border-gray-200">
                     Hora
                   </div>
                   <div className="flex-1 relative">
@@ -389,7 +261,7 @@ export default function AvailabilityTimelineViewer({
                 {/* Day columns */}
                 {days.map((dayObj) => (
                   <div key={dayObj.key} className="flex flex-col">
-                    <div className="h-16 flex flex-col items-center justify-center border-b border-gray-200">
+                    <div className="h-24 flex flex-col items-center justify-center border-b border-gray-200">
                       <div className="font-bold text-gray-700">{dayObj.label}</div>
                       <div className="text-xs text-gray-500">{dayObj.date.getDate()}/{dayObj.date.getMonth() + 1}</div>
                     </div>
@@ -413,16 +285,19 @@ export default function AvailabilityTimelineViewer({
                           
                           if (dayReservations.length === 0) return null;
                           
-                          // Get all unique time boundaries (start and end times)
+                          const parseLocalTimeToMinutes = (timestamp: string) => {
+                            const utcDate = new Date(timestamp);
+                            return utcDate.getHours() * 60 + utcDate.getMinutes();
+                          };
+
                           const boundaries = new Set<number>();
                           dayReservations.forEach(res => {
-                            const startMinutes = new Date(res.startTime).getHours() * 60 + new Date(res.startTime).getMinutes();
-                            const endMinutes = new Date(res.endTime).getHours() * 60 + new Date(res.endTime).getMinutes();
+                            const startMinutes = parseLocalTimeToMinutes(res.startTime);
+                            const endMinutes = parseLocalTimeToMinutes(res.endTime);
                             boundaries.add(startMinutes);
                             boundaries.add(endMinutes);
                           });
                           
-                          // Sort boundaries and create segments
                           const sortedBoundaries = Array.from(boundaries).sort((a, b) => a - b);
                           const segments = [];
                           
@@ -430,10 +305,9 @@ export default function AvailabilityTimelineViewer({
                             const segmentStart = sortedBoundaries[i];
                             const segmentEnd = sortedBoundaries[i + 1];
                             
-                            // Find all reservations that overlap with this segment
                             const overlappingReservations = dayReservations.filter(res => {
-                              const resStart = new Date(res.startTime).getHours() * 60 + new Date(res.startTime).getMinutes();
-                              const resEnd = new Date(res.endTime).getHours() * 60 + new Date(res.endTime).getMinutes();
+                              const resStart = parseLocalTimeToMinutes(res.startTime);
+                              const resEnd = parseLocalTimeToMinutes(res.endTime);
                               return resStart < segmentEnd && resEnd > segmentStart;
                             });
                             
@@ -447,35 +321,25 @@ export default function AvailabilityTimelineViewer({
                             }
                           }
                           
-                          // Create cards for each segment
                           return segments.map((segment) => {
-                            // Clamp to visible range
                             const clampedStart = Math.max(segment.start, VISIBLE_START_HOUR * 60);
                             const clampedEnd = Math.min(segment.end, VISIBLE_END_HOUR * 60);
                             
-                            // Skip if not in visible range
                             if (clampedStart >= clampedEnd) return null;
                             
-                            // Calculate position
                             const startRelative = clampedStart - VISIBLE_START_HOUR * 60;
                             const endRelative = clampedEnd - VISIBLE_START_HOUR * 60;
                             const topPct = (startRelative / TOTAL_MINUTES) * 100;
                             const heightPct = ((endRelative - startRelative) / TOTAL_MINUTES) * 100;
                             
-                            // Create time strings
-                            const startDate = new Date();
-                            startDate.setHours(Math.floor(segment.start / 60), segment.start % 60, 0, 0);
-                            const endDate = new Date();
-                            endDate.setHours(Math.floor(segment.end / 60), segment.end % 60, 0, 0);
+                            const formatTimeFromMinutes = (totalMinutes: number) => {
+                              const hours = Math.floor(totalMinutes / 60);
+                              const minutes = totalMinutes % 60;
+                              return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                            };
                             
-                            const startStr = startDate.toLocaleTimeString("es-ES", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            });
-                            const endStr = endDate.toLocaleTimeString("es-ES", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            });
+                            const startStr = formatTimeFromMinutes(segment.start);
+                            const endStr = formatTimeFromMinutes(segment.end);
 
                             const ratio = segment.count / capacity;
                             const colorClass = getColorByRatio(ratio);
@@ -486,10 +350,9 @@ export default function AvailabilityTimelineViewer({
                                 className={`absolute rounded-lg p-1 border-2 shadow-lg cursor-pointer hover:shadow-xl hover:z-10 transition-all ${colorClass}`}
                                 style={{
                                   top: `${topPct}%`,
-                                  height: `${Math.max(heightPct, 8)}%`,
+                                  height: `${heightPct}%`,
                                   left: `2%`,
                                   width: `96%`,
-                                  minHeight: "40px",
                                   zIndex: 1
                                 }}
                                 onClick={() => {
@@ -552,8 +415,14 @@ export default function AvailabilityTimelineViewer({
 
       {/* Detail Modal for Multiple Reservations */}
       {selectedSlot && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+        <div 
+          className="fixed inset-0 z-60 flex items-center justify-center bg-black/50"
+          onClick={() => setSelectedSlot(null)}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-800">
                 Reservas - {selectedSlot.day}
@@ -575,14 +444,19 @@ export default function AvailabilityTimelineViewer({
 
             <div className="space-y-3">
               {selectedSlot.reservations.map((reservation, idx) => {
-                const startTime = new Date(reservation.startTime).toLocaleTimeString("es-ES", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                });
-                const endTime = new Date(reservation.endTime).toLocaleTimeString("es-ES", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                });
+                // Parse timestamps as local time (no timezone conversion)
+                const parseLocalTimeString = (timestamp: string) => {
+                  // timestamp format: "2025-10-02T19:00:00.000Z" (UTC)
+                  const utcDate = new Date(timestamp);
+                  return utcDate.toLocaleTimeString("es-ES", {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                  });
+                };
+                
+                const startTime = parseLocalTimeString(reservation.startTime);
+                const endTime = parseLocalTimeString(reservation.endTime);
 
                 return (
                   <div 

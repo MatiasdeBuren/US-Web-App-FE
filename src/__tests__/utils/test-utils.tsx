@@ -2,6 +2,7 @@ import { render } from '@testing-library/react';
 import type { RenderOptions } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { ToastProvider } from '../../components/Toast';
 
 // Create a custom render function that includes providers
 const customRender = (
@@ -15,13 +16,19 @@ const customRender = (
   
   const Wrapper = ({ children }: { children: React.ReactNode }) => {
     if (!withRouter) {
-      return <>{children}</>;
+      return (
+        <ToastProvider>
+          {children}
+        </ToastProvider>
+      );
     }
     
     return (
-      <MemoryRouter initialEntries={initialEntries}>
-        {children}
-      </MemoryRouter>
+      <ToastProvider>
+        <MemoryRouter initialEntries={initialEntries}>
+          {children}
+        </MemoryRouter>
+      </ToastProvider>
     );
   };
 
