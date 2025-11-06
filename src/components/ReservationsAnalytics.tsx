@@ -106,6 +106,11 @@ const ReservationsAnalytics: React.FC<ReservationsAnalyticsProps> = ({ token }) 
   const processAndSetData = React.useCallback((reservations: any[]) => {
     let filteredReservations = [...reservations];
 
+
+    filteredReservations = filteredReservations.filter(r => 
+      r.status?.name !== 'cancelada'
+    );
+
     if (selectedAmenity !== 'all') {
       filteredReservations = filteredReservations.filter(r =>
         r.amenity?.name === selectedAmenity
@@ -480,7 +485,11 @@ const ReservationsAnalytics: React.FC<ReservationsAnalyticsProps> = ({ token }) 
                 </p>
                 {selectedAmenity !== 'all' && (
                   <p className="text-sm text-blue-600 mt-1">
-                    {((amenityStats.reduce((sum, a) => sum + a.totalReservations, 0) / Math.max(allReservations.length, 1)) * 100).toFixed(1)}% del total
+                    {(() => {
+                      const totalNonCancelled = allReservations.filter(r => r.status?.name !== 'cancelada').length;
+                      const amenityTotal = amenityStats.reduce((sum, a) => sum + a.totalReservations, 0);
+                      return ((amenityTotal / Math.max(totalNonCancelled, 1)) * 100).toFixed(1);
+                    })()}% del total
                   </p>
                 )}
               </div>
