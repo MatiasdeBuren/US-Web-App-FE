@@ -368,8 +368,15 @@ const ReservationsAnalytics: React.FC<ReservationsAnalyticsProps> = ({ token }) 
 
   const getPeakHour = (): string => {
     if (hourlyData.length === 0) return '--:--';
-    const peak = hourlyData.reduce((max, curr) => curr.count > max.count ? curr : max, hourlyData[0]);
-    return peak.hour;
+    
+    const maxCount = Math.max(...hourlyData.map(h => h.count));
+
+    if (maxCount === 0) return '--:--';
+    const peakHours = hourlyData.filter(h => h.count === maxCount);
+
+    if (peakHours.length === 1) return peakHours[0].hour;
+  
+    return peakHours.map(h => h.hour).join(', ');
   };
 
   const getCurrentDateLabel = (): string => {
