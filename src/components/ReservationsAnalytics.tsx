@@ -43,12 +43,65 @@ const ReservationsAnalytics: React.FC<ReservationsAnalyticsProps> = ({ token }) 
   const [loading, setLoading] = useState(true);
   const [amenityStats, setAmenityStats] = useState<AmenityStats[]>([]);
   const [hourlyData, setHourlyData] = useState<HourlyData[]>([]);
+  const [timelineSegments, setTimelineSegments] = useState<Array<{
+    startMinutes: number;
+    endMinutes: number;
+    amenityName: string;
+    layer: number;
+    count: number; // Cantidad de reservas idénticas en el mismo horario
+  }>>([]);
   const [allReservations, setAllReservations] = useState<any[]>([]);
   const [selectedAmenity, setSelectedAmenity] = useState<string>('all');
   const [dateFilterOption, setDateFilterOption] = useState<DateFilterOption | null>(null);
   const [showDateFilterModal, setShowDateFilterModal] = useState(false);
   const [showAmenityFilterModal, setShowAmenityFilterModal] = useState(false);
   const [availableAmenities, setAvailableAmenities] = useState<Array<{id: number, name: string}>>([]);
+
+  const getAmenityColor = (amenityName: string) => {
+    const colorIndex = amenityName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 5;
+    const colorConfigs = [
+      { 
+        gradient: 'from-blue-500 to-blue-400 hover:from-blue-600 hover:to-blue-500',
+        solid: 'bg-blue-500',
+        name: 'blue'
+      },
+      { 
+        gradient: 'from-purple-500 to-purple-400 hover:from-purple-600 hover:to-purple-500',
+        solid: 'bg-purple-500',
+        name: 'purple'
+      },
+      { 
+        gradient: 'from-green-500 to-green-400 hover:from-green-600 hover:to-green-500',
+        solid: 'bg-green-500',
+        name: 'green'
+      },
+      { 
+        gradient: 'from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500',
+        solid: 'bg-orange-500',
+        name: 'orange'
+      },
+      { 
+        gradient: 'from-pink-500 to-pink-400 hover:from-pink-600 hover:to-pink-500',
+        solid: 'bg-pink-500',
+        name: 'pink'
+      },
+    ];
+    return colorConfigs[colorIndex];
+  };
+
+  const getAmenityLegend = () => {
+    const uniqueAmenities = new Map<string, { color: string; solid: string }>();
+    timelineSegments.forEach(segment => {
+      if (!uniqueAmenities.has(segment.amenityName)) {
+        const colorConfig = getAmenityColor(segment.amenityName);
+        uniqueAmenities.set(segment.amenityName, { 
+          color: colorConfig.gradient, 
+          solid: colorConfig.solid 
+        });
+      }
+    });
+    return Array.from(uniqueAmenities.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  };
 
   const processAndSetData = React.useCallback((reservations: any[]) => {
     let filteredReservations = [...reservations];
@@ -125,9 +178,11 @@ const ReservationsAnalytics: React.FC<ReservationsAnalyticsProps> = ({ token }) 
 
     const processedStats = processReservationData(filteredReservations);
     const processedHourly = processHourlyData(filteredReservations);
+    const processedSegments = processTimelineSegments(filteredReservations);
 
     setAmenityStats(processedStats);
     setHourlyData(processedHourly);
+    setTimelineSegments(processedSegments);
   }, [selectedAmenity, dateFilterOption]);
 
   const loadAnalyticsData = React.useCallback(async () => {
@@ -244,6 +299,71 @@ const ReservationsAnalytics: React.FC<ReservationsAnalyticsProps> = ({ token }) 
     });
 
     return Array.from(hourlyMap.values());
+  };
+
+  const processTimelineSegments = (reservations: any[]) => {
+    
+    const groupedMap = new Map<string, {
+      startMinutes: number;
+      endMinutes: number;
+      amenityName: string;
+      count: number;
+    }>();
+
+    reservations.forEach(res => {
+      const startDate = new Date(res.startTime);
+      const endDate = new Date(res.endTime);
+      const startMinutes = startDate.getHours() * 60 + startDate.getMinutes();
+      const endMinutes = endDate.getHours() * 60 + endDate.getMinutes();
+      const amenityName = res.amenity?.name || 'Desconocido';
+      const key = `${startMinutes}-${endMinutes}-${amenityName}`;
+      
+      if (groupedMap.has(key)) {
+        groupedMap.get(key)!.count++;
+      } else {
+        groupedMap.set(key, {
+          startMinutes,
+          endMinutes,
+          amenityName,
+          count: 1
+        });
+      }
+    });
+
+    const segments = Array.from(groupedMap.values()).map(group => ({
+      ...group,
+      layer: 0
+    }));
+
+    segments.sort((a, b) => a.startMinutes - b.startMinutes);
+
+    for (let i = 0; i < segments.length; i++) {
+      const currentSegment = segments[i];
+      let layer = 0;
+      let overlaps = true;
+
+      while (overlaps) {
+        overlaps = false;
+        
+        for (let j = 0; j < i; j++) {
+          const prevSegment = segments[j];
+          if (prevSegment.layer === layer) {
+            
+            if (currentSegment.startMinutes < prevSegment.endMinutes &&
+                currentSegment.endMinutes > prevSegment.startMinutes) {
+              overlaps = true;
+              break;
+            }
+          }
+        }
+        if (overlaps) {
+          layer++;
+        }
+      }
+      currentSegment.layer = layer;
+    }
+
+    return segments;
   };
 
   const getPeakHour = (): string => {
@@ -411,7 +531,7 @@ const ReservationsAnalytics: React.FC<ReservationsAnalyticsProps> = ({ token }) 
           </motion.div>
         </div>
 
-        {/* Hourly Distribution Chart */}
+        {/* Timeline Distribution Chart */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -420,42 +540,117 @@ const ReservationsAnalytics: React.FC<ReservationsAnalyticsProps> = ({ token }) 
         >
           <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-blue-600" />
-            Distribución por Hora
+            Distribución Temporal de Reservas
           </h3>
-          <div className="overflow-x-auto overflow-y-hidden pb-12">
-            <div className="h-64 relative" style={{ minWidth: '2400px', width: '2400px' }}>
-              <div className="absolute inset-0 flex items-end justify-between gap-4 px-4">
-                {hourlyData.map((data, index) => {
-                  const maxCount = Math.max(...hourlyData.map(d => d.count), 1);
-                  const height = (data.count / maxCount) * 100;
-                  return (
-                    <div key={index} className="flex-1 flex flex-col items-center justify-end h-full" style={{ minWidth: '60px' }}>
-                      <div className="relative w-full flex flex-col items-center justify-end h-full">
-                        <motion.div
-                          initial={{ height: 0 }}
-                          animate={{ height: `${height}%` }}
-                          transition={{ delay: index * 0.02, duration: 0.5 }}
-                          className="w-full bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg hover:from-blue-600 hover:to-blue-500 transition-colors cursor-pointer"
-                          style={{ minHeight: data.count > 0 ? '4px' : '0' }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+
+          {/* Color Legend */}
+          {timelineSegments.length > 0 && (
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="text-xs font-semibold text-gray-700">Referencia de colores de Amenities:</div>
               </div>
-              <div className="absolute bottom-0 left-0 right-0 flex justify-between gap-4 px-4" style={{ transform: 'translateY(100%)', paddingTop: '8px' }}>
-                {hourlyData.map((data, index) => (
-                  <div key={index} className="flex-1 flex flex-col items-center" style={{ minWidth: '60px' }}>
-                    <span className="text-sm text-gray-500 font-medium">
-                      {data.hour.split(':')[0]}
-                    </span>
-                    {data.count > 0 && (
-                      <span className="text-xs text-gray-600 font-medium mt-1">
-                        {data.count}
-                      </span>
+              <div className="flex flex-wrap gap-4">
+                {getAmenityLegend().map(([amenityName, colorInfo]) => (
+                  <div key={amenityName} className="flex items-center gap-2">
+                    <div className={`w-4 h-4 rounded ${colorInfo.solid}`}></div>
+                    <span className="text-xs text-gray-700 font-medium">{amenityName}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          <div className="overflow-x-auto overflow-y-hidden pb-4">
+            <div className="relative" style={{ minWidth: '2400px', height: '360px' }}>
+              {/* Hour markers at the bottom */}
+              <div className="absolute bottom-0 left-0 right-0 flex border-t border-gray-300 pt-2">
+                {Array.from({ length: 24 }, (_, hour) => (
+                  <div
+                    key={hour}
+                    className="flex-1 text-center text-xs text-gray-600 font-medium relative"
+                    style={{ minWidth: '100px' }}
+                  >
+                    <span>{hour.toString().padStart(2, '0')}:00</span>
+                    {hour < 23 && (
+                      <div className="absolute left-1/2 top-0 w-px h-2 bg-gray-300 -translate-x-1/2" />
                     )}
                   </div>
                 ))}
+              </div>
+
+              {/* Timeline segments */}
+              <div className="absolute top-0 left-0 right-0" style={{ height: '320px' }}>
+                {timelineSegments.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-gray-400">
+                    <div className="text-center">
+                      <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>No hay reservas en el período seleccionado</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Background grid for half-hour marks */}
+                    <div className="absolute inset-0 flex">
+                      {Array.from({ length: 48 }, (_, i) => (
+                        <div
+                          key={i}
+                          className="flex-1 border-r border-gray-100"
+                          style={{ minWidth: '50px' }}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Reservation bars */}
+                    {timelineSegments.map((segment, index) => {
+                      const totalMinutes = 24 * 60;
+                      const leftPercent = (segment.startMinutes / totalMinutes) * 100;
+                      const widthPercent = ((segment.endMinutes - segment.startMinutes) / totalMinutes) * 100;
+
+                      const maxLayers = Math.max(...timelineSegments.map(s => s.layer), 0) + 1;
+                      const barHeight = Math.min(40, 280 / maxLayers); 
+                      const bottomPosition = segment.layer * barHeight;
+                      
+                      const startHour = Math.floor(segment.startMinutes / 60);
+                      const startMin = segment.startMinutes % 60;
+                      const endHour = Math.floor(segment.endMinutes / 60);
+                      const endMin = segment.endMinutes % 60;
+                      
+                      const timeLabel = `${startHour.toString().padStart(2, '0')}:${startMin.toString().padStart(2, '0')} - ${endHour.toString().padStart(2, '0')}:${endMin.toString().padStart(2, '0')}`;
+                      const colorConfig = getAmenityColor(segment.amenityName);
+                      
+                      return (
+                        <motion.div
+                          key={`segment-${index}`}
+                          initial={{ width: 0, opacity: 0 }}
+                          animate={{ width: `${widthPercent}%`, opacity: 1 }}
+                          transition={{ delay: index * 0.01, duration: 0.3 }}
+                          className={`absolute bg-gradient-to-r ${colorConfig.gradient} rounded-lg hover:shadow-md transition-all cursor-pointer group`}
+                          style={{
+                            left: `${leftPercent}%`,
+                            bottom: `${bottomPosition}px`,
+                            height: `${barHeight - 4}px`,
+                            minWidth: '4px'
+                          }}
+                          title={`${segment.amenityName}\n${timeLabel}${segment.count > 1 ? `\n${segment.count} reservas` : ''}`}
+                        >
+                          {/* Tooltip on hover */}
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10">
+                            <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-lg">
+                              <div className="font-semibold">{segment.amenityName}</div>
+                              <div className="text-gray-300">{timeLabel}</div>
+                              {segment.count > 1 && (
+                                <div className="text-blue-300 mt-1 font-semibold">
+                                  {segment.count} reservas en este horario
+                                </div>
+                              )}
+                            </div>
+                            <div className="w-2 h-2 bg-gray-900 rotate-45 absolute top-full left-1/2 -translate-x-1/2 -mt-1" />
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </>
+                )}
               </div>
             </div>
           </div>
