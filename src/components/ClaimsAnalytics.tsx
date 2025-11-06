@@ -96,71 +96,81 @@ const ClaimsAnalytics: React.FC<ClaimsAnalyticsProps> = ({ token }) => {
   return (
     <>
       {/* Sub-tabs for Claims */}
-      <div className="flex gap-1 p-1 bg-purple-50 rounded-lg mb-4">
-        <button
+      <div className="flex gap-2 mb-6">
+        <motion.button
           onClick={() => setClaimsSubTab('evolution')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className={`flex-1 px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${
             claimsSubTab === 'evolution'
-              ? 'bg-purple-600 text-white shadow-sm'
-              : 'text-purple-700 hover:text-purple-900'
+              ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-lg shadow-purple-200'
+              : 'bg-white text-gray-600 hover:text-purple-600 hover:bg-purple-50 border border-gray-200'
           }`}
         >
           Evolución de Reclamos
-        </button>
-        <button
+        </motion.button>
+        <motion.button
           onClick={() => setClaimsSubTab('metrics')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className={`flex-1 px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${
             claimsSubTab === 'metrics'
-              ? 'bg-purple-600 text-white shadow-sm'
-              : 'text-purple-700 hover:text-purple-900'
+              ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-lg shadow-purple-200'
+              : 'bg-white text-gray-600 hover:text-purple-600 hover:bg-purple-50 border border-gray-200'
           }`}
         >
           Métricas
-        </button>
+        </motion.button>
       </div>
 
       {/* Period selector - only for evolution */}
       {claimsSubTab === 'evolution' && (
-        <div className="flex gap-1 p-1 bg-indigo-50 rounded-lg mb-6">
-          <button
+        <div className="flex gap-2 mb-6">
+          <motion.button
             onClick={() => {
               setClaimsPeriod('daily');
               setDayOffset(0);
             }}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className={`flex-1 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${
               claimsPeriod === 'daily'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-indigo-700 hover:text-indigo-900'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600'
             }`}
           >
             Diario
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             onClick={() => {
               setClaimsPeriod('weekly');
               setDayOffset(0);
             }}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className={`flex-1 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${
               claimsPeriod === 'weekly'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-indigo-700 hover:text-indigo-900'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600'
             }`}
           >
             Semanal
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             onClick={() => {
               setClaimsPeriod('monthly');
               setDayOffset(0);
             }}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className={`flex-1 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${
               claimsPeriod === 'monthly'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-indigo-700 hover:text-indigo-900'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600'
             }`}
           >
             Mensual
-          </button>
+          </motion.button>
         </div>
       )}
 
