@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  TrendingUp
+  BarChart3,
+  Clock,
+  TrendingUp,
+  Activity,
+  PieChart
 } from 'lucide-react';
 
 interface MonthlyClaimData {
@@ -22,45 +26,64 @@ interface ClaimsAnalyticsProps {
 }
 
 const ClaimsAnalytics: React.FC<ClaimsAnalyticsProps> = ({ token }) => {
+  const [claimsSubTab, setClaimsSubTab] = useState<'evolution' | 'metrics'>('evolution');
   const [claimsPeriod, setClaimsPeriod] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
   const [dayOffset, setDayOffset] = useState(0);
   const [monthlyClaimsData, setMonthlyClaimsData] = useState<MonthlyClaimData[]>([]);
+  const [claimsMetrics, setClaimsMetrics] = useState<any>(null);
   const [isLoadingClaims, setIsLoadingClaims] = useState(false);
 
   const loadClaimsData = React.useCallback(async () => {
     setIsLoadingClaims(true);
     
     try {
-      console.log('[CLAIMS] Fetching stats - Period:', claimsPeriod, 'Offset:', dayOffset);
-      const claimsStats = await fetch(`${import.meta.env.VITE_API_URL}/admin/claims/stats?period=${claimsPeriod}&offset=${dayOffset}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      }).then(res => res.json()).catch((err) => {
-        console.error('[CLAIMS] Fetch error:', err);
-        return { data: [] };
-      });
+      if (claimsSubTab === 'evolution') {
+        console.log('[CLAIMS] Fetching stats - Period:', claimsPeriod, 'Offset:', dayOffset);
+        const claimsStats = await fetch(`${import.meta.env.VITE_API_URL}/admin/claims/stats?period=${claimsPeriod}&offset=${dayOffset}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }).then(res => res.json()).catch((err) => {
+          console.error('[CLAIMS] Fetch error:', err);
+          return { data: [] };
+        });
 
-      console.log('[CLAIMS STATS] Response:', {
-        period: claimsStats.period,
-        offset: claimsStats.offset,
-        totalClaims: claimsStats.totalClaims,
-        dataLength: claimsStats.data?.length || 0,
-      });
+        console.log('[CLAIMS STATS] Response:', {
+          period: claimsStats.period,
+          offset: claimsStats.offset,
+          totalClaims: claimsStats.totalClaims,
+          dataLength: claimsStats.data?.length || 0,
+        });
 
-      if (claimsStats && Array.isArray(claimsStats.data)) {
-        setMonthlyClaimsData(claimsStats.data);
+        if (claimsStats && Array.isArray(claimsStats.data)) {
+          setMonthlyClaimsData(claimsStats.data);
+        } else {
+          console.warn('[CLAIMS] Invalid response format or empty data');
+          setMonthlyClaimsData([]);
+        }
       } else {
-        console.warn('[CLAIMS] Invalid response format or empty data');
-        setMonthlyClaimsData([]);
+        console.log('[CLAIMS METRICS] Fetching metrics data');
+        const metricsData = await fetch(`${import.meta.env.VITE_API_URL}/admin/claims/metrics`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }).then(res => res.json()).catch((err) => {
+          console.error('[CLAIMS METRICS] Fetch error:', err);
+          return null;
+        });
+
+        if (metricsData) {
+          setClaimsMetrics(metricsData);
+        }
       }
     } catch (error) {
       console.error('[CLAIMS] Error loading data:', error);
     } finally {
       setIsLoadingClaims(false);
     }
-  }, [token, claimsPeriod, dayOffset]);
+  }, [token, claimsSubTab, claimsPeriod, dayOffset]);
 
   useEffect(() => {
     loadClaimsData();
@@ -72,8 +95,33 @@ const ClaimsAnalytics: React.FC<ClaimsAnalyticsProps> = ({ token }) => {
 
   return (
     <>
-      {/* Period selector */}
-      <div className="flex gap-1 p-1 bg-indigo-50 rounded-lg mb-6">
+      {/* Sub-tabs for Claims */}
+      <div className="flex gap-1 p-1 bg-purple-50 rounded-lg mb-4">
+        <button
+          onClick={() => setClaimsSubTab('evolution')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+            claimsSubTab === 'evolution'
+              ? 'bg-purple-600 text-white shadow-sm'
+              : 'text-purple-700 hover:text-purple-900'
+          }`}
+        >
+          Evolución de Reclamos
+        </button>
+        <button
+          onClick={() => setClaimsSubTab('metrics')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+            claimsSubTab === 'metrics'
+              ? 'bg-purple-600 text-white shadow-sm'
+              : 'text-purple-700 hover:text-purple-900'
+          }`}
+        >
+          Métricas
+        </button>
+      </div>
+
+      {/* Period selector - only for evolution */}
+      {claimsSubTab === 'evolution' && (
+        <div className="flex gap-1 p-1 bg-indigo-50 rounded-lg mb-6">
           <button
             onClick={() => {
               setClaimsPeriod('daily');
@@ -114,8 +162,10 @@ const ClaimsAnalytics: React.FC<ClaimsAnalyticsProps> = ({ token }) => {
             Mensual
           </button>
         </div>
+      )}
 
-      <motion.div
+      {claimsSubTab === 'evolution' ? (
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
@@ -348,6 +398,179 @@ const ClaimsAnalytics: React.FC<ClaimsAnalyticsProps> = ({ token }) => {
             </div>
           )}
         </motion.div>
+      ) : (
+        /* Metrics Tab */
+        <div className="space-y-6">
+          {isLoadingClaims ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Cargando métricas...</p>
+              </div>
+            </div>
+          ) : claimsMetrics ? (
+            <>
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-2xl"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-blue-600 font-medium">Tiempo Promedio de Resolución</p>
+                      <p className="text-3xl font-bold text-blue-900">
+                        {claimsMetrics.averageResolutionTime ? 
+                          `${Math.round(claimsMetrics.averageResolutionTime)} días` : 
+                          'N/A'}
+                      </p>
+                      <p className="text-sm text-blue-600 mt-1">
+                        Desde creación hasta finalización
+                      </p>
+                    </div>
+                    <Clock className="w-8 h-8 text-blue-600" />
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-2xl"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-green-600 font-medium">Tasa de Resolución</p>
+                      <p className="text-3xl font-bold text-green-900">
+                        {claimsMetrics.resolutionRate ? 
+                          `${Math.round(claimsMetrics.resolutionRate)}%` : 
+                          'N/A'}
+                      </p>
+                      <p className="text-sm text-green-600 mt-1">
+                        Reclamos resueltos/cerrados
+                      </p>
+                    </div>
+                    <TrendingUp className="w-8 h-8 text-green-600" />
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-2xl"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-purple-600 font-medium">Total de Reclamos</p>
+                      <p className="text-3xl font-bold text-purple-900">
+                        {claimsMetrics.totalClaims || 0}
+                      </p>
+                      <p className="text-sm text-purple-600 mt-1">
+                        Histórico completo
+                      </p>
+                    </div>
+                    <BarChart3 className="w-8 h-8 text-purple-600" />
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Claims by Category */}
+              {claimsMetrics.byCategory && claimsMetrics.byCategory.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
+                >
+                  <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <PieChart className="w-5 h-5 text-indigo-600" />
+                    Reclamos por Categoría
+                  </h3>
+                  <div className="space-y-4">
+                    {claimsMetrics.byCategory.map((category: any, idx: number) => {
+                      const percentage = claimsMetrics.totalClaims > 0 
+                        ? (category.count / claimsMetrics.totalClaims) * 100 
+                        : 0;
+                      const colors = [
+                        'bg-blue-500',
+                        'bg-green-500',
+                        'bg-yellow-500',
+                        'bg-red-500',
+                        'bg-purple-500',
+                        'bg-pink-500',
+                        'bg-indigo-500',
+                        'bg-orange-500'
+                      ];
+                      const color = colors[idx % colors.length];
+
+                      return (
+                        <div key={category.category || idx} className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-gray-700">
+                              {category.category || 'Sin categoría'}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-gray-600">{category.count}</span>
+                              <span className="text-xs text-gray-500">
+                                ({percentage.toFixed(1)}%)
+                              </span>
+                            </div>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className={`${color} h-2 rounded-full transition-all duration-500`}
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Claims by Status */}
+              {claimsMetrics.byStatus && claimsMetrics.byStatus.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
+                >
+                  <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-emerald-600" />
+                    Distribución por Estado
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {claimsMetrics.byStatus.map((status: any) => (
+                      <div
+                        key={status.status}
+                        className="bg-gray-50 p-4 rounded-xl border border-gray-100"
+                      >
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-gray-900">
+                            {status.count}
+                          </div>
+                          <div className="text-sm text-gray-600 mt-1">
+                            {status.status}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>No hay métricas disponibles</p>
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 };

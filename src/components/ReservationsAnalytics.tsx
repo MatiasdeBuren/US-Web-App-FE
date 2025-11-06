@@ -422,32 +422,42 @@ const ReservationsAnalytics: React.FC<ReservationsAnalyticsProps> = ({ token }) 
             <BarChart3 className="w-5 h-5 text-blue-600" />
             Distribución por Hora
           </h3>
-          <div className="h-64 flex items-end justify-between gap-1">
-            {hourlyData.map((data, index) => {
-              const maxCount = Math.max(...hourlyData.map(d => d.count), 1);
-              const height = (data.count / maxCount) * 100;
-              return (
-                <div key={index} className="flex-1 flex flex-col items-center group">
-                  <div className="relative w-full">
-                    <motion.div
-                      initial={{ height: 0 }}
-                      animate={{ height: `${height}%` }}
-                      transition={{ delay: index * 0.02, duration: 0.5 }}
-                      className="w-full bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg hover:from-blue-600 hover:to-blue-500 transition-colors cursor-pointer"
-                      style={{ minHeight: data.count > 0 ? '4px' : '0' }}
-                    />
-                  </div>
-                  <span className="text-xs text-gray-500 mt-2 rotate-0 group-hover:text-gray-700">
-                    {index % 2 === 0 ? data.hour.split(':')[0] : ''}
-                  </span>
-                  {data.count > 0 && (
-                    <span className="text-xs text-gray-600 font-medium mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {data.count}
+          <div className="overflow-x-auto overflow-y-hidden pb-12">
+            <div className="h-64 relative" style={{ minWidth: '2400px', width: '2400px' }}>
+              <div className="absolute inset-0 flex items-end justify-between gap-4 px-4">
+                {hourlyData.map((data, index) => {
+                  const maxCount = Math.max(...hourlyData.map(d => d.count), 1);
+                  const height = (data.count / maxCount) * 100;
+                  return (
+                    <div key={index} className="flex-1 flex flex-col items-center justify-end h-full" style={{ minWidth: '60px' }}>
+                      <div className="relative w-full flex flex-col items-center justify-end h-full">
+                        <motion.div
+                          initial={{ height: 0 }}
+                          animate={{ height: `${height}%` }}
+                          transition={{ delay: index * 0.02, duration: 0.5 }}
+                          className="w-full bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg hover:from-blue-600 hover:to-blue-500 transition-colors cursor-pointer"
+                          style={{ minHeight: data.count > 0 ? '4px' : '0' }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 flex justify-between gap-4 px-4" style={{ transform: 'translateY(100%)', paddingTop: '8px' }}>
+                {hourlyData.map((data, index) => (
+                  <div key={index} className="flex-1 flex flex-col items-center" style={{ minWidth: '60px' }}>
+                    <span className="text-sm text-gray-500 font-medium">
+                      {data.hour.split(':')[0]}
                     </span>
-                  )}
-                </div>
-              );
-            })}
+                    {data.count > 0 && (
+                      <span className="text-xs text-gray-600 font-medium mt-1">
+                        {data.count}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </motion.div>
 
