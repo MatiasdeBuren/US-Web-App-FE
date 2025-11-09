@@ -89,6 +89,159 @@ const ReservationsAnalytics: React.FC<ReservationsAnalyticsProps> = ({ token }) 
     return colorConfigs[colorIndex];
   };
 
+  const calculateUtilizationRate = React.useCallback((
+    reservations: any[], 
+    openTime: string, 
+    closeTime: string,
+    dateRangeStart: Date | null,
+    dateRangeEnd: Date | null
+  ): number => {
+    if (reservations.length === 0) return 0;
+
+    const [openHour, openMin] = openTime.split(':').map(Number);
+    const [closeHour, closeMin] = closeTime.split(':').map(Number);
+    const dailyOpenMinutes = openHour * 60 + openMin;
+    const dailyCloseMinutes = closeHour * 60 + closeMin;
+    const dailyAvailableMinutes = dailyCloseMinutes - dailyOpenMinutes;
+
+    if (dailyAvailableMinutes <= 0) return 0;
+
+    let numberOfDays = 30;
+    if (dateRangeStart && dateRangeEnd) {
+      // Lo setteo a cero para evitar errores cuando calculamos la diferencia de dias en el filtro
+      const startDay = new Date(dateRangeStart);
+      startDay.setHours(0, 0, 0, 0);
+      
+      const endDay = new Date(dateRangeEnd);
+      endDay.setHours(0, 0, 0, 0);
+      
+      const diffTime = endDay.getTime() - startDay.getTime();
+      numberOfDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    }
+
+    const totalAvailableMinutes = dailyAvailableMinutes * numberOfDays;
+    const timeRanges: Array<{ start: number; end: number }> = [];
+    
+    reservations.forEach(res => {
+      const startTime = new Date(res.startTime);
+      const endTime = new Date(res.endTime);
+      const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
+      const endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
+      
+      timeRanges.push({ start: startMinutes, end: endMinutes });
+    });
+
+    timeRanges.sort((a, b) => a.start - b.start);
+
+    const mergedRanges: Array<{ start: number; end: number }> = [];
+    for (const range of timeRanges) {
+      if (mergedRanges.length === 0) {
+        mergedRanges.push({ ...range });
+      } else {
+        const lastRange = mergedRanges[mergedRanges.length - 1];
+        if (range.start <= lastRange.end) {
+          
+          lastRange.end = Math.max(lastRange.end, range.end);
+        } else {
+          mergedRanges.push({ ...range });
+        }
+      }
+    }
+
+    const totalUsedMinutes = mergedRanges.reduce((sum, range) => {
+      return sum + (range.end - range.start);
+    }, 0);
+
+    const utilizationRate = (totalUsedMinutes / totalAvailableMinutes) * 100;
+
+    console.log('[UTILIZATION DEBUG]', {
+      openTime,
+      closeTime,
+      dailyAvailableMinutes,
+      numberOfDays,
+      totalAvailableMinutes,
+      reservationsCount: reservations.length,
+      mergedRangesCount: mergedRanges.length,
+      totalUsedMinutes,
+      utilizationRate: utilizationRate.toFixed(2) + '%'
+    });
+
+    return Math.min(utilizationRate, 100);
+  }, []);
+
+  const processReservationData = React.useCallback((reservations: any[], dateRangeStart: Date | null = null, dateRangeEnd: Date | null = null): AmenityStats[] => {
+    const amenityMap = new Map<string, any>();
+
+    reservations.forEach(reservation => {
+      const amenityName = reservation.amenity?.name || 'Desconocido';
+      const startTime = new Date(reservation.startTime);
+      const endTime = new Date(reservation.endTime);
+      const hour = startTime.getHours();
+      const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+
+      if (!amenityMap.has(amenityName)) {
+        const amenityData = {
+          id: reservation.amenity?.id || 0,
+          name: amenityName,
+          totalReservations: 0,
+          hourlyCount: new Array(24).fill(0),
+          totalDuration: 0,
+          reservations: [],
+          openTime: reservation.amenity?.openTime || '00:00',
+          closeTime: reservation.amenity?.closeTime || '23:59'
+        };
+        
+        console.log('[AMENITY DATA]', amenityName, {
+          openTime: reservation.amenity?.openTime,
+          closeTime: reservation.amenity?.closeTime,
+          usedOpenTime: amenityData.openTime,
+          usedCloseTime: amenityData.closeTime
+        });
+        
+        amenityMap.set(amenityName, amenityData);
+      }
+
+      const stats = amenityMap.get(amenityName);
+      stats.totalReservations++;
+      stats.hourlyCount[hour]++;
+      stats.totalDuration += duration;
+      stats.reservations.push(reservation);
+    });
+
+    const result: AmenityStats[] = Array.from(amenityMap.values()).map(stats => {
+      const hourlyWithIndex = stats.hourlyCount.map((count: number, hour: number) => ({ hour, count }));
+      const peakHours = hourlyWithIndex
+        .sort((a: { hour: number; count: number }, b: { hour: number; count: number }) => b.count - a.count)
+        .slice(0, 3)
+        .filter((h: { hour: number; count: number }) => h.count > 0)
+        .map((h: { hour: number; count: number }) => ({
+          ...h,
+          label: `${h.hour.toString().padStart(2, '0')}:00`
+        }));
+
+      const utilizationRate = calculateUtilizationRate(
+        stats.reservations, 
+        stats.openTime, 
+        stats.closeTime, 
+        dateRangeStart, 
+        dateRangeEnd
+      );
+
+      const averageDuration = stats.totalReservations > 0 ? stats.totalDuration / stats.totalReservations : 0;
+
+      return {
+        id: stats.id,
+        name: stats.name,
+        totalReservations: stats.totalReservations,
+        peakHours,
+        utilizationRate: Math.round(utilizationRate * 10) / 10,
+        averageDuration: Math.round(averageDuration * 10) / 10
+      };
+    });
+
+    return result.sort((a, b) => b.totalReservations - a.totalReservations);
+  }, [calculateUtilizationRate]);
+
   const getAmenityLegend = () => {
     const uniqueAmenities = new Map<string, { color: string; solid: string }>();
     timelineSegments.forEach(segment => {
@@ -116,6 +269,9 @@ const ReservationsAnalytics: React.FC<ReservationsAnalyticsProps> = ({ token }) 
         r.amenity?.name === selectedAmenity
       );
     }
+
+    let dateRangeStart: Date | null = null;
+    let dateRangeEnd: Date | null = null;
 
     if (dateFilterOption && dateFilterOption.value !== 'all') {
       const now = new Date();
@@ -172,6 +328,9 @@ const ReservationsAnalytics: React.FC<ReservationsAnalyticsProps> = ({ token }) 
       }
 
       if (startDate && endDate) {
+        dateRangeStart = startDate;
+        dateRangeEnd = endDate;
+        
         filteredReservations = filteredReservations.filter(reservation => {
           const reservationDate = new Date(reservation.startTime);
           return reservationDate >= startDate! && reservationDate <= endDate!;
@@ -181,14 +340,14 @@ const ReservationsAnalytics: React.FC<ReservationsAnalyticsProps> = ({ token }) 
 
     console.log('[ANALYTICS] Filtered to', filteredReservations.length, 'reservations');
 
-    const processedStats = processReservationData(filteredReservations);
+    const processedStats = processReservationData(filteredReservations, dateRangeStart, dateRangeEnd);
     const processedHourly = processHourlyData(filteredReservations);
     const processedSegments = processTimelineSegments(filteredReservations);
 
     setAmenityStats(processedStats);
     setHourlyData(processedHourly);
     setTimelineSegments(processedSegments);
-  }, [selectedAmenity, dateFilterOption]);
+  }, [selectedAmenity, dateFilterOption, processReservationData]);
 
   const loadAnalyticsData = React.useCallback(async () => {
     try {
@@ -226,61 +385,6 @@ const ReservationsAnalytics: React.FC<ReservationsAnalyticsProps> = ({ token }) 
       processAndSetData(allReservations);
     }
   }, [selectedAmenity, dateFilterOption, allReservations, processAndSetData]);
-
-  const processReservationData = (reservations: any[]): AmenityStats[] => {
-    const amenityMap = new Map<string, any>();
-
-    reservations.forEach(reservation => {
-      const amenityName = reservation.amenity?.name || 'Desconocido';
-      const startTime = new Date(reservation.startTime);
-      const endTime = new Date(reservation.endTime);
-      const hour = startTime.getHours();
-      const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-
-      if (!amenityMap.has(amenityName)) {
-        amenityMap.set(amenityName, {
-          id: reservation.amenity?.id || 0,
-          name: amenityName,
-          totalReservations: 0,
-          hourlyCount: new Array(24).fill(0),
-          totalDuration: 0,
-          reservations: []
-        });
-      }
-
-      const stats = amenityMap.get(amenityName);
-      stats.totalReservations++;
-      stats.hourlyCount[hour]++;
-      stats.totalDuration += duration;
-      stats.reservations.push(reservation);
-    });
-
-    const result: AmenityStats[] = Array.from(amenityMap.values()).map(stats => {
-      const hourlyWithIndex = stats.hourlyCount.map((count: number, hour: number) => ({ hour, count }));
-      const peakHours = hourlyWithIndex
-        .sort((a: { hour: number; count: number }, b: { hour: number; count: number }) => b.count - a.count)
-        .slice(0, 3)
-        .filter((h: { hour: number; count: number }) => h.count > 0)
-        .map((h: { hour: number; count: number }) => ({
-          ...h,
-          label: `${h.hour.toString().padStart(2, '0')}:00`
-        }));
-
-      const utilizationRate = stats.totalReservations > 0 ? Math.min((stats.totalReservations / 30) * 100, 100) : 0;
-      const averageDuration = stats.totalReservations > 0 ? stats.totalDuration / stats.totalReservations : 0;
-
-      return {
-        id: stats.id,
-        name: stats.name,
-        totalReservations: stats.totalReservations,
-        peakHours,
-        utilizationRate: Math.round(utilizationRate),
-        averageDuration: Math.round(averageDuration * 10) / 10
-      };
-    });
-
-    return result.sort((a, b) => b.totalReservations - a.totalReservations);
-  };
 
   const processHourlyData = (reservations: any[]): HourlyData[] => {
     const hourlyMap = new Map<number, any>();
@@ -523,7 +627,7 @@ const ReservationsAnalytics: React.FC<ReservationsAnalyticsProps> = ({ token }) 
                 <p className="text-purple-600 font-medium">Utilización Promedio</p>
                 <p className="text-3xl font-bold text-purple-900">
                   {amenityStats.length > 0
-                    ? Math.round(amenityStats.reduce((sum, a) => sum + a.utilizationRate, 0) / amenityStats.length)
+                    ? (Math.round((amenityStats.reduce((sum, a) => sum + a.utilizationRate, 0) / amenityStats.length) * 10) / 10)
                     : 0}%
                 </p>
               </div>
