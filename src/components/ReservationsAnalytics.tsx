@@ -108,7 +108,7 @@ const ReservationsAnalytics: React.FC<ReservationsAnalyticsProps> = ({ token }) 
 
     let numberOfDays = 30;
     if (dateRangeStart && dateRangeEnd) {
-      // Lo setteo a cero para evitar errores cuando calculamos la diferencia de dias en el filtro
+      // Lo setteo a cero para evitar errores cuando se calcula la diferencia de dias en el filtro
       const startDay = new Date(dateRangeStart);
       startDay.setHours(0, 0, 0, 0);
       
@@ -626,9 +626,19 @@ const ReservationsAnalytics: React.FC<ReservationsAnalyticsProps> = ({ token }) 
               <div>
                 <p className="text-purple-600 font-medium">Utilización Promedio</p>
                 <p className="text-3xl font-bold text-purple-900">
-                  {amenityStats.length > 0
-                    ? (Math.round((amenityStats.reduce((sum, a) => sum + a.utilizationRate, 0) / amenityStats.length) * 10) / 10)
-                    : 0}%
+                  {(() => {
+                    if (selectedAmenity === 'all') {
+                      // Calculo el promedio entre todas las amenities
+                      const totalUtilization = amenityStats.reduce((sum, a) => sum + a.utilizationRate, 0);
+                      const totalAmenities = availableAmenities.length > 0 ? availableAmenities.length : 1;
+                      return (Math.round((totalUtilization / totalAmenities) * 10) / 10);
+                    } else {
+                      // Solo la amenity filtrada
+                      return amenityStats.length > 0
+                        ? (Math.round((amenityStats.reduce((sum, a) => sum + a.utilizationRate, 0) / amenityStats.length) * 10) / 10)
+                        : 0;
+                    }
+                  })()}%
                 </p>
               </div>
               <TrendingUp className="w-8 h-8 text-purple-600" />
