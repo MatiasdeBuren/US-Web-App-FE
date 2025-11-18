@@ -1,35 +1,13 @@
 import { X, Trophy, Star, TrendingUp, Award, Calendar } from "lucide-react";
-import { useEffect, useState } from "react";
-import { 
-  getGamificationProfile, 
-  type UserGamification, 
-  formatPoints, 
-  calculateLevelProgress 
-} from "../api_calls/gamification";
+import { useGamification } from "../contexts/GamificationContext";
+import { formatPoints, calculateLevelProgress } from "../api_calls/gamification";
 
 interface GamificationProfileModalProps {
-  userId: number;
   onClose: () => void;
 }
 
-export default function GamificationProfileModal({ userId, onClose }: GamificationProfileModalProps) {
-  const [profile, setProfile] = useState<UserGamification | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadProfile();
-  }, [userId]);
-
-  const loadProfile = async () => {
-    try {
-      const data = await getGamificationProfile(userId);
-      setProfile(data);
-    } catch (error) {
-      console.error("Error loading profile:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+export default function GamificationProfileModal({ onClose }: GamificationProfileModalProps) {
+  const { profile, loading } = useGamification();
 
   if (loading) {
     return (

@@ -12,7 +12,6 @@ import logoUs from '../assets/Logo_Us_2.png';
 
 interface HeaderProps {
     userName: string;
-    userId: number;
     onProfileClick: () => void;
     showProfileMenu?: boolean;
     onLogout?: () => void;
@@ -37,7 +36,6 @@ interface HeaderProps {
 
 function Header({ 
     userName,
-    userId, 
     onProfileClick, 
     showProfileMenu = true, 
     onLogout, 
@@ -164,7 +162,6 @@ function Header({
 
                     <div className="flex items-center space-x-4">
                         <GamificationBadge 
-                            userId={userId} 
                             onClick={() => setShowGamificationModal(true)} 
                         />
                         
@@ -326,7 +323,6 @@ function Header({
             
             {showGamificationModal && (
                 <GamificationProfileModal 
-                    userId={userId} 
                     onClose={() => setShowGamificationModal(false)} 
                 />
             )}

@@ -28,6 +28,7 @@ import ClaimsPage from "./ClaimsPage";
 import useUserNotifications from "../hooks/useUserNotifications";
 import useNotificationToasts from "../hooks/useNotificationToasts";
 import { NotificationToastContainer } from "../components/NotificationToast";
+import { GamificationProvider } from "../contexts/GamificationContext";
 import type { UserData, ReservationData, Reservation, Amenity } from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL as string;
@@ -496,16 +497,16 @@ function TenantDashboard() {
     };
 
     return (
-        <div className={`min-h-screen bg-gray-100 overflow-hidden ${(showSuccessToast || showPasswordChangeToast) ? 'pointer-events-none' : ''}`}>
-            {/* HEADER */}
-            <Header
-                userName={userData?.user.name || ""}
-                userId={userData?.user.id || 0}
-                onProfileClick={() => setShowProfile((prev) => !prev)}
-                onLogout={handleLogout}
-                onClaimsClick={() => setActiveTab("reclamos")}
-                onDashboardClick={() => setActiveTab("dashboard")}
-                activeTab={activeTab}
+        <GamificationProvider userId={userData?.user.id || 0}>
+            <div className={`min-h-screen bg-gray-100 overflow-hidden ${(showSuccessToast || showPasswordChangeToast) ? 'pointer-events-none' : ''}`}>
+                {/* HEADER */}
+                <Header
+                    userName={userData?.user.name || ""}
+                    onProfileClick={() => setShowProfile((prev) => !prev)}
+                    onLogout={handleLogout}
+                    onClaimsClick={() => setActiveTab("reclamos")}
+                    onDashboardClick={() => setActiveTab("dashboard")}
+                    activeTab={activeTab}
                 userNotifications={userNotifications}
                 userUnreadCount={userUnreadCount}
                 onMarkUserNotificationAsRead={markUserNotificationAsRead}
@@ -756,7 +757,8 @@ function TenantDashboard() {
                 onRemoveToast={removeToast}
             />
 
-        </div>
+            </div>
+        </GamificationProvider>
     );
 }
 

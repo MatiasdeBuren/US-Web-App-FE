@@ -1,30 +1,13 @@
 import { Trophy } from "lucide-react";
-import { useEffect, useState } from "react";
-import { getGamificationProfile, type UserGamification, formatPoints } from "../api_calls/gamification";
+import { useGamification } from "../contexts/GamificationContext";
+import { formatPoints } from "../api_calls/gamification";
 
 interface GamificationBadgeProps {
-  userId: number;
   onClick?: () => void;
 }
 
-export default function GamificationBadge({ userId, onClick }: GamificationBadgeProps) {
-  const [profile, setProfile] = useState<UserGamification | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadProfile();
-  }, [userId]);
-
-  const loadProfile = async () => {
-    try {
-      const data = await getGamificationProfile(userId);
-      setProfile(data);
-    } catch (error) {
-      console.error("Error loading gamification profile:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+export default function GamificationBadge({ onClick }: GamificationBadgeProps) {
+  const { profile, loading } = useGamification();
 
   if (loading || !profile) {
     return null;
