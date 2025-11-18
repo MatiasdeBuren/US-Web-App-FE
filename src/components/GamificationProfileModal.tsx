@@ -165,8 +165,50 @@ export default function GamificationProfileModal({ userId, onClose }: Gamificati
               </div>
             )}
           </div>
+
+          <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-800 rounded-xl p-6 border border-blue-200 dark:border-gray-600">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-blue-600" />
+              Cómo Ganar Puntos
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <PointAction icon="✅" action="Completar reserva" points="+50" positive />
+              <PointAction icon="⭐" action="Dar calificación" points="+30" positive />
+              <PointAction icon="📝" action="Crear reclamo" points="+20" positive />
+              <PointAction icon="✔️" action="Reclamo resuelto" points="+40" positive />
+              <PointAction icon="👍" action="Dar adhesión" points="+5" positive />
+              <PointAction icon="🎯" action="Recibir adhesión positiva" points="+10" positive />
+              <PointAction icon="📅" action="Login diario" points="+10" positive />
+              <PointAction icon="🔥" action="7 días consecutivos" points="+50" positive />
+              <PointAction icon="❌" action="Cancelar reserva" points="-10" positive={false} />
+              <PointAction icon="❌" action="Reclamo rechazado" points="-5" positive={false} />
+              <PointAction icon="👎" action="Adhesión negativa" points="-5" positive={false} />
+            </div>
+          </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+interface PointActionProps {
+  icon: string;
+  action: string;
+  points: string;
+  positive: boolean;
+}
+
+function PointAction({ icon, action, points, positive }: PointActionProps) {
+  return (
+    <div className="flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
+      <span className="text-2xl">{icon}</span>
+      <div className="flex-1">
+        <p className="text-sm font-medium text-gray-900 dark:text-white">{action}</p>
+      </div>
+      <span className={`text-sm font-bold ${positive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+        {points}
+      </span>
     </div>
   );
 }
