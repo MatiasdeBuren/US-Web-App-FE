@@ -1,6 +1,7 @@
 import { X, Trophy, Star, TrendingUp, Award, Calendar } from "lucide-react";
 import { useGamification } from "../contexts/GamificationContext";
 import { formatPoints, calculateLevelProgress } from "../api_calls/gamification";
+import GamificationCustomization from "./GamificationCustomization";
 
 interface GamificationProfileModalProps {
   onClose: () => void;
@@ -143,6 +144,9 @@ export default function GamificationProfileModal({ onClose }: GamificationProfil
               </div>
             )}
           </div>
+
+          {/* CUSTOMIZATION SECTION */}
+          <GamificationCustomization userId={profile.userId} />
 
           <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-800 rounded-xl p-6 border border-blue-200 dark:border-gray-600">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
