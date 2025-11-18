@@ -28,8 +28,9 @@ export default function GamificationProfileModal({ onClose }: GamificationProfil
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        {/* HEADER STICKY */}
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center flex-shrink-0">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Mi Perfil de Gamificación</h2>
           <button
             onClick={onClose}
@@ -39,11 +40,13 @@ export default function GamificationProfileModal({ onClose }: GamificationProfil
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        {/* SCROLLABLE CONTENT */}
+        <div className="overflow-y-auto flex-1 p-6 space-y-6">
           <div 
-            className="rounded-xl p-6 text-white"
+            className={`rounded-xl p-6 text-white ${profile.selectedFrame.cssClass} ${profile.selectedEffect.cssClass}`}
             style={{ 
-              background: `linear-gradient(135deg, ${profile.level.color}dd, ${profile.level.color}99)` 
+              background: profile.selectedTheme.gradient 
+                || `linear-gradient(135deg, ${profile.selectedTheme.primaryColor}, ${profile.selectedTheme.secondaryColor})`
             }}
           >
             <div className="flex items-center gap-4 mb-4">
@@ -55,6 +58,13 @@ export default function GamificationProfileModal({ onClose }: GamificationProfil
               </div>
               <div>
                 <h3 className="text-2xl font-bold">{profile.level.displayName}</h3>
+                {profile.selectedTitle && (
+                  <p className="text-white/95 text-sm font-medium">
+                    {profile.selectedTitle.key === 'custom' && profile.customTitleText 
+                      ? profile.customTitleText 
+                      : profile.selectedTitle.displayName}
+                  </p>
+                )}
                 <p className="text-white/90">{formatPoints(profile.totalPoints)} puntos</p>
               </div>
             </div>

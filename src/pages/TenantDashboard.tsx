@@ -29,6 +29,7 @@ import useUserNotifications from "../hooks/useUserNotifications";
 import useNotificationToasts from "../hooks/useNotificationToasts";
 import { NotificationToastContainer } from "../components/NotificationToast";
 import { GamificationProvider } from "../contexts/GamificationContext";
+import WelcomeSection from "../components/WelcomeSection";
 import type { UserData, ReservationData, Reservation, Amenity } from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL as string;
@@ -520,69 +521,7 @@ function TenantDashboard() {
             {/* MAIN CONTENT CONTAINER */}
             <div className="relative p-8">
                 {/* WELCOME SECTION */}
-                <div className="mb-12 relative overflow-hidden">
-                    <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700 rounded-3xl p-8 shadow-2xl border border-gray-200">
-                        {/* Decorative background elements */}
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/10 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
-                        <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-white/5 to-transparent rounded-full translate-y-12 -translate-x-12"></div>
-                        
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 bg-gradient-to-r from-white to-gray-100 rounded-xl flex items-center justify-center shadow-lg">
-                                    <span className="text-2xl">🏢</span>
-                                </div>
-                                <div>
-                                    <h1 className="text-4xl font-bold text-white mb-2">
-                                        ¡Hola, {userData?.user.name}!
-                                    </h1>
-                                    <div className="flex items-center gap-2 text-gray-300">
-                                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                                        <span className="text-lg">Sistema activo</span>
-                                    </div>
-                                </div>
-                            </div>
-                            {/* Features Highlights 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-                                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                                            <span className="text-white text-lg">📅</span>
-                                        </div>
-                                        <h3 className="text-white font-semibold text-lg">Reservas Rápidas</h3>
-                                    </div>
-                                    <p className="text-gray-300 text-sm">
-                                        Selecciona tu amenity favorito y reserva en segundos
-                                    </p>
-                                </div>
-                                
-                                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
-                                            <span className="text-white text-lg">⚡</span>
-                                        </div>
-                                        <h3 className="text-white font-semibold text-lg">Estado en Tiempo Real</h3>
-                                    </div>
-                                    <p className="text-gray-300 text-sm">
-                                        Ve la disponibilidad actualizada de todos los espacios
-                                    </p>
-                                </div>
-                                
-                                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
-                                            <span className="text-white text-lg">📊</span>
-                                        </div>
-                                        <h3 className="text-white font-semibold text-lg">Gestión Completa</h3>
-                                    </div>
-                                    <p className="text-gray-300 text-sm">
-                                        Administra, cancela y revisa todas tus reservas fácilmente
-                                    </p>
-                                </div>
-                            </div>
-                            */}
-                        </div>
-                    </div>
-                </div>
+                <WelcomeSection userName={userData?.user.name || ""} />
 
             {/* Mostrar ClaimsPage si activeTab es 'reclamos', sino mostrar el dashboard original */}
             {activeTab === "reclamos" ? (

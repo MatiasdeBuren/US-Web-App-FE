@@ -13,10 +13,17 @@ export default function GamificationBadge({ onClick }: GamificationBadgeProps) {
     return null;
   }
 
+  const themeGradient = profile.selectedTheme.gradient 
+    || `linear-gradient(135deg, ${profile.selectedTheme.primaryColor}, ${profile.selectedTheme.secondaryColor})`;
+
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-500/10 to-blue-500/10 hover:from-purple-500/20 hover:to-blue-500/20 border border-purple-500/20 transition-all duration-200"
+      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all duration-200 hover:scale-105 hover:shadow-lg ${profile.selectedFrame.cssClass} ${profile.selectedEffect.cssClass}`}
+      style={{ 
+        background: themeGradient,
+        borderColor: profile.selectedTheme.primaryColor + '60'
+      }}
     >
       <div 
         className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg"
@@ -26,10 +33,10 @@ export default function GamificationBadge({ onClick }: GamificationBadgeProps) {
       </div>
       
       <div className="flex flex-col items-start">
-        <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
+        <span className="text-xs font-semibold text-white drop-shadow-sm">
           {profile.level.displayName}
         </span>
-        <span className="text-[10px] text-gray-500 dark:text-gray-400">
+        <span className="text-[10px] text-white/90 drop-shadow-sm">
           {formatPoints(profile.totalPoints)} pts
         </span>
       </div>
