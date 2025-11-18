@@ -500,6 +500,7 @@ function TenantDashboard() {
             {/* HEADER */}
             <Header
                 userName={userData?.user.name || ""}
+                userId={userData?.user.id || 0}
                 onProfileClick={() => setShowProfile((prev) => !prev)}
                 onLogout={handleLogout}
                 onClaimsClick={() => setActiveTab("reclamos")}

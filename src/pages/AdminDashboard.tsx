@@ -210,6 +210,7 @@ function AdminDashboard() {
         <div className={`min-h-screen bg-gray-100 ${(showSuccessToast || showPasswordChangeToast) ? 'pointer-events-none' : ''}`}>
             <Header
                 userName={userData?.user.name || ""}
+                userId={userData?.user.id || 0}
                 onProfileClick={() => setShowProfile((prev) => !prev)}
                 onLogout={handleLogout}
                 showClaimsTab={false}
