@@ -63,7 +63,7 @@ export interface GamificationEffect {
 }
 
 export interface UserGamification {
-    points: number;
+    totalPoints: number;
     customTitle: string | null;
     level: GamificationLevel;
     selectedTheme: GamificationTheme | null;

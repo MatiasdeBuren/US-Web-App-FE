@@ -40,7 +40,7 @@ interface GamificationEffect {
 }
 
 interface UserGamification {
-  points?: number | null;
+  totalPoints?: number | null;
   customTitle: string | null;
   level: GamificationLevel;
   selectedTheme: GamificationTheme | null;
@@ -96,7 +96,7 @@ export default function UserBadge({
     );
   }
 
-  const { level, selectedTheme, selectedFrame, selectedEffect, customTitle, points } = gamification;
+  const { level, selectedTheme, selectedFrame, selectedEffect, customTitle, totalPoints } = gamification;
 
   const themeGradient = selectedTheme?.gradient 
     || `linear-gradient(135deg, ${selectedTheme?.primaryColor || level.color}, ${selectedTheme?.secondaryColor || level.color})`;
@@ -106,25 +106,25 @@ export default function UserBadge({
 
   const sizeConfig = {
     sm: {
-      container: 'px-2 py-1',
-      circle: 'w-5 h-5',
-      icon: 'w-3 h-3',
-      levelText: 'text-[10px]',
-      pointsText: 'text-[8px]'
-    },
-    md: {
       container: 'px-3 py-1.5',
       circle: 'w-6 h-6',
-      icon: 'w-3.5 h-3.5',
+      icon: 'w-4 h-4',
       levelText: 'text-xs',
       pointsText: 'text-[10px]'
     },
-    lg: {
+    md: {
       container: 'px-4 py-2',
       circle: 'w-8 h-8',
-      icon: 'w-4 h-4',
+      icon: 'w-5 h-5',
       levelText: 'text-sm',
       pointsText: 'text-xs'
+    },
+    lg: {
+      container: 'px-5 py-2.5',
+      circle: 'w-10 h-10',
+      icon: 'w-6 h-6',
+      levelText: 'text-base',
+      pointsText: 'text-sm'
     }
   };
 
@@ -163,7 +163,7 @@ export default function UserBadge({
           background: themeGradient,
           borderColor: (selectedTheme?.primaryColor || level.color) + '60'
         }}
-        title={`${level.displayName} - ${points || 0} puntos`}
+        title={`${level.displayName} - ${totalPoints || 0} puntos`}
       >
         {/* Level Icon Circle */}
         <div 
@@ -180,7 +180,7 @@ export default function UserBadge({
               {level.displayName}
             </span>
             <span className={`${config.pointsText} text-white/90 drop-shadow-sm`}>
-              {formatPoints(points)} pts
+              {formatPoints(totalPoints)} pts
             </span>
           </div>
         )}
