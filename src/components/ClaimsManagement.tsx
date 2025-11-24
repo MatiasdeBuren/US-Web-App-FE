@@ -32,7 +32,7 @@ import {
   deleteAdminClaim,
   type Claim
 } from '../api_calls/claims';
-import { createProjectFlowTask } from '../api_calls/projectFlow';
+import { createProjectFlowTask, createProjectFlowSubTask } from '../api_calls/projectFlow';
 import ClaimSuccessToast from './ClaimSuccessToast';
 import ClaimErrorToast from './ClaimErrorToast';
 import CategoryFilterModal from './CategoryFilterModal';
@@ -40,7 +40,9 @@ import StatusFilterModal from './StatusFilterModal';
 import DateFilterModal, { type DateFilterOption } from './DateFilterModal';
 import UserBadge from './UserBadge';
 import ExportToProjectFlowModal from './ExportToProjectFlowModal';
-import ProjectFlowExportSuccessToast from './ProjectFlowExportSuccessToast';
+import ProjectFlowTaskCreatedToast from './ProjectFlowTaskCreatedToast';
+import CreateSubTaskModal from './CreateSubTaskModal';
+import SubTaskCreatedToast from './SubTaskCreatedToast';
 
 interface ClaimsManagementProps {
   isOpen: boolean;
@@ -122,8 +124,13 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
   
   const [showExportModal, setShowExportModal] = useState(false);
   const [claimToExport, setClaimToExport] = useState<Claim | null>(null);
-  const [showExportSuccessToast, setShowExportSuccessToast] = useState(false);
-  const [exportedClaimTitle, setExportedClaimTitle] = useState<string>('');
+  const [showTaskCreatedToast, setShowTaskCreatedToast] = useState(false);
+  const [createdTaskTitle, setCreatedTaskTitle] = useState<string>('');
+  const [createdTaskId, setCreatedTaskId] = useState<string>('');
+  
+  const [showSubTaskModal, setShowSubTaskModal] = useState(false);
+  const [showSubTaskCreatedToast, setShowSubTaskCreatedToast] = useState(false);
+  const [createdSubTaskTitle, setCreatedSubTaskTitle] = useState<string>('');
   
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -368,18 +375,43 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
     if (!claimToExport) return;
 
     try {
-      await createProjectFlowTask(token, {
+      const task = await createProjectFlowTask(token, {
         title,
         description,
         deadline
       });
       
-      setExportedClaimTitle(title);
+      // Guardar el task ID y título para poder crear subtareas
+      setCreatedTaskId(task.id);
+      setCreatedTaskTitle(title);
       setShowExportModal(false);
-      setShowExportSuccessToast(true);
+      setShowTaskCreatedToast(true);
       setClaimToExport(null);
     } catch (error: any) {
       setErrorMessage(error.message || 'Error al exportar a Project Flow');
+      setShowErrorToast(true);
+    }
+  };
+
+  const handleOpenSubTaskModal = () => {
+    setShowSubTaskModal(true);
+  };
+
+  const handleCreateSubTask = async (title: string, description: string, deadline: string) => {
+    if (!createdTaskId) return;
+
+    try {
+      await createProjectFlowSubTask(token, createdTaskId, {
+        title,
+        description,
+        deadline
+      });
+      
+      setCreatedSubTaskTitle(title);
+      setShowSubTaskModal(false);
+      setShowSubTaskCreatedToast(true);
+    } catch (error: any) {
+      setErrorMessage(error.message || 'Error al crear subtarea');
       setShowErrorToast(true);
     }
   };
@@ -759,11 +791,19 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
         errorMessage={errorMessage}
       />
 
-      {/* Export Success Toast */}
-      <ProjectFlowExportSuccessToast
-        isVisible={showExportSuccessToast}
-        onComplete={() => setShowExportSuccessToast(false)}
-        claimTitle={exportedClaimTitle}
+      {/* Task Created Toast with SubTask Option */}
+      <ProjectFlowTaskCreatedToast
+        isVisible={showTaskCreatedToast}
+        onComplete={() => setShowTaskCreatedToast(false)}
+        onCreateSubTask={handleOpenSubTaskModal}
+        taskTitle={createdTaskTitle}
+      />
+
+      {/* SubTask Created Toast */}
+      <SubTaskCreatedToast
+        isVisible={showSubTaskCreatedToast}
+        onComplete={() => setShowSubTaskCreatedToast(false)}
+        subTaskTitle={createdSubTaskTitle}
       />
 
       {/* Export Modal */}
@@ -779,6 +819,14 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
           claimDescription={claimToExport.description}
         />
       )}
+
+      {/* SubTask Modal */}
+      <CreateSubTaskModal
+        isOpen={showSubTaskModal}
+        onClose={() => setShowSubTaskModal(false)}
+        onCreateSubTask={handleCreateSubTask}
+        parentTaskTitle={createdTaskTitle}
+      />
 
       {/* Category Filter Modal */}
       <CategoryFilterModal
