@@ -36,6 +36,7 @@ import ClaimErrorToast from './ClaimErrorToast';
 import CategoryFilterModal from './CategoryFilterModal';
 import StatusFilterModal from './StatusFilterModal';
 import DateFilterModal, { type DateFilterOption } from './DateFilterModal';
+import UserBadge from './UserBadge';
 
 interface ClaimsManagementProps {
   isOpen: boolean;
@@ -485,7 +486,7 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
                     >
                       <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
                         {/* Category Icon */}
-                        <div className={`self-start p-2 rounded-xl ${
+                        <div className={`self-start p-2 rounded-xl flex-shrink-0 ${
                           claim.category?.name === 'ascensor' ? 'bg-purple-100 text-purple-600' :
                           claim.category?.name === 'plomeria' ? 'bg-blue-100 text-blue-600' :
                           claim.category?.name === 'electricidad' ? 'bg-yellow-100 text-yellow-600' :
@@ -501,9 +502,22 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-2">
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-gray-900 mb-1 break-words">
-                                {claim.subject}
-                              </h3>
+                              <div className="flex items-start justify-between gap-2 mb-1">
+                                <h3 className="font-semibold text-gray-900 break-words flex-1">
+                                  {claim.subject}
+                                </h3>
+                                {/* User gamification badge in top-right */}
+                                {claim.user && (
+                                  <div className="flex-shrink-0">
+                                    <UserBadge
+                                      gamification={claim.user.gamification}
+                                      userName={claim.createdBy}
+                                      size="sm"
+                                      showName={false}
+                                    />
+                                  </div>
+                                )}
+                              </div>
                               <p className="text-sm text-gray-600 mb-2 break-words">
                                 {claim.description}
                               </p>

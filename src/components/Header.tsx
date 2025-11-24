@@ -5,6 +5,8 @@ import LogoutConfirmModal from "./LogoutConfirmModal";
 import LogoutSuccessToast from "./LogoutSuccessToast";
 import NotificationBell, { type Notification } from "./NotificationBell";
 import UserNotificationBell from "./UserNotificationBell";
+import GamificationBadge from "./GamificationBadge";
+import GamificationProfileModal from "./GamificationProfileModal";
 import type { UserNotification } from "../hooks/useUserNotifications";
 import logoUs from '../assets/Logo_Us_2.png';
 
@@ -33,7 +35,7 @@ interface HeaderProps {
 }
 
 function Header({ 
-    userName, 
+    userName,
     onProfileClick, 
     showProfileMenu = true, 
     onLogout, 
@@ -60,6 +62,7 @@ function Header({
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [showSuccessToast, setShowSuccessToast] = useState(false);
+    const [showGamificationModal, setShowGamificationModal] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const mobileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -158,6 +161,10 @@ function Header({
                     </div>
 
                     <div className="flex items-center space-x-4">
+                        <GamificationBadge 
+                            onClick={() => setShowGamificationModal(true)} 
+                        />
+                        
                         {showNotifications && (
                             <NotificationBell
                                 notifications={notifications}
@@ -313,6 +320,12 @@ function Header({
                 isVisible={showSuccessToast}
                 onComplete={handleLogoutComplete}
             />
+            
+            {showGamificationModal && (
+                <GamificationProfileModal 
+                    onClose={() => setShowGamificationModal(false)} 
+                />
+            )}
         </header>
     );
 }

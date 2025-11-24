@@ -23,6 +23,61 @@ export interface ClaimStatus {
     color?: string;
 }
 
+export interface GamificationLevel {
+    id: number;
+    name: string;
+    displayName: string;
+    minPoints: number;
+    maxPoints: number | null;
+    order: number;
+    icon: string;
+    color: string;
+}
+
+export interface GamificationTheme {
+    id: number;
+    name: string;
+    displayName: string;
+    primaryColor: string;
+    secondaryColor: string;
+    gradient: string;
+    requiredLevelId: number;
+}
+
+export interface GamificationFrame {
+    id: number;
+    name: string;
+    displayName: string;
+    cssClass: string;
+    animation: string;
+    requiredLevelId: number;
+}
+
+export interface GamificationEffect {
+    id: number;
+    name: string;
+    displayName: string;
+    cssClass: string;
+    animation: string;
+    requiredLevelId: number;
+}
+
+export interface UserGamification {
+    totalPoints: number;
+    customTitle: string | null;
+    level: GamificationLevel;
+    selectedTheme: GamificationTheme | null;
+    selectedFrame: GamificationFrame | null;
+    selectedEffect: GamificationEffect | null;
+}
+
+export interface ClaimUser {
+    id: number;
+    name: string;
+    email: string;
+    gamification?: UserGamification | null;
+}
+
 export interface Claim {
     id: number;
     subject: string;
@@ -35,6 +90,7 @@ export interface Claim {
     updatedAt: string;
     createdBy: string;
     userId?: number;
+    user?: ClaimUser;
     adminNotes?: string;
     isAnonymous?: boolean;
     adhesion_counts?: {

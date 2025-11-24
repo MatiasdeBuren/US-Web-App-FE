@@ -28,6 +28,7 @@ import LogoutSuccessToast from "../components/LogoutSuccessToast";
 import PasswordChangeSuccessToast from "../components/PasswordChangeSuccessToast";
 import ReservationErrorToast from "../components/ReservationErrorToast";
 import NotificationsModal from "../components/NotificationsModal";
+import { GamificationProvider } from "../contexts/GamificationContext";
 import { getAdminStats, type AdminStats as AdminStatsType } from "../api_calls/admin";
 import { updateUserName } from "../api_calls/update_user_name";
 import { updateUserPassword } from "../api_calls/update_user_password";
@@ -207,13 +208,14 @@ function AdminDashboard() {
     };
 
     return (
-        <div className={`min-h-screen bg-gray-100 ${(showSuccessToast || showPasswordChangeToast) ? 'pointer-events-none' : ''}`}>
-            <Header
-                userName={userData?.user.name || ""}
-                onProfileClick={() => setShowProfile((prev) => !prev)}
-                onLogout={handleLogout}
-                showClaimsTab={false}
-                showAmenitiesTab={false}
+        <GamificationProvider userId={userData?.user.id || 0}>
+            <div className={`min-h-screen bg-gray-100 ${(showSuccessToast || showPasswordChangeToast) ? 'pointer-events-none' : ''}`}>
+                <Header
+                    userName={userData?.user.name || ""}
+                    onProfileClick={() => setShowProfile((prev) => !prev)}
+                    onLogout={handleLogout}
+                    showClaimsTab={false}
+                    showAmenitiesTab={false}
                 showNotifications={true}
                 notifications={notifications}
                 onMarkNotificationAsRead={markAsRead}
@@ -597,7 +599,8 @@ function AdminDashboard() {
                 isOpen={showRatingsView}
                 onClose={() => setShowRatingsView(false)}
             />
-        </div>
+            </div>
+        </GamificationProvider>
     );
 }
 
