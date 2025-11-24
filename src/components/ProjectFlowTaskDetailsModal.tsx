@@ -1,0 +1,238 @@
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Clock, CheckCircle, PlayCircle, XCircle, Calendar, Plus, Loader2 } from 'lucide-react';
+import { getProjectFlowTask, type ProjectFlowTask } from '../api_calls/projectFlow';
+
+interface ProjectFlowTaskDetailsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  taskId: string;
+  token: string;
+  onAddSubTask?: () => void;
+}
+
+const statusIcons = {
+  TODO: Clock,
+  IN_PROGRESS: PlayCircle,
+  DONE: CheckCircle,
+  CANCELLED: XCircle
+};
+
+const statusLabels = {
+  TODO: 'Pendiente',
+  IN_PROGRESS: 'En Progreso',
+  DONE: 'Completada',
+  CANCELLED: 'Cancelada'
+};
+
+const statusColors = {
+  TODO: 'bg-gray-100 text-gray-800 border-gray-300',
+  IN_PROGRESS: 'bg-blue-100 text-blue-800 border-blue-300',
+  DONE: 'bg-green-100 text-green-800 border-green-300',
+  CANCELLED: 'bg-red-100 text-red-800 border-red-300'
+};
+
+export default function ProjectFlowTaskDetailsModal({
+  isOpen,
+  onClose,
+  taskId,
+  token,
+  onAddSubTask
+}: ProjectFlowTaskDetailsModalProps) {
+  const [task, setTask] = useState<ProjectFlowTask | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen && taskId) {
+      loadTask();
+    }
+  }, [isOpen, taskId]);
+
+  const loadTask = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const taskData = await getProjectFlowTask(token, taskId);
+      setTask(taskData);
+    } catch (err: any) {
+      setError(err.message || 'Error al cargar la tarea');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const StatusIcon = task ? statusIcons[task.status] : Clock;
+
+  return (
+    <AnimatePresence>
+      <div
+        className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-[60]"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                <StatusIcon className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Detalles de la Tarea
+                </h2>
+                <p className="text-sm text-gray-500">ProjectFlow</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="p-6">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+              </div>
+            ) : error ? (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+            ) : task ? (
+              <div className="space-y-4">
+                {/* Title */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Título
+                  </label>
+                  <p className="text-lg font-semibold text-gray-900">{task.title}</p>
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Estado
+                  </label>
+                  <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border ${statusColors[task.status]}`}>
+                    <StatusIcon className="w-4 h-4" />
+                    {statusLabels[task.status]}
+                  </span>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Descripción
+                  </label>
+                  <p className="text-sm text-gray-600 whitespace-pre-wrap">{task.description}</p>
+                </div>
+
+                {/* Deadline */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Fecha límite
+                  </label>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Calendar className="w-4 h-4" />
+                    {new Date(task.deadline).toLocaleDateString('es-ES', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </div>
+                </div>
+
+                {/* Task ID */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    ID de Tarea
+                  </label>
+                  <code className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">
+                    {task.id}
+                  </code>
+                </div>
+
+                {/* SubTasks */}
+                {task.subTasks && task.subTasks.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Subtareas ({task.subTasks.length})
+                    </label>
+                    <div className="space-y-2">
+                      {task.subTasks.map((subTask) => {
+                        const SubTaskIcon = statusIcons[subTask.status];
+                        return (
+                          <div
+                            key={subTask.id}
+                            className="p-3 bg-gray-50 rounded-lg border border-gray-200"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 mb-1">
+                                  {subTask.title}
+                                </p>
+                                <p className="text-xs text-gray-600 mb-2">
+                                  {subTask.description}
+                                </p>
+                                <div className="flex items-center gap-2">
+                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${statusColors[subTask.status]}`}>
+                                    <SubTaskIcon className="w-3 h-3" />
+                                    {statusLabels[subTask.status]}
+                                  </span>
+                                  <span className="text-xs text-gray-500 flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    {new Date(subTask.deadline).toLocaleDateString('es-ES')}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between p-6 border-t border-gray-100 bg-gray-50">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              Cerrar
+            </button>
+            {onAddSubTask && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onAddSubTask();
+                }}
+                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-colors flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Añadir Subtarea
+              </button>
+            )}
+          </div>
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  );
+}

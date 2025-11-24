@@ -19,6 +19,28 @@ export interface ProjectFlowTask {
   status: TaskStatus;
   deadline: string;
   parentTaskId: string | null;
+  isPublic: boolean;
+  createdAt: string;
+  updatedAt: string;
+  creatorId: string;
+  completedById: string | null;
+  completedAt: string | null;
+  creator: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  parentTask: {
+    id: string;
+    title: string;
+  } | null;
+  completedBy?: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
+  subTasks?: ProjectFlowTask[];
+  notes?: any[];
 }
 
 

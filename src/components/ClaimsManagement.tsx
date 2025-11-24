@@ -35,7 +35,7 @@ import {
   linkClaimToProjectFlowTask,
   type Claim
 } from '../api_calls/claims';
-import { createProjectFlowTask, createProjectFlowSubTask } from '../api_calls/projectFlow';
+import { createProjectFlowTask, createProjectFlowSubTask, updateProjectFlowTask, type TaskStatus } from '../api_calls/projectFlow';
 import ClaimSuccessToast from './ClaimSuccessToast';
 import ClaimErrorToast from './ClaimErrorToast';
 import CategoryFilterModal from './CategoryFilterModal';
@@ -46,6 +46,7 @@ import ExportToProjectFlowModal from './ExportToProjectFlowModal';
 import ProjectFlowTaskCreatedToast from './ProjectFlowTaskCreatedToast';
 import CreateSubTaskModal from './CreateSubTaskModal';
 import SubTaskCreatedToast from './SubTaskCreatedToast';
+import ProjectFlowTaskDetailsModal from './ProjectFlowTaskDetailsModal';
 
 interface ClaimsManagementProps {
   isOpen: boolean;
@@ -134,6 +135,9 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
   const [showSubTaskModal, setShowSubTaskModal] = useState(false);
   const [showSubTaskCreatedToast, setShowSubTaskCreatedToast] = useState(false);
   const [createdSubTaskTitle, setCreatedSubTaskTitle] = useState<string>('');
+  
+  const [showTaskDetailsModal, setShowTaskDetailsModal] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string>('');
   
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -333,6 +337,35 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
       const updatedClaim = await updateClaimStatus(token, claim.id, newStatus as any, adminNotes);
       
       console.log('📝 [ADMIN NOTES DEBUG] Updated claim response:', updatedClaim);
+      
+      
+      if (claim.projectFlowTaskId) {
+        try {
+          let projectFlowStatus: TaskStatus = 'TODO';
+          
+
+          switch (newStatus) {
+            case 'pendiente':
+              projectFlowStatus = 'TODO';
+              break;
+            case 'en_progreso':
+              projectFlowStatus = 'IN_PROGRESS';
+              break;
+            case 'resuelto':
+              projectFlowStatus = 'DONE';
+              break;
+            case 'rechazado':
+              projectFlowStatus = 'CANCELLED';
+              break;
+          }
+          
+          await updateProjectFlowTask(token, claim.projectFlowTaskId, { status: projectFlowStatus });
+          console.log('✅ Estado sincronizado con ProjectFlow:', projectFlowStatus);
+        } catch (pfError) {
+          console.error('⚠️ Error al sincronizar con ProjectFlow (no crítico):', pfError);
+          // No fallar la operación completa si la sincronización falla
+        }
+      }
       
       await loadClaims();
       setToastAction('updated');
@@ -695,10 +728,16 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
                             
                             {/* ProjectFlow Badge */}
                             {claim.projectFlowTaskId && (
-                              <span className="px-2 py-1 rounded-full text-xs font-medium border bg-purple-50 text-purple-700 border-purple-200 flex items-center gap-1">
+                              <button
+                                onClick={() => {
+                                  setSelectedTaskId(claim.projectFlowTaskId!);
+                                  setShowTaskDetailsModal(true);
+                                }}
+                                className="px-2 py-1 rounded-full text-xs font-medium border bg-purple-50 text-purple-700 border-purple-200 flex items-center gap-1 hover:bg-purple-100 transition-colors cursor-pointer"
+                              >
                                 <ExternalLink className="w-3 h-3" />
-                                <span>ProjectFlow</span>
-                              </span>
+                                <span>Ver en ProjectFlow</span>
+                              </button>
                             )}
                             
                             {/* Adhesion counters for admin */}
@@ -835,6 +874,18 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
         isVisible={showSubTaskCreatedToast}
         onComplete={() => setShowSubTaskCreatedToast(false)}
         subTaskTitle={createdSubTaskTitle}
+      />
+
+      {/* ProjectFlow Task Details Modal */}
+      <ProjectFlowTaskDetailsModal
+        isOpen={showTaskDetailsModal}
+        onClose={() => setShowTaskDetailsModal(false)}
+        taskId={selectedTaskId}
+        token={token}
+        onAddSubTask={() => {
+          setCreatedTaskId(selectedTaskId);
+          setShowSubTaskModal(true);
+        }}
       />
 
       {/* Export Modal */}
