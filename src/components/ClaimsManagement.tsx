@@ -23,7 +23,8 @@ import {
   ChevronDown,
   MessageSquare,
   ThumbsUp,
-  ThumbsDown
+  ThumbsDown,
+  Send
 } from 'lucide-react';
 import {
   getAdminClaims,
@@ -31,12 +32,15 @@ import {
   deleteAdminClaim,
   type Claim
 } from '../api_calls/claims';
+import { createProjectFlowTask } from '../api_calls/projectFlow';
 import ClaimSuccessToast from './ClaimSuccessToast';
 import ClaimErrorToast from './ClaimErrorToast';
 import CategoryFilterModal from './CategoryFilterModal';
 import StatusFilterModal from './StatusFilterModal';
 import DateFilterModal, { type DateFilterOption } from './DateFilterModal';
 import UserBadge from './UserBadge';
+import ExportToProjectFlowModal from './ExportToProjectFlowModal';
+import ProjectFlowExportSuccessToast from './ProjectFlowExportSuccessToast';
 
 interface ClaimsManagementProps {
   isOpen: boolean;
@@ -115,6 +119,11 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
   const [showStatusFilterModal, setShowStatusFilterModal] = useState(false);
   const [showDateFilterModal, setShowDateFilterModal] = useState(false);
   const [claimToUpdateStatus, setClaimToUpdateStatus] = useState<Claim | null>(null);
+  
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [claimToExport, setClaimToExport] = useState<Claim | null>(null);
+  const [showExportSuccessToast, setShowExportSuccessToast] = useState(false);
+  const [exportedClaimTitle, setExportedClaimTitle] = useState<string>('');
   
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -350,6 +359,31 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
     }
   };
 
+  const handleExportClick = (claim: Claim) => {
+    setClaimToExport(claim);
+    setShowExportModal(true);
+  };
+
+  const handleExport = async (title: string, description: string, deadline: string) => {
+    if (!claimToExport) return;
+
+    try {
+      await createProjectFlowTask(token, {
+        title,
+        description,
+        deadline
+      });
+      
+      setExportedClaimTitle(title);
+      setShowExportModal(false);
+      setShowExportSuccessToast(true);
+      setClaimToExport(null);
+    } catch (error: any) {
+      setErrorMessage(error.message || 'Error al exportar a Project Flow');
+      setShowErrorToast(true);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -564,6 +598,13 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
                             {/* Actions */}
                             <div className="flex items-center gap-2 self-start">
                               <button
+                                onClick={() => handleExportClick(claim)}
+                                className="p-2 hover:bg-white rounded-lg transition-colors cursor-pointer group"
+                                title="Exportar a Project Flow"
+                              >
+                                <Send className="w-4 h-4 text-purple-500 group-hover:text-purple-600" />
+                              </button>
+                              <button
                                 onClick={() => {
                                   setClaimToUpdateStatus(claim);
                                   setShowStatusModal(true);
@@ -717,6 +758,27 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
         onComplete={() => setShowErrorToast(false)}
         errorMessage={errorMessage}
       />
+
+      {/* Export Success Toast */}
+      <ProjectFlowExportSuccessToast
+        isVisible={showExportSuccessToast}
+        onComplete={() => setShowExportSuccessToast(false)}
+        claimTitle={exportedClaimTitle}
+      />
+
+      {/* Export Modal */}
+      {claimToExport && (
+        <ExportToProjectFlowModal
+          isOpen={showExportModal}
+          onClose={() => {
+            setShowExportModal(false);
+            setClaimToExport(null);
+          }}
+          onExport={handleExport}
+          claimTitle={claimToExport.subject}
+          claimDescription={claimToExport.description}
+        />
+      )}
 
       {/* Category Filter Modal */}
       <CategoryFilterModal

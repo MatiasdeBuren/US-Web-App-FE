@@ -6,7 +6,7 @@ import ModernDatePicker from './ModernDatePicker';
 interface ExportToProjectFlowModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onExport: (deadline: string) => Promise<void>;
+  onExport: (title: string, description: string, deadline: string) => Promise<void>;
   claimTitle: string;
   claimDescription: string;
 }
@@ -18,6 +18,8 @@ export default function ExportToProjectFlowModal({
   claimTitle,
   claimDescription
 }: ExportToProjectFlowModalProps) {
+  const [title, setTitle] = useState(claimTitle);
+  const [description, setDescription] = useState(claimDescription);
   const [deadline, setDeadline] = useState('');
   const [time, setTime] = useState('12:00');
   const [isExporting, setIsExporting] = useState(false);
@@ -27,6 +29,16 @@ export default function ExportToProjectFlowModal({
   const today = new Date().toISOString().split('T')[0];
 
   const handleExport = async () => {
+    if (!title.trim()) {
+      setError('Por favor ingresa un título para la tarea');
+      return;
+    }
+
+    if (!description.trim()) {
+      setError('Por favor ingresa una descripción para la tarea');
+      return;
+    }
+
     if (!deadline) {
       setError('Por favor selecciona una fecha límite');
       return;
@@ -43,8 +55,10 @@ export default function ExportToProjectFlowModal({
     try {
       // Formato: 2025-11-25T15:26
       const deadlineDateTime = `${deadline}T${time}`;
-      await onExport(deadlineDateTime);
+      await onExport(title.trim(), description.trim(), deadlineDateTime);
       onClose();
+      setTitle(claimTitle);
+      setDescription(claimDescription);
       setDeadline('');
       setTime('12:00');
     } catch (err) {
@@ -56,6 +70,8 @@ export default function ExportToProjectFlowModal({
 
   const handleClose = () => {
     if (!isExporting) {
+      setTitle(claimTitle);
+      setDescription(claimDescription);
       setDeadline('');
       setTime('12:00');
       setError('');
@@ -112,9 +128,14 @@ export default function ExportToProjectFlowModal({
                 <FileText className="w-4 h-4 text-indigo-600" />
                 Título de la Tarea
               </label>
-              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-gray-900 font-medium">{claimTitle}</p>
-              </div>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                placeholder="Título de la tarea"
+                disabled={isExporting}
+              />
             </div>
 
             {/* Descripción */}
@@ -123,9 +144,14 @@ export default function ExportToProjectFlowModal({
                 <FileText className="w-4 h-4 text-indigo-600" />
                 Descripción
               </label>
-              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 max-h-32 overflow-y-auto">
-                <p className="text-gray-700 text-sm whitespace-pre-wrap">{claimDescription}</p>
-              </div>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
+                placeholder="Descripción de la tarea"
+                disabled={isExporting}
+              />
             </div>
 
             {/* Fecha Límite */}
@@ -138,7 +164,7 @@ export default function ExportToProjectFlowModal({
                 selectedDate={deadline}
                 onDateChange={setDeadline}
                 minDate={today}
-                label="Seleccionar fecha límite"
+                label=""
               />
             </div>
 
@@ -187,7 +213,7 @@ export default function ExportToProjectFlowModal({
             </button>
             <button
               onClick={handleExport}
-              disabled={isExporting || !deadline || !time}
+              disabled={isExporting || !title.trim() || !description.trim() || !deadline || !time}
               className="flex-1 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isExporting ? (
