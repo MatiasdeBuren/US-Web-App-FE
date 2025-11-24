@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Clock, CheckCircle, PlayCircle, XCircle, Calendar, Plus, Loader2 } from 'lucide-react';
-import { getProjectFlowTask, type ProjectFlowTask } from '../api_calls/projectFlow';
+import { X, Clock, CheckCircle, PlayCircle, XCircle, Calendar, Plus, Loader2, RefreshCw } from 'lucide-react';
+import { getProjectFlowTask, updateProjectFlowTask, type ProjectFlowTask, type TaskStatus } from '../api_calls/projectFlow';
+import { updateClaimStatus } from '../api_calls/claims';
 
 interface ProjectFlowTaskDetailsModalProps {
   isOpen: boolean;
@@ -9,6 +10,9 @@ interface ProjectFlowTaskDetailsModalProps {
   taskId: string;
   token: string;
   onAddSubTask?: () => void;
+  claimId?: number;
+  currentClaimStatus?: string;
+  onClaimStatusSync?: () => void;
 }
 
 const statusIcons = {
@@ -37,15 +41,23 @@ export default function ProjectFlowTaskDetailsModal({
   onClose,
   taskId,
   token,
-  onAddSubTask
+  onAddSubTask,
+  claimId,
+  currentClaimStatus,
+  onClaimStatusSync
 }: ProjectFlowTaskDetailsModalProps) {
   const [task, setTask] = useState<ProjectFlowTask | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     if (isOpen && taskId) {
       loadTask();
+      // Auto-refresh cada 10 segundos mientras el modal está abierto
+      const interval = setInterval(loadTask, 10000);
+      return () => clearInterval(interval);
     }
   }, [isOpen, taskId]);
 
@@ -55,11 +67,80 @@ export default function ProjectFlowTaskDetailsModal({
       setError(null);
       const taskData = await getProjectFlowTask(token, taskId);
       setTask(taskData);
+      
+      // Sincronizar estado del claim si es diferente al de la tarea
+      if (claimId && currentClaimStatus && taskData) {
+        await syncClaimStatus(taskData.status);
+      }
     } catch (err: any) {
       setError(err.message || 'Error al cargar la tarea');
     } finally {
       setLoading(false);
     }
+  };
+
+  const syncClaimStatus = async (taskStatus: TaskStatus) => {
+    if (!claimId || !currentClaimStatus) return;
+    
+    // Mapear estado de ProjectFlow a estado de Claim
+    let newClaimStatus: string | null = null;
+    
+    switch (taskStatus) {
+      case 'TODO':
+        if (currentClaimStatus !== 'pendiente') newClaimStatus = 'pendiente';
+        break;
+      case 'IN_PROGRESS':
+        if (currentClaimStatus !== 'en_progreso') newClaimStatus = 'en_progreso';
+        break;
+      case 'DONE':
+        if (currentClaimStatus !== 'resuelto') newClaimStatus = 'resuelto';
+        break;
+      case 'CANCELLED':
+        if (currentClaimStatus !== 'rechazado') newClaimStatus = 'rechazado';
+        break;
+    }
+    
+    // Si el estado es diferente, sincronizar
+    if (newClaimStatus) {
+      try {
+        setSyncing(true);
+        await updateClaimStatus(token, claimId, newClaimStatus as any);
+        console.log('🔄 Estado del claim sincronizado desde ProjectFlow:', newClaimStatus);
+        
+        // Notificar al componente padre para recargar claims
+        if (onClaimStatusSync) {
+          onClaimStatusSync();
+        }
+      } catch (err) {
+        console.error('⚠️ Error al sincronizar estado del claim:', err);
+      } finally {
+        setSyncing(false);
+      }
+    }
+  };
+
+  const handleUpdateTaskStatus = async (taskIdToUpdate: string, newStatus: TaskStatus) => {
+    try {
+      setUpdatingTaskId(taskIdToUpdate);
+      await updateProjectFlowTask(token, taskIdToUpdate, { status: newStatus });
+      
+      // Recargar la tarea para mostrar los cambios
+      await loadTask();
+    } catch (err: any) {
+      setError(err.message || 'Error al actualizar el estado');
+    } finally {
+      setUpdatingTaskId(null);
+    }
+  };
+
+  const handleCompleteTask = () => {
+    if (task) {
+      handleUpdateTaskStatus(task.id, 'DONE');
+    }
+  };
+
+  const handleCompleteSubTask = (subTaskId: string) => {
+    handleUpdateTaskStatus(subTaskId, 'DONE');
   };
 
   if (!isOpen) return null;
@@ -89,7 +170,9 @@ export default function ProjectFlowTaskDetailsModal({
                 <h2 className="text-xl font-semibold text-gray-900">
                   Detalles de la Tarea
                 </h2>
-                <p className="text-sm text-gray-500">ProjectFlow</p>
+                <p className="text-sm text-gray-500">
+                  ProjectFlow {syncing && '• Sincronizando...'}
+                </p>
               </div>
             </div>
             <button
@@ -125,10 +208,26 @@ export default function ProjectFlowTaskDetailsModal({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Estado
                   </label>
-                  <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border ${statusColors[task.status]}`}>
-                    <StatusIcon className="w-4 h-4" />
-                    {statusLabels[task.status]}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border ${statusColors[task.status]}`}>
+                      <StatusIcon className="w-4 h-4" />
+                      {statusLabels[task.status]}
+                    </span>
+                    {task.status !== 'DONE' && (
+                      <button
+                        onClick={handleCompleteTask}
+                        disabled={updatingTaskId === task.id}
+                        className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                      >
+                        {updatingTaskId === task.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <CheckCircle className="w-4 h-4" />
+                        )}
+                        Marcar como completada
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Description */}
@@ -175,6 +274,7 @@ export default function ProjectFlowTaskDetailsModal({
                     <div className="space-y-2">
                       {task.subTasks.map((subTask) => {
                         const SubTaskIcon = statusIcons[subTask.status];
+                        const isUpdating = updatingTaskId === subTask.id;
                         return (
                           <div
                             key={subTask.id}
@@ -199,6 +299,20 @@ export default function ProjectFlowTaskDetailsModal({
                                   </span>
                                 </div>
                               </div>
+                              {subTask.status !== 'DONE' && (
+                                <button
+                                  onClick={() => handleCompleteSubTask(subTask.id)}
+                                  disabled={isUpdating}
+                                  className="flex-shrink-0 p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
+                                  title="Marcar como completada"
+                                >
+                                  {isUpdating ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <CheckCircle className="w-4 h-4" />
+                                  )}
+                                </button>
+                              )}
                             </div>
                           </div>
                         );

@@ -35,7 +35,7 @@ import {
   linkClaimToProjectFlowTask,
   type Claim
 } from '../api_calls/claims';
-import { createProjectFlowTask, createProjectFlowSubTask, updateProjectFlowTask, type TaskStatus } from '../api_calls/projectFlow';
+import { createProjectFlowTask, createProjectFlowSubTask, updateProjectFlowTask, getProjectFlowTask, type TaskStatus } from '../api_calls/projectFlow';
 import ClaimSuccessToast from './ClaimSuccessToast';
 import ClaimErrorToast from './ClaimErrorToast';
 import CategoryFilterModal from './CategoryFilterModal';
@@ -138,6 +138,7 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
   
   const [showTaskDetailsModal, setShowTaskDetailsModal] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string>('');
+  const [selectedClaimForTask, setSelectedClaimForTask] = useState<Claim | null>(null);
   
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -361,9 +362,32 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
           
           await updateProjectFlowTask(token, claim.projectFlowTaskId, { status: projectFlowStatus });
           console.log('✅ Estado sincronizado con ProjectFlow:', projectFlowStatus);
+
+
+          if (newStatus === 'resuelto') {
+            try {
+              const taskDetails = await getProjectFlowTask(token, claim.projectFlowTaskId);
+              if (taskDetails.subTasks && taskDetails.subTasks.length > 0) {
+                console.log('🔄 Completando', taskDetails.subTasks.length, 'subtareas...');
+                
+
+                await Promise.all(
+                  taskDetails.subTasks
+                    .filter(subTask => subTask.status !== 'DONE')
+                    .map(subTask => 
+                      updateProjectFlowTask(token, subTask.id, { status: 'DONE' })
+                        .catch(err => console.error('⚠️ Error al completar subtarea:', subTask.id, err))
+                    )
+                );
+                
+                console.log('✅ Todas las subtareas completadas');
+              }
+            } catch (subTaskError) {
+              console.error('⚠️ Error al completar subtareas (no crítico):', subTaskError);
+            }
+          }
         } catch (pfError) {
           console.error('⚠️ Error al sincronizar con ProjectFlow (no crítico):', pfError);
-          // No fallar la operación completa si la sincronización falla
         }
       }
       
@@ -731,6 +755,7 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
                               <button
                                 onClick={() => {
                                   setSelectedTaskId(claim.projectFlowTaskId!);
+                                  setSelectedClaimForTask(claim);
                                   setShowTaskDetailsModal(true);
                                 }}
                                 className="px-2 py-1 rounded-full text-xs font-medium border bg-purple-50 text-purple-700 border-purple-200 flex items-center gap-1 hover:bg-purple-100 transition-colors cursor-pointer"
@@ -879,9 +904,15 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
       {/* ProjectFlow Task Details Modal */}
       <ProjectFlowTaskDetailsModal
         isOpen={showTaskDetailsModal}
-        onClose={() => setShowTaskDetailsModal(false)}
+        onClose={() => {
+          setShowTaskDetailsModal(false);
+          setSelectedClaimForTask(null);
+        }}
         taskId={selectedTaskId}
         token={token}
+        claimId={selectedClaimForTask?.id}
+        currentClaimStatus={selectedClaimForTask?.status as string | undefined}
+        onClaimStatusSync={loadClaims}
         onAddSubTask={() => {
           setCreatedTaskId(selectedTaskId);
           setShowSubTaskModal(true);
