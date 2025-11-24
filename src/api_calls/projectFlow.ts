@@ -1,4 +1,4 @@
-const PROJECT_FLOW_API_URL = import.meta.env.VITE_PROJECT_FLOW_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL as string;
 
 export type TaskStatus = "TODO" | "IN_PROGRESS" | "DONE" | "CANCELLED";
 
@@ -22,11 +22,12 @@ export interface ProjectFlowTask {
 }
 
 
+
 export async function createProjectFlowTask(
   token: string,
   taskData: CreateTaskData
 ): Promise<ProjectFlowTask> {
-  const response = await fetch(`${PROJECT_FLOW_API_URL}/task/create`, {
+  const response = await fetch(`${API_URL}/projectflow/tasks`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -44,12 +45,13 @@ export async function createProjectFlowTask(
   return result.data;
 }
 
+
 export async function createProjectFlowSubTask(
   token: string,
   parentTaskId: string,
   taskData: CreateTaskData
 ): Promise<ProjectFlowTask> {
-  const response = await fetch(`${PROJECT_FLOW_API_URL}/task/${parentTaskId}/create`, {
+  const response = await fetch(`${API_URL}/projectflow/tasks/${parentTaskId}/subtasks`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -67,13 +69,15 @@ export async function createProjectFlowSubTask(
   return result.data;
 }
 
+
 export async function getProjectFlowTask(
   token: string,
   taskId: string
 ): Promise<ProjectFlowTask> {
-  const response = await fetch(`${PROJECT_FLOW_API_URL}/task/${taskId}`, {
+  const response = await fetch(`${API_URL}/projectflow/tasks/${taskId}`, {
     method: 'GET',
     headers: {
+      'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     }
   });
@@ -86,3 +90,72 @@ export async function getProjectFlowTask(
   const result = await response.json();
   return result.data;
 }
+
+
+export async function getProjectFlowTasks(
+  token: string
+): Promise<ProjectFlowTask[]> {
+  const response = await fetch(`${API_URL}/projectflow/tasks`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Error al obtener tareas de Project Flow');
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Update a task in ProjectFlow via our backend
+ */
+export async function updateProjectFlowTask(
+  token: string,
+  taskId: string,
+  updateData: Partial<CreateTaskData> & { status?: TaskStatus }
+): Promise<ProjectFlowTask> {
+  const response = await fetch(`${API_URL}/projectflow/tasks/${taskId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(updateData)
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Error al actualizar tarea en Project Flow');
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Delete a task from ProjectFlow via our backend
+ */
+export async function deleteProjectFlowTask(
+  token: string,
+  taskId: string
+): Promise<void> {
+  const response = await fetch(`${API_URL}/projectflow/tasks/${taskId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Error al eliminar tarea de Project Flow');
+  }
+}
+

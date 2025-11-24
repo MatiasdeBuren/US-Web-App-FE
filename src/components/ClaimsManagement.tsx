@@ -24,12 +24,15 @@ import {
   MessageSquare,
   ThumbsUp,
   ThumbsDown,
-  Send
+  Send,
+  ExternalLink,
+  Plus
 } from 'lucide-react';
 import {
   getAdminClaims,
   updateClaimStatus,
   deleteAdminClaim,
+  linkClaimToProjectFlowTask,
   type Claim
 } from '../api_calls/claims';
 import { createProjectFlowTask, createProjectFlowSubTask } from '../api_calls/projectFlow';
@@ -381,12 +384,18 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
         deadline
       });
       
-      // Guardar el task ID y título para poder crear subtareas
+
+      await linkClaimToProjectFlowTask(token, claimToExport.id, task.id);
+      
+
       setCreatedTaskId(task.id);
       setCreatedTaskTitle(title);
       setShowExportModal(false);
       setShowTaskCreatedToast(true);
       setClaimToExport(null);
+      
+
+      loadClaims();
     } catch (error: any) {
       setErrorMessage(error.message || 'Error al exportar a Project Flow');
       setShowErrorToast(true);
@@ -629,13 +638,27 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
 
                             {/* Actions */}
                             <div className="flex items-center gap-2 self-start">
-                              <button
-                                onClick={() => handleExportClick(claim)}
-                                className="p-2 hover:bg-white rounded-lg transition-colors cursor-pointer group"
-                                title="Exportar a Project Flow"
-                              >
-                                <Send className="w-4 h-4 text-purple-500 group-hover:text-purple-600" />
-                              </button>
+                              {claim.projectFlowTaskId ? (
+                                <button
+                                  onClick={() => {
+                                    setCreatedTaskId(claim.projectFlowTaskId!);
+                                    setCreatedTaskTitle(claim.subject);
+                                    setShowSubTaskModal(true);
+                                  }}
+                                  className="p-2 hover:bg-white rounded-lg transition-colors cursor-pointer group"
+                                  title="Añadir subtarea en ProjectFlow"
+                                >
+                                  <Plus className="w-4 h-4 text-purple-500 group-hover:text-purple-600" />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleExportClick(claim)}
+                                  className="p-2 hover:bg-white rounded-lg transition-colors cursor-pointer group"
+                                  title="Exportar a Project Flow"
+                                >
+                                  <Send className="w-4 h-4 text-purple-500 group-hover:text-purple-600" />
+                                </button>
+                              )}
                               <button
                                 onClick={() => {
                                   setClaimToUpdateStatus(claim);
@@ -669,6 +692,14 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
                               <span className="hidden sm:inline">{claim.status?.label || claim.status?.name || 'Sin estado'}</span>
                               <span className="sm:hidden">{(claim.status?.label || claim.status?.name || 'Sin').substring(0, 3)}</span>
                             </span>
+                            
+                            {/* ProjectFlow Badge */}
+                            {claim.projectFlowTaskId && (
+                              <span className="px-2 py-1 rounded-full text-xs font-medium border bg-purple-50 text-purple-700 border-purple-200 flex items-center gap-1">
+                                <ExternalLink className="w-3 h-3" />
+                                <span>ProjectFlow</span>
+                              </span>
+                            )}
                             
                             {/* Adhesion counters for admin */}
                             {claim.adhesion_counts && (claim.adhesion_counts.support > 0 || claim.adhesion_counts.disagree > 0) && (
