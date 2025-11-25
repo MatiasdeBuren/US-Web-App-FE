@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Clock, CheckCircle, PlayCircle, XCircle, Calendar, Plus, Loader2, RefreshCw } from 'lucide-react';
+import { X, Clock, CheckCircle, PlayCircle, XCircle, Calendar, Plus, Loader2 } from 'lucide-react';
 import { getProjectFlowTask, updateProjectFlowTask, type ProjectFlowTask, type TaskStatus } from '../api_calls/projectFlow';
 import { updateClaimStatus } from '../api_calls/claims';
 
@@ -52,37 +52,10 @@ export default function ProjectFlowTaskDetailsModal({
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && taskId) {
-      loadTask();
-      // Auto-refresh cada 10 segundos mientras el modal está abierto
-      const interval = setInterval(loadTask, 10000);
-      return () => clearInterval(interval);
-    }
-  }, [isOpen, taskId]);
-
-  const loadTask = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const taskData = await getProjectFlowTask(token, taskId);
-      setTask(taskData);
-      
-      // Sincronizar estado del claim si es diferente al de la tarea
-      if (claimId && currentClaimStatus && taskData) {
-        await syncClaimStatus(taskData.status);
-      }
-    } catch (err: any) {
-      setError(err.message || 'Error al cargar la tarea');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const syncClaimStatus = async (taskStatus: TaskStatus) => {
+  const syncClaimStatus = useCallback(async (taskStatus: TaskStatus) => {
     if (!claimId || !currentClaimStatus) return;
     
-    // Mapear estado de ProjectFlow a estado de Claim
+    // Mapear estados de ProjectFlow a estados de Claim
     let newClaimStatus: string | null = null;
     
     switch (taskStatus) {
@@ -117,15 +90,39 @@ export default function ProjectFlowTaskDetailsModal({
         setSyncing(false);
       }
     }
-  };
+  }, [claimId, currentClaimStatus, token, onClaimStatusSync]);
+
+  const loadTask = useCallback(async (shouldSync: boolean = false) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const taskData = await getProjectFlowTask(token, taskId);
+      setTask(taskData);
+      
+      // Sincronizar estado del claim solo cuando se solicite explícitamente
+      // (por ejemplo, después de actualizar el estado de una tarea)
+      if (shouldSync && claimId && currentClaimStatus && taskData) {
+        await syncClaimStatus(taskData.status);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Error al cargar la tarea');
+    } finally {
+      setLoading(false);
+    }
+  }, [token, taskId, claimId, currentClaimStatus, syncClaimStatus]);
+
+  useEffect(() => {
+    if (isOpen && taskId) {
+      loadTask();
+    }
+  }, [isOpen, taskId, loadTask]);
 
   const handleUpdateTaskStatus = async (taskIdToUpdate: string, newStatus: TaskStatus) => {
     try {
       setUpdatingTaskId(taskIdToUpdate);
       await updateProjectFlowTask(token, taskIdToUpdate, { status: newStatus });
-      
-      // Recargar la tarea para mostrar los cambios
-      await loadTask();
+
+      await loadTask(true);
     } catch (err: any) {
       setError(err.message || 'Error al actualizar el estado');
     } finally {
