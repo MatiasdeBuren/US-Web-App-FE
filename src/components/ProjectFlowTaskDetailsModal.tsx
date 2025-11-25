@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Clock, CheckCircle, PlayCircle, XCircle, Calendar, Plus, Loader2 } from 'lucide-react';
-import { getProjectFlowTask, updateProjectFlowTask, type ProjectFlowTask, type TaskStatus } from '../api_calls/projectFlow';
+import { X, Clock, CheckCircle, PlayCircle, XCircle, Calendar, Plus, Loader2, Trash2 } from 'lucide-react';
+import { getProjectFlowTask, updateProjectFlowTask, deleteProjectFlowTask, type ProjectFlowTask, type TaskStatus } from '../api_calls/projectFlow';
 import { updateClaimStatus } from '../api_calls/claims';
+import GenericToast from './GenericToast';
 
 interface ProjectFlowTaskDetailsModalProps {
   isOpen: boolean;
@@ -50,7 +51,12 @@ export default function ProjectFlowTaskDetailsModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
+  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [subTaskToDelete, setSubTaskToDelete] = useState<{ id: string; title: string } | null>(null);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [deletedSubTaskTitle, setDeletedSubTaskTitle] = useState<string>('');
 
   const syncClaimStatus = useCallback(async (taskStatus: TaskStatus) => {
     if (!claimId || !currentClaimStatus) return;
@@ -140,13 +146,42 @@ export default function ProjectFlowTaskDetailsModal({
     handleUpdateTaskStatus(subTaskId, 'DONE');
   };
 
+  const handleDeleteSubTaskClick = (subTaskId: string, subTaskTitle: string) => {
+    setSubTaskToDelete({ id: subTaskId, title: subTaskTitle });
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDeleteSubTask = async () => {
+    if (!subTaskToDelete) return;
+
+    try {
+      setDeletingTaskId(subTaskToDelete.id);
+      const titleToDelete = subTaskToDelete.title;
+      await deleteProjectFlowTask(token, subTaskToDelete.id);
+      await loadTask();
+      setShowDeleteModal(false);
+      setSubTaskToDelete(null);
+      
+      // Mostrar toast de éxito
+      setDeletedSubTaskTitle(titleToDelete);
+      setShowSuccessToast(true);
+    } catch (err: any) {
+      setError(err.message || 'Error al eliminar la subtarea');
+      setShowDeleteModal(false);
+      setSubTaskToDelete(null);
+    } finally {
+      setDeletingTaskId(null);
+    }
+  };
+
   if (!isOpen) return null;
 
   const StatusIcon = task ? statusIcons[task.status] : Clock;
 
   return (
-    <AnimatePresence>
-      <div
+    <>
+      <AnimatePresence>
+        <div
         className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-[60]"
         onClick={onClose}
       >
@@ -272,6 +307,7 @@ export default function ProjectFlowTaskDetailsModal({
                       {task.subTasks.map((subTask) => {
                         const SubTaskIcon = statusIcons[subTask.status];
                         const isUpdating = updatingTaskId === subTask.id;
+                        const isDeleting = deletingTaskId === subTask.id;
                         return (
                           <div
                             key={subTask.id}
@@ -296,20 +332,34 @@ export default function ProjectFlowTaskDetailsModal({
                                   </span>
                                 </div>
                               </div>
-                              {subTask.status !== 'DONE' && (
+                              <div className="flex flex-col gap-1">
+                                {subTask.status !== 'DONE' && (
+                                  <button
+                                    onClick={() => handleCompleteSubTask(subTask.id)}
+                                    disabled={isUpdating || isDeleting}
+                                    className="flex-shrink-0 p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
+                                    title="Marcar como completada"
+                                  >
+                                    {isUpdating ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <CheckCircle className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                )}
                                 <button
-                                  onClick={() => handleCompleteSubTask(subTask.id)}
-                                  disabled={isUpdating}
-                                  className="flex-shrink-0 p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
-                                  title="Marcar como completada"
+                                  onClick={() => handleDeleteSubTaskClick(subTask.id, subTask.title)}
+                                  disabled={isUpdating || isDeleting}
+                                  className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                                  title="Eliminar subtarea"
                                 >
-                                  {isUpdating ? (
+                                  {isDeleting ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
                                   ) : (
-                                    <CheckCircle className="w-4 h-4" />
+                                    <Trash2 className="w-4 h-4" />
                                   )}
                                 </button>
-                              )}
+                              </div>
                             </div>
                           </div>
                         );
@@ -344,6 +394,87 @@ export default function ProjectFlowTaskDetailsModal({
           </div>
         </motion.div>
       </div>
-    </AnimatePresence>
+      </AnimatePresence>
+
+      {/* Delete SubTask Confirmation Modal */}
+      {showDeleteModal && (
+      <div
+        className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[70]"
+        onClick={() => {
+          setShowDeleteModal(false);
+          setSubTaskToDelete(null);
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+              <Trash2 className="w-5 h-5 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Eliminar Subtarea
+              </h3>
+              <p className="text-sm text-gray-500">Esta acción no se puede deshacer</p>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <p className="text-gray-600 mb-2">
+              ¿Estás seguro de que deseas eliminar esta subtarea de ProjectFlow?
+            </p>
+            {subTaskToDelete && (
+              <p className="text-sm font-medium text-gray-900 bg-gray-50 p-3 rounded-lg">
+                {subTaskToDelete.title}
+              </p>
+            )}
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                setShowDeleteModal(false);
+                setSubTaskToDelete(null);
+              }}
+              disabled={!!deletingTaskId}
+              className="flex-1 px-4 py-2 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleConfirmDeleteSubTask}
+              disabled={!!deletingTaskId}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {deletingTaskId ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                'Eliminar'
+              )}
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    )}
+
+    {/* Success Toast */}
+    <GenericToast
+      isVisible={showSuccessToast}
+      onComplete={() => setShowSuccessToast(false)}
+      title="Subtarea Eliminada"
+      message={`La subtarea "${deletedSubTaskTitle}" ha sido eliminada exitosamente de ProjectFlow`}
+      type="success"
+      icon={CheckCircle}
+      position="top-right"
+      duration={4000}
+    />
+    </>
   );
 }
