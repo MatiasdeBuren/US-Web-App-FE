@@ -35,7 +35,7 @@ import {
   linkClaimToProjectFlowTask,
   type Claim
 } from '../api_calls/claims';
-import { createProjectFlowTask, createProjectFlowSubTask, updateProjectFlowTask, getProjectFlowTask, type TaskStatus } from '../api_calls/projectFlow';
+import { createProjectFlowTask, createProjectFlowSubTask, updateProjectFlowTask, getProjectFlowTask, deleteProjectFlowTask, type TaskStatus } from '../api_calls/projectFlow';
 import ClaimSuccessToast from './ClaimSuccessToast';
 import ClaimErrorToast from './ClaimErrorToast';
 import CategoryFilterModal from './CategoryFilterModal';
@@ -406,12 +406,23 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async (deleteProjectFlowTaskOption: boolean) => {
     if (!claimToDelete) return;
     
     try {
       setIsDeleting(true);
+      
       await deleteAdminClaim(token, claimToDelete.id);
+      
+      // Si el usuario eligió eliminar la tarea de ProjectFlow y existe
+      if (deleteProjectFlowTaskOption && claimToDelete.projectFlowTaskId) {
+        try {
+          await deleteProjectFlowTask(token, claimToDelete.projectFlowTaskId);
+        } catch (error) {
+          console.error('Error al eliminar tarea de ProjectFlow:', error);
+        }
+      }
+      
       await loadClaims();
       setToastAction('deleted');
       setToastSubject(claimToDelete.subject);
@@ -1077,12 +1088,18 @@ interface DeleteConfirmationModalProps {
   claim: Claim;
   isVisible: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (deleteProjectFlowTask: boolean) => void;
   isLoading: boolean;
 }
 
 function DeleteConfirmationModal({ claim, isVisible, onClose, onConfirm, isLoading }: DeleteConfirmationModalProps) {
+  const [deleteTask, setDeleteTask] = useState(false);
+  
   if (!isVisible) return null;
+
+  const handleConfirm = () => {
+    onConfirm(deleteTask);
+  };
 
   return (
     <div 
@@ -1107,20 +1124,44 @@ function DeleteConfirmationModal({ claim, isVisible, onClose, onConfirm, isLoadi
         <p className="text-gray-600 mb-2">
           ¿Estás seguro de que deseas eliminar este reclamo?
         </p>
-        <p className="text-sm text-gray-500 mb-6">
+        <p className="text-sm text-gray-500 mb-4">
           <strong>{claim.subject}</strong><br />
           Esta acción no se puede deshacer.
         </p>
+
+        {/* ProjectFlow Task Option */}
+        {claim.projectFlowTaskId && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={deleteTask}
+                onChange={(e) => setDeleteTask(e.target.checked)}
+                className="mt-1 w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                disabled={isLoading}
+              />
+              <div className="flex-1">
+                <span className="text-sm font-medium text-gray-900">
+                  ¿También eliminar la tarea de ProjectFlow?
+                </span>
+                <p className="text-xs text-gray-600 mt-1">
+                  Este reclamo tiene una tarea asociada en ProjectFlow. Si deseas eliminarla también, marca esta opción.
+                </p>
+              </div>
+            </label>
+          </div>
+        )}
 
         <div className="flex gap-3">
           <button
             onClick={onClose}
             className="flex-1 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
+            disabled={isLoading}
           >
             Cancelar
           </button>
           <button
-            onClick={onConfirm}
+            onClick={handleConfirm}
             disabled={isLoading}
             className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 cursor-pointer"
           >
