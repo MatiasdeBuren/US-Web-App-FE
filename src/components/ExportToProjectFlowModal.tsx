@@ -91,7 +91,7 @@ export default function ExportToProjectFlowModal({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden"
+          className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -121,7 +121,7 @@ export default function ExportToProjectFlowModal({
           </div>
 
           {/* Content */}
-          <div className="p-6 space-y-4">
+          <div className="p-6 space-y-4 overflow-y-auto flex-1">
             {/* Título */}
             <div>
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
