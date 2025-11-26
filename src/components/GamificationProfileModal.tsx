@@ -1,7 +1,9 @@
-import { X, Trophy, Star, TrendingUp, Award, Calendar } from "lucide-react";
+import { X, Trophy, Star, TrendingUp, Award, Calendar, Info } from "lucide-react";
+import { useState } from "react";
 import { useGamification } from "../contexts/GamificationContext";
 import { formatPoints, calculateLevelProgress } from "../api_calls/gamification";
 import GamificationCustomization from "./GamificationCustomization";
+import LevelRewardsModal from "./LevelRewardsModal";
 
 interface GamificationProfileModalProps {
   onClose: () => void;
@@ -9,6 +11,7 @@ interface GamificationProfileModalProps {
 
 export default function GamificationProfileModal({ onClose }: GamificationProfileModalProps) {
   const { profile, loading } = useGamification();
+  const [showRewardsModal, setShowRewardsModal] = useState(false);
 
   if (loading) {
     return (
@@ -81,6 +84,15 @@ export default function GamificationProfileModal({ onClose }: GamificationProfil
                 />
               </div>
             </div>
+            
+            {/* Rewards Button */}
+            <button
+              onClick={() => setShowRewardsModal(true)}
+              className="mt-4 w-full px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-lg border border-white/30 transition-all flex items-center justify-center gap-2 group"
+            >
+              <Info className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-medium">Ver Recompensas por Nivel</span>
+            </button>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -180,6 +192,13 @@ export default function GamificationProfileModal({ onClose }: GamificationProfil
           </div>
         </div>
       </div>
+      
+      {/* Level Rewards Modal */}
+      <LevelRewardsModal
+        isOpen={showRewardsModal}
+        onClose={() => setShowRewardsModal(false)}
+        currentLevel={profile.level.id}
+      />
     </div>
   );
 }

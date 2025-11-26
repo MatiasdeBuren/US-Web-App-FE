@@ -20,6 +20,7 @@ interface HeaderProps {
     activeTab?: 'dashboard' | 'reclamos';
     showClaimsTab?: boolean;
     showAmenitiesTab?: boolean;
+    showGamification?: boolean;
     notifications?: Notification[];
     onMarkNotificationAsRead?: (notificationId: string) => void;
     onMarkAllNotificationsAsRead?: () => void;
@@ -44,6 +45,7 @@ function Header({
     activeTab = 'dashboard', 
     showClaimsTab = true, 
     showAmenitiesTab = true,
+    showGamification = true,
     notifications = [],
     onMarkNotificationAsRead,
     onMarkAllNotificationsAsRead,
@@ -161,9 +163,11 @@ function Header({
                     </div>
 
                     <div className="flex items-center space-x-4">
-                        <GamificationBadge 
-                            onClick={() => setShowGamificationModal(true)} 
-                        />
+                        {showGamification && (
+                            <GamificationBadge 
+                                onClick={() => setShowGamificationModal(true)} 
+                            />
+                        )}
                         
                         {showNotifications && (
                             <NotificationBell

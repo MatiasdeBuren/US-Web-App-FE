@@ -1,4 +1,7 @@
+import { useState } from "react";
 import { useGamification } from "../contexts/GamificationContext";
+import { Info } from "lucide-react";
+import LevelRewardsModal from "./LevelRewardsModal";
 
 interface WelcomeSectionProps {
   userName: string;
@@ -6,8 +9,10 @@ interface WelcomeSectionProps {
 
 export default function WelcomeSection({ userName }: WelcomeSectionProps) {
   const { profile } = useGamification();
+  const [showRewardsModal, setShowRewardsModal] = useState(false);
 
   return (
+    <>
     <div className="mb-12 relative overflow-hidden">
       <div 
         className={`rounded-3xl p-8 shadow-2xl border ${profile?.selectedFrame.cssClass || ''} ${profile?.selectedEffect.cssClass || ''}`}
@@ -43,8 +48,26 @@ export default function WelcomeSection({ userName }: WelcomeSectionProps) {
               </div>
             </div>
           </div>
+          
+          {/* Level Rewards Button */}
+          {profile && (
+            <button
+              onClick={() => setShowRewardsModal(true)}
+              className="mt-4 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white rounded-lg border border-white/30 transition-all flex items-center gap-2 group"
+            >
+              <Info className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-medium">Ver Recompensas por Nivel</span>
+            </button>
+          )}
         </div>
       </div>
     </div>
+    
+    <LevelRewardsModal
+      isOpen={showRewardsModal}
+      onClose={() => setShowRewardsModal(false)}
+      currentLevel={profile?.level.id || 1}
+    />
+    </>
   );
 }
