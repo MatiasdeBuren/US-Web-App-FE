@@ -123,12 +123,36 @@ export default function ProjectFlowTaskDetailsModal({
     }
   }, [isOpen, taskId, loadTask]);
 
-  const handleUpdateTaskStatus = async (taskIdToUpdate: string, newStatus: TaskStatus) => {
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  const handleUpdateTaskStatus = async (taskIdToUpdate: string, newStatus: TaskStatus, isMainTask: boolean = false) => {
     try {
       setUpdatingTaskId(taskIdToUpdate);
       await updateProjectFlowTask(token, taskIdToUpdate, { status: newStatus });
 
-      await loadTask(true);
+     
+      if (isMainTask && newStatus === 'DONE' && claimId) {
+        try {
+          await updateClaimStatus(token, claimId, 'resuelto');
+          console.log('✅ Claim actualizado a resuelto en la base de datos');
+          
+        } catch (err) {
+          console.error('⚠️ Error al actualizar estado del claim:', err);
+        }
+      }
+
+      await loadTask(false); 
     } catch (err: any) {
       setError(err.message || 'Error al actualizar el estado');
     } finally {
@@ -138,12 +162,12 @@ export default function ProjectFlowTaskDetailsModal({
 
   const handleCompleteTask = () => {
     if (task) {
-      handleUpdateTaskStatus(task.id, 'DONE');
+      handleUpdateTaskStatus(task.id, 'DONE', true); 
     }
   };
 
   const handleCompleteSubTask = (subTaskId: string) => {
-    handleUpdateTaskStatus(subTaskId, 'DONE');
+    handleUpdateTaskStatus(subTaskId, 'DONE', false); 
   };
 
   const handleDeleteSubTaskClick = (subTaskId: string, subTaskTitle: string) => {
