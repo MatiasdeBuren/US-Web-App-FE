@@ -1,17 +1,43 @@
-import { X, Trophy, Star, TrendingUp, Award, Calendar, Info } from "lucide-react";
+import { X, Trophy, Star, TrendingUp, Award, Calendar, Info, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { useGamification } from "../contexts/GamificationContext";
-import { formatPoints, calculateLevelProgress } from "../api_calls/gamification";
+import { formatPoints, calculateLevelProgress, refreshAchievements } from "../api_calls/gamification";
 import GamificationCustomization from "./GamificationCustomization";
 import LevelRewardsModal from "./LevelRewardsModal";
+import AchievementsModal from "./AchievementsModal";
 
 interface GamificationProfileModalProps {
   onClose: () => void;
 }
 
 export default function GamificationProfileModal({ onClose }: GamificationProfileModalProps) {
-  const { profile, loading } = useGamification();
+  const { profile, loading, refreshProfile } = useGamification();
   const [showRewardsModal, setShowRewardsModal] = useState(false);
+  const [showAchievementsModal, setShowAchievementsModal] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshMessage, setRefreshMessage] = useState<string | null>(null);
+
+  const handleRefreshAchievements = async () => {
+    setIsRefreshing(true);
+    setRefreshMessage(null);
+    
+    try {
+      const result = await refreshAchievements();
+      setRefreshMessage(result.message);
+      
+      // Refrescar el perfil para mostrar los nuevos achievements
+      await refreshProfile();
+      
+      // Limpiar mensaje después de 5 segundos
+      setTimeout(() => setRefreshMessage(null), 5000);
+    } catch (error) {
+      console.error("Error refrescando achievements:", error);
+      setRefreshMessage("Error al verificar logros");
+      setTimeout(() => setRefreshMessage(null), 5000);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -123,10 +149,33 @@ export default function GamificationProfileModal({ onClose }: GamificationProfil
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <Award className="w-5 h-5" />
-              Logros Desbloqueados ({profile.achievements.length})
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Award className="w-5 h-5" />
+                Logros Desbloqueados ({profile.achievements.length})
+              </h3>
+              
+              {/* Refresh Achievements Button */}
+              <button
+                onClick={handleRefreshAchievements}
+                disabled={isRefreshing}
+                className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg transition-all flex items-center gap-2 text-sm font-medium shadow-sm"
+              >
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Verificando...' : 'Verificar Logros'}
+              </button>
+            </div>
+            
+            {/* Refresh Message */}
+            {refreshMessage && (
+              <div className={`mb-4 p-3 rounded-lg text-sm ${
+                refreshMessage.includes('Error') 
+                  ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+                  : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
+              }`}>
+                {refreshMessage}
+              </div>
+            )}
             
             {profile.achievements.length === 0 ? (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
@@ -165,6 +214,15 @@ export default function GamificationProfileModal({ onClose }: GamificationProfil
                 ))}
               </div>
             )}
+            
+            {/* Ver Todos los Logros Button */}
+            <button
+              onClick={() => setShowAchievementsModal(true)}
+              className="mt-4 w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all flex items-center justify-center gap-2 group shadow-md"
+            >
+              <Trophy className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              <span className="font-medium">Ver Todos los Logros</span>
+            </button>
           </div>
 
           {/* CUSTOMIZATION SECTION */}
@@ -198,6 +256,13 @@ export default function GamificationProfileModal({ onClose }: GamificationProfil
         isOpen={showRewardsModal}
         onClose={() => setShowRewardsModal(false)}
         currentLevel={profile.level.id}
+      />
+      
+      {/* Achievements Modal */}
+      <AchievementsModal
+        isOpen={showAchievementsModal}
+        onClose={() => setShowAchievementsModal(false)}
+        unlockedAchievements={profile.achievements.map(ua => ua.achievement.key)}
       />
     </div>
   );

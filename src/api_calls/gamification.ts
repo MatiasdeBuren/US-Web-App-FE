@@ -300,6 +300,32 @@ export async function getPointTransactions(
 }
 
 
+export async function refreshAchievements(): Promise<{
+  success: boolean;
+  unlockedCount: number;
+  unlockedAchievements: Array<Achievement & { timesEarned: number; isNew: boolean }>;
+  totalPointsEarned: number;
+  message: string;
+}> {
+  const token = localStorage.getItem("token");
+  
+  const res = await fetch(`${API_URL}/gamification/refresh-achievements`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || "Error al refrescar achievements");
+  }
+
+  return res.json();
+}
+
+
 export function formatPoints(points: number): string {
   return new Intl.NumberFormat('es-AR').format(points);
 }
