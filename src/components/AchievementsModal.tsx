@@ -26,11 +26,11 @@ const achievementCategories = [
       {
         key: 'reservation_streak_5',
         name: '5 Sin Cancelar',
-        description: 'Completaste 5 reservas sin cancelar ninguna',
+        description: 'Completaste 5 reservas',
         icon: '🔥',
         points: 50,
         rarity: 'rare',
-        requirement: '5 reservas consecutivas sin cancelar'
+        requirement: '5 reservas completadas'
       },
       {
         key: 'reservation_master_50',
@@ -40,24 +40,6 @@ const achievementCategories = [
         points: 100,
         rarity: 'epic',
         requirement: '50 reservas completadas'
-      },
-      {
-        key: 'early_bird',
-        name: 'Madrugador',
-        description: 'Hiciste 10 reservas antes de las 8am',
-        icon: '🌅',
-        points: 40,
-        rarity: 'rare',
-        requirement: '10 reservas antes de las 8:00'
-      },
-      {
-        key: 'night_owl',
-        name: 'Nocturno',
-        description: 'Hiciste 10 reservas después de las 8pm',
-        icon: '🌙',
-        points: 40,
-        rarity: 'rare',
-        requirement: '10 reservas después de las 20:00'
       }
     ]
   },
@@ -164,15 +146,6 @@ const achievementCategories = [
         points: 100,
         rarity: 'epic',
         requirement: 'Usuario #1-50'
-      },
-      {
-        key: 'profile_complete',
-        name: 'Perfil Completo',
-        description: 'Completaste tu perfil al 100%',
-        icon: '✅',
-        points: 25,
-        rarity: 'common',
-        requirement: 'Todos los campos del perfil completos'
       }
     ]
   }
