@@ -93,6 +93,7 @@ export interface Claim {
     user?: ClaimUser;
     adminNotes?: string;
     isAnonymous?: boolean;
+    projectFlowTaskId?: string | null;
     adhesion_counts?: {
         support: number;
         disagree: number;
@@ -488,6 +489,43 @@ export async function deleteAdminClaim(token: string, claimId: number): Promise<
         }
     } catch (error) {
         console.error('Error en deleteAdminClaim:', error);
+        throw error;
+    }
+}
+
+export async function linkClaimToProjectFlowTask(
+    token: string, 
+    claimId: number, 
+    projectFlowTaskId: string
+): Promise<Claim> {
+    try {
+        const response = await fetch(`${API_URL}/admin/claims/${claimId}/projectflow-task`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ projectFlowTaskId })
+        });
+
+        if (!response.ok) {
+            if (response.status === 403) {
+                throw new Error('Acceso denegado. Se requieren permisos de administrador.');
+            }
+            if (response.status === 401) {
+                throw new Error('Token de autenticación inválido.');
+            }
+            if (response.status === 404) {
+                throw new Error('Reclamo no encontrado.');
+            }
+            const error = await response.json();
+            throw new Error(error.message || `Error al vincular reclamo con ProjectFlow: ${response.status}`);
+        }
+
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.error('Error en linkClaimToProjectFlowTask:', error);
         throw error;
     }
 }

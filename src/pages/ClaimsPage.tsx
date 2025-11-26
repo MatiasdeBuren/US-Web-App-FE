@@ -19,6 +19,7 @@ import {
   type Claim,
   type UpdateClaimData
 } from '../api_calls/claims';
+import { deleteProjectFlowTask } from '../api_calls/projectFlow';
 
 
 const categoryIcons = {
@@ -318,7 +319,7 @@ function ClaimsPage() {
     setShowDeleteModal(true);
   };
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = async (deleteProjectFlowTaskOption: boolean) => {
     if (!claimToDelete || !token) {
       setErrorMessage('No hay sesión activa');
       setShowErrorToast(true);
@@ -327,7 +328,19 @@ function ClaimsPage() {
     
     setIsDeleting(true);
     try {
+      // Eliminar el reclamo
       await deleteClaim(token, claimToDelete.id);
+      
+      // Si el usuario eligió eliminar la tarea de ProjectFlow y existe
+      if (deleteProjectFlowTaskOption && claimToDelete.projectFlowTaskId) {
+        try {
+          await deleteProjectFlowTask(token, claimToDelete.projectFlowTaskId);
+        } catch (error) {
+          console.error('Error al eliminar tarea de ProjectFlow:', error);
+          // No mostramos error fatal, el reclamo ya fue eliminado
+        }
+      }
+      
       setClaims(prev => prev.filter(claim => claim.id !== claimToDelete.id));
       setShowDeleteModal(false);
       setClaimToDelete(null);
@@ -741,6 +754,7 @@ function ClaimsPage() {
         onConfirm={handleConfirmDelete}
         claimSubject={claimToDelete?.subject}
         isDeleting={isDeleting}
+        hasProjectFlowTask={!!claimToDelete?.projectFlowTaskId}
       />
 
       {/* Success Toast */}
