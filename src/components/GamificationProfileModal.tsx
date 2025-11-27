@@ -60,7 +60,6 @@ export default function GamificationProfileModal({ onClose }: GamificationProfil
       <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* HEADER STICKY */}
         <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center flex-shrink-0">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Mi Perfil de Gamificación</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
