@@ -23,19 +23,30 @@ import {
   ChevronDown,
   MessageSquare,
   ThumbsUp,
-  ThumbsDown
+  ThumbsDown,
+  Send,
+  ExternalLink,
+  Plus
 } from 'lucide-react';
 import {
   getAdminClaims,
   updateClaimStatus,
   deleteAdminClaim,
+  linkClaimToProjectFlowTask,
   type Claim
 } from '../api_calls/claims';
+import { createProjectFlowTask, createProjectFlowSubTask, updateProjectFlowTask, getProjectFlowTask, deleteProjectFlowTask, type TaskStatus } from '../api_calls/projectFlow';
 import ClaimSuccessToast from './ClaimSuccessToast';
 import ClaimErrorToast from './ClaimErrorToast';
 import CategoryFilterModal from './CategoryFilterModal';
 import StatusFilterModal from './StatusFilterModal';
 import DateFilterModal, { type DateFilterOption } from './DateFilterModal';
+import UserBadge from './UserBadge';
+import ExportToProjectFlowModal from './ExportToProjectFlowModal';
+import ProjectFlowTaskCreatedToast from './ProjectFlowTaskCreatedToast';
+import CreateSubTaskModal from './CreateSubTaskModal';
+import SubTaskCreatedToast from './SubTaskCreatedToast';
+import ProjectFlowTaskDetailsModal from './ProjectFlowTaskDetailsModal';
 
 interface ClaimsManagementProps {
   isOpen: boolean;
@@ -114,6 +125,20 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
   const [showStatusFilterModal, setShowStatusFilterModal] = useState(false);
   const [showDateFilterModal, setShowDateFilterModal] = useState(false);
   const [claimToUpdateStatus, setClaimToUpdateStatus] = useState<Claim | null>(null);
+  
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [claimToExport, setClaimToExport] = useState<Claim | null>(null);
+  const [showTaskCreatedToast, setShowTaskCreatedToast] = useState(false);
+  const [createdTaskTitle, setCreatedTaskTitle] = useState<string>('');
+  const [createdTaskId, setCreatedTaskId] = useState<string>('');
+  
+  const [showSubTaskModal, setShowSubTaskModal] = useState(false);
+  const [showSubTaskCreatedToast, setShowSubTaskCreatedToast] = useState(false);
+  const [createdSubTaskTitle, setCreatedSubTaskTitle] = useState<string>('');
+  
+  const [showTaskDetailsModal, setShowTaskDetailsModal] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string>('');
+  const [selectedClaimForTask, setSelectedClaimForTask] = useState<Claim | null>(null);
   
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -314,6 +339,58 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
       
       console.log('📝 [ADMIN NOTES DEBUG] Updated claim response:', updatedClaim);
       
+      
+      if (claim.projectFlowTaskId) {
+        try {
+          let projectFlowStatus: TaskStatus = 'TODO';
+          
+
+          switch (newStatus) {
+            case 'pendiente':
+              projectFlowStatus = 'TODO';
+              break;
+            case 'en_progreso':
+              projectFlowStatus = 'IN_PROGRESS';
+              break;
+            case 'resuelto':
+              projectFlowStatus = 'DONE';
+              break;
+            case 'rechazado':
+              projectFlowStatus = 'CANCELLED';
+              break;
+          }
+          
+          await updateProjectFlowTask(token, claim.projectFlowTaskId, { status: projectFlowStatus });
+          console.log('✅ Estado sincronizado con ProjectFlow:', projectFlowStatus);
+
+
+          if (newStatus === 'resuelto') {
+            try {
+              const taskDetails = await getProjectFlowTask(token, claim.projectFlowTaskId);
+              if (taskDetails.subTasks && taskDetails.subTasks.length > 0) {
+                console.log('🔄 Completando', taskDetails.subTasks.length, 'subtareas...');
+                
+
+                await Promise.all(
+                  taskDetails.subTasks
+                    .filter(subTask => subTask.status !== 'DONE')
+                    .map(subTask => 
+                      updateProjectFlowTask(token, subTask.id, { status: 'DONE' })
+                        .catch(err => console.error('⚠️ Error al completar subtarea:', subTask.id, err))
+                    )
+                );
+                
+                console.log('✅ Todas las subtareas completadas');
+              }
+            } catch (subTaskError) {
+              console.error('⚠️ Error al completar subtareas (no crítico):', subTaskError);
+            }
+          }
+        } catch (pfError) {
+          console.error('⚠️ Error al sincronizar con ProjectFlow (no crítico):', pfError);
+        }
+      }
+      
       await loadClaims();
       setToastAction('updated');
       setToastSubject(claim.subject);
@@ -329,12 +406,23 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async (deleteProjectFlowTaskOption: boolean) => {
     if (!claimToDelete) return;
     
     try {
       setIsDeleting(true);
+      
       await deleteAdminClaim(token, claimToDelete.id);
+      
+      // Si el usuario eligió eliminar la tarea de ProjectFlow y existe
+      if (deleteProjectFlowTaskOption && claimToDelete.projectFlowTaskId) {
+        try {
+          await deleteProjectFlowTask(token, claimToDelete.projectFlowTaskId);
+        } catch (error) {
+          console.error('Error al eliminar tarea de ProjectFlow:', error);
+        }
+      }
+      
       await loadClaims();
       setToastAction('deleted');
       setToastSubject(claimToDelete.subject);
@@ -346,6 +434,62 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
       setShowErrorToast(true);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleExportClick = (claim: Claim) => {
+    setClaimToExport(claim);
+    setShowExportModal(true);
+  };
+
+  const handleExport = async (title: string, description: string, deadline: string) => {
+    if (!claimToExport) return;
+
+    try {
+      const task = await createProjectFlowTask(token, {
+        title,
+        description,
+        deadline
+      });
+      
+
+      await linkClaimToProjectFlowTask(token, claimToExport.id, task.id);
+      
+
+      setCreatedTaskId(task.id);
+      setCreatedTaskTitle(title);
+      setShowExportModal(false);
+      setShowTaskCreatedToast(true);
+      setClaimToExport(null);
+      
+
+      loadClaims();
+    } catch (error: any) {
+      setErrorMessage(error.message || 'Error al exportar a Project Flow');
+      setShowErrorToast(true);
+    }
+  };
+
+  const handleOpenSubTaskModal = () => {
+    setShowSubTaskModal(true);
+  };
+
+  const handleCreateSubTask = async (title: string, description: string, deadline: string) => {
+    if (!createdTaskId) return;
+
+    try {
+      await createProjectFlowSubTask(token, createdTaskId, {
+        title,
+        description,
+        deadline
+      });
+      
+      setCreatedSubTaskTitle(title);
+      setShowSubTaskModal(false);
+      setShowSubTaskCreatedToast(true);
+    } catch (error: any) {
+      setErrorMessage(error.message || 'Error al crear subtarea');
+      setShowErrorToast(true);
     }
   };
 
@@ -485,7 +629,7 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
                     >
                       <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
                         {/* Category Icon */}
-                        <div className={`self-start p-2 rounded-xl ${
+                        <div className={`self-start p-2 rounded-xl flex-shrink-0 ${
                           claim.category?.name === 'ascensor' ? 'bg-purple-100 text-purple-600' :
                           claim.category?.name === 'plomeria' ? 'bg-blue-100 text-blue-600' :
                           claim.category?.name === 'electricidad' ? 'bg-yellow-100 text-yellow-600' :
@@ -501,9 +645,22 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-2">
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-gray-900 mb-1 break-words">
-                                {claim.subject}
-                              </h3>
+                              <div className="flex items-start justify-between gap-2 mb-1">
+                                <h3 className="font-semibold text-gray-900 break-words flex-1">
+                                  {claim.subject}
+                                </h3>
+                                {/* User gamification badge in top-right */}
+                                {claim.user && (
+                                  <div className="flex-shrink-0">
+                                    <UserBadge
+                                      gamification={claim.user.gamification}
+                                      userName={claim.createdBy}
+                                      size="sm"
+                                      showName={false}
+                                    />
+                                  </div>
+                                )}
+                              </div>
                               <p className="text-sm text-gray-600 mb-2 break-words">
                                 {claim.description}
                               </p>
@@ -549,6 +706,27 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
 
                             {/* Actions */}
                             <div className="flex items-center gap-2 self-start">
+                              {claim.projectFlowTaskId ? (
+                                <button
+                                  onClick={() => {
+                                    setCreatedTaskId(claim.projectFlowTaskId!);
+                                    setCreatedTaskTitle(claim.subject);
+                                    setShowSubTaskModal(true);
+                                  }}
+                                  className="p-2 hover:bg-white rounded-lg transition-colors cursor-pointer group"
+                                  title="Añadir subtarea en ProjectFlow"
+                                >
+                                  <Plus className="w-4 h-4 text-purple-500 group-hover:text-purple-600" />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleExportClick(claim)}
+                                  className="p-2 hover:bg-white rounded-lg transition-colors cursor-pointer group"
+                                  title="Exportar a Project Flow"
+                                >
+                                  <Send className="w-4 h-4 text-purple-500 group-hover:text-purple-600" />
+                                </button>
+                              )}
                               <button
                                 onClick={() => {
                                   setClaimToUpdateStatus(claim);
@@ -582,6 +760,21 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
                               <span className="hidden sm:inline">{claim.status?.label || claim.status?.name || 'Sin estado'}</span>
                               <span className="sm:hidden">{(claim.status?.label || claim.status?.name || 'Sin').substring(0, 3)}</span>
                             </span>
+                            
+                            {/* ProjectFlow Badge */}
+                            {claim.projectFlowTaskId && (
+                              <button
+                                onClick={() => {
+                                  setSelectedTaskId(claim.projectFlowTaskId!);
+                                  setSelectedClaimForTask(claim);
+                                  setShowTaskDetailsModal(true);
+                                }}
+                                className="px-2 py-1 rounded-full text-xs font-medium border bg-purple-50 text-purple-700 border-purple-200 flex items-center gap-1 hover:bg-purple-100 transition-colors cursor-pointer"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                <span>Ver en ProjectFlow</span>
+                              </button>
+                            )}
                             
                             {/* Adhesion counters for admin */}
                             {claim.adhesion_counts && (claim.adhesion_counts.support > 0 || claim.adhesion_counts.disagree > 0) && (
@@ -702,6 +895,61 @@ function ClaimsManagement({ isOpen, onClose, token }: ClaimsManagementProps) {
         isVisible={showErrorToast}
         onComplete={() => setShowErrorToast(false)}
         errorMessage={errorMessage}
+      />
+
+      {/* Task Created Toast with SubTask Option */}
+      <ProjectFlowTaskCreatedToast
+        isVisible={showTaskCreatedToast}
+        onComplete={() => setShowTaskCreatedToast(false)}
+        onCreateSubTask={handleOpenSubTaskModal}
+        taskTitle={createdTaskTitle}
+      />
+
+      {/* SubTask Created Toast */}
+      <SubTaskCreatedToast
+        isVisible={showSubTaskCreatedToast}
+        onComplete={() => setShowSubTaskCreatedToast(false)}
+        subTaskTitle={createdSubTaskTitle}
+      />
+
+      {/* ProjectFlow Task Details Modal */}
+      <ProjectFlowTaskDetailsModal
+        isOpen={showTaskDetailsModal}
+        onClose={() => {
+          setShowTaskDetailsModal(false);
+          setSelectedClaimForTask(null);
+        }}
+        taskId={selectedTaskId}
+        token={token}
+        claimId={selectedClaimForTask?.id}
+        currentClaimStatus={selectedClaimForTask?.status as string | undefined}
+        onClaimStatusSync={loadClaims}
+        onAddSubTask={() => {
+          setCreatedTaskId(selectedTaskId);
+          setShowSubTaskModal(true);
+        }}
+      />
+
+      {/* Export Modal */}
+      {claimToExport && (
+        <ExportToProjectFlowModal
+          isOpen={showExportModal}
+          onClose={() => {
+            setShowExportModal(false);
+            setClaimToExport(null);
+          }}
+          onExport={handleExport}
+          claimTitle={claimToExport.subject}
+          claimDescription={claimToExport.description}
+        />
+      )}
+
+      {/* SubTask Modal */}
+      <CreateSubTaskModal
+        isOpen={showSubTaskModal}
+        onClose={() => setShowSubTaskModal(false)}
+        onCreateSubTask={handleCreateSubTask}
+        parentTaskTitle={createdTaskTitle}
       />
 
       {/* Category Filter Modal */}
@@ -840,12 +1088,18 @@ interface DeleteConfirmationModalProps {
   claim: Claim;
   isVisible: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (deleteProjectFlowTask: boolean) => void;
   isLoading: boolean;
 }
 
 function DeleteConfirmationModal({ claim, isVisible, onClose, onConfirm, isLoading }: DeleteConfirmationModalProps) {
+  const [deleteTask, setDeleteTask] = useState(false);
+  
   if (!isVisible) return null;
+
+  const handleConfirm = () => {
+    onConfirm(deleteTask);
+  };
 
   return (
     <div 
@@ -870,20 +1124,44 @@ function DeleteConfirmationModal({ claim, isVisible, onClose, onConfirm, isLoadi
         <p className="text-gray-600 mb-2">
           ¿Estás seguro de que deseas eliminar este reclamo?
         </p>
-        <p className="text-sm text-gray-500 mb-6">
+        <p className="text-sm text-gray-500 mb-4">
           <strong>{claim.subject}</strong><br />
           Esta acción no se puede deshacer.
         </p>
+
+        {/* ProjectFlow Task Option */}
+        {claim.projectFlowTaskId && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={deleteTask}
+                onChange={(e) => setDeleteTask(e.target.checked)}
+                className="mt-1 w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                disabled={isLoading}
+              />
+              <div className="flex-1">
+                <span className="text-sm font-medium text-gray-900">
+                  ¿También eliminar la tarea de ProjectFlow?
+                </span>
+                <p className="text-xs text-gray-600 mt-1">
+                  Este reclamo tiene una tarea asociada en ProjectFlow. Si deseas eliminarla también, marca esta opción.
+                </p>
+              </div>
+            </label>
+          </div>
+        )}
 
         <div className="flex gap-3">
           <button
             onClick={onClose}
             className="flex-1 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
+            disabled={isLoading}
           >
             Cancelar
           </button>
           <button
-            onClick={onConfirm}
+            onClick={handleConfirm}
             disabled={isLoading}
             className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 cursor-pointer"
           >

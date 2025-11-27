@@ -1,8 +1,9 @@
 export interface UserData {
     user: {
+        id: number;
         name: string;
         email: string;
-        role?: string; // "admin" | "tenant" | "owner"
+        role?: string;
         iat: number;
         exp: number;
     };

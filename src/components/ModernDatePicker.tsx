@@ -142,10 +142,12 @@ function ModernDatePicker({
         <div className={`relative ${className}`}>
             {/* Date Input Display */}
             <div className="group">
-                <label className="flex items-center gap-2 text-gray-700 font-semibold text-sm uppercase tracking-wide mb-3">
-                    <Calendar className="w-4 h-4 text-gray-600" />
-                    {label}
-                </label>
+                {label && (
+                    <label className="flex items-center gap-2 text-gray-700 font-semibold text-sm uppercase tracking-wide mb-3">
+                        <Calendar className="w-4 h-4 text-gray-600" />
+                        {label}
+                    </label>
+                )}
                 
                 <button
                     type="button"

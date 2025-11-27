@@ -207,13 +207,15 @@ function AdminDashboard() {
     };
 
     return (
-        <div className={`min-h-screen bg-gray-100 ${(showSuccessToast || showPasswordChangeToast) ? 'pointer-events-none' : ''}`}>
-            <Header
-                userName={userData?.user.name || ""}
-                onProfileClick={() => setShowProfile((prev) => !prev)}
-                onLogout={handleLogout}
-                showClaimsTab={false}
-                showAmenitiesTab={false}
+        <>
+            <div className={`min-h-screen bg-gray-100 ${(showSuccessToast || showPasswordChangeToast) ? 'pointer-events-none' : ''}`}>
+                <Header
+                    userName={userData?.user.name || ""}
+                    onProfileClick={() => setShowProfile((prev) => !prev)}
+                    onLogout={handleLogout}
+                    showClaimsTab={false}
+                    showAmenitiesTab={false}
+                    showGamification={false}
                 showNotifications={true}
                 notifications={notifications}
                 onMarkNotificationAsRead={markAsRead}
@@ -597,7 +599,8 @@ function AdminDashboard() {
                 isOpen={showRatingsView}
                 onClose={() => setShowRatingsView(false)}
             />
-        </div>
+            </div>
+        </>
     );
 }
 

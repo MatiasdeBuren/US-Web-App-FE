@@ -8,6 +8,7 @@ import ClaimErrorToast from '../components/ClaimErrorToast';
 import CategoryFilterModal from '../components/CategoryFilterModal';
 import StatusFilterModal from '../components/StatusFilterModal';
 import OwnershipFilterModal from '../components/OwnershipFilterModal';
+import UserBadge from '../components/UserBadge';
 import { 
   getClaims,
   createClaim, 
@@ -18,6 +19,7 @@ import {
   type Claim,
   type UpdateClaimData
 } from '../api_calls/claims';
+import { deleteProjectFlowTask } from '../api_calls/projectFlow';
 
 
 const categoryIcons = {
@@ -317,7 +319,7 @@ function ClaimsPage() {
     setShowDeleteModal(true);
   };
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = async (deleteProjectFlowTaskOption: boolean) => {
     if (!claimToDelete || !token) {
       setErrorMessage('No hay sesión activa');
       setShowErrorToast(true);
@@ -326,7 +328,19 @@ function ClaimsPage() {
     
     setIsDeleting(true);
     try {
+      // Eliminar el reclamo
       await deleteClaim(token, claimToDelete.id);
+      
+      // Si el usuario eligió eliminar la tarea de ProjectFlow y existe
+      if (deleteProjectFlowTaskOption && claimToDelete.projectFlowTaskId) {
+        try {
+          await deleteProjectFlowTask(token, claimToDelete.projectFlowTaskId);
+        } catch (error) {
+          console.error('Error al eliminar tarea de ProjectFlow:', error);
+          // No mostramos error fatal, el reclamo ya fue eliminado
+        }
+      }
+      
       setClaims(prev => prev.filter(claim => claim.id !== claimToDelete.id));
       setShowDeleteModal(false);
       setClaimToDelete(null);
@@ -541,9 +555,9 @@ function ClaimsPage() {
                 className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
               >
                 <div className="mb-4">
-                  {/* Header with icon and title */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`p-2 rounded-xl ${
+                  {/* Header with icon, title, and user badge */}
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className={`p-2 rounded-xl flex-shrink-0 ${
                       claim.category?.name === 'ascensor' ? 'bg-purple-100 text-purple-600' :
                       claim.category?.name === 'plomeria' ? 'bg-blue-100 text-blue-600' :
                       claim.category?.name === 'electricidad' ? 'bg-yellow-100 text-yellow-600' :
@@ -558,6 +572,17 @@ function ClaimsPage() {
                       <h3 className="text-lg font-semibold text-gray-900 truncate">{claim.subject}</h3>
                       <p className="text-sm text-gray-500 truncate">{claim.category?.label || claim.category?.name || 'Categoría desconocida'} • {claim.location}</p>
                     </div>
+                    {/* User gamification badge in top-right */}
+                    {claim.user && (
+                      <div className="flex-shrink-0">
+                        <UserBadge
+                          gamification={claim.user.gamification}
+                          userName={claim.isAnonymous && currentUser?.role !== 'admin' ? 'Anónimo' : claim.createdBy}
+                          size="sm"
+                          showName={false}
+                        />
+                      </div>
+                    )}
                   </div>
                   
                   {/* Badges - responsive layout */}
@@ -729,6 +754,7 @@ function ClaimsPage() {
         onConfirm={handleConfirmDelete}
         claimSubject={claimToDelete?.subject}
         isDeleting={isDeleting}
+        hasProjectFlowTask={!!claimToDelete?.projectFlowTaskId}
       />
 
       {/* Success Toast */}
