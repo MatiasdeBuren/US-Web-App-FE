@@ -87,6 +87,12 @@ export default function ExpenseCard({ expense, onRegisterPayment, onDelete }: Ex
                   Pagado:{' '}
                   <span className="font-medium text-gray-800">{formatCurrency(expense.paidAmount)}</span>
                 </span>
+                {expense.totalAmount - expense.paidAmount > 0 && (
+                  <span>
+                    Saldo:{' '}
+                    <span className="font-medium text-red-600">{formatCurrency(expense.totalAmount - expense.paidAmount)}</span>
+                  </span>
+                )}
                 <span>
                   Total:{' '}
                   <span className="font-medium text-gray-800">{formatCurrency(expense.totalAmount)}</span>
@@ -198,6 +204,12 @@ export default function ExpenseCard({ expense, onRegisterPayment, onDelete }: Ex
                     <span>Total</span>
                     <span>{formatCurrency(expense.totalAmount)}</span>
                   </div>
+                  {expense.totalAmount - expense.paidAmount > 0 && (
+                    <div className="flex items-center justify-between text-sm font-semibold text-red-600 mt-1">
+                      <span>Saldo restante</span>
+                      <span>{formatCurrency(expense.totalAmount - expense.paidAmount)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
