@@ -10,6 +10,7 @@ import {
   type ExpenseStatus,
   type PaymentMethod,
 } from '../api_calls/expenses';
+import { getAdminApartments, type AdminApartment } from '../api_calls/admin';
 
 
 interface UseExpensesManagementOptions {
@@ -22,6 +23,7 @@ export interface UseExpensesManagementReturn {
   expenseTypes: ExpenseType[];
   expenseStatuses: ExpenseStatus[];
   paymentMethods: PaymentMethod[];
+  apartments: AdminApartment[];
   loading: boolean;
   isDeleting: boolean;
 
@@ -31,10 +33,14 @@ export interface UseExpensesManagementReturn {
   setSelectedStatusId: (id: number | null) => void;
   selectedTypeId: number | null;
   setSelectedTypeId: (id: number | null) => void;
+  selectedApartmentId: number | null;
+  setSelectedApartmentId: (id: number | null) => void;
   showStatusFilter: boolean;
   setShowStatusFilter: (open: boolean) => void;
   showTypeFilter: boolean;
   setShowTypeFilter: (open: boolean) => void;
+  showApartmentFilter: boolean;
+  setShowApartmentFilter: (open: boolean) => void;
 
   currentPage: number;
   setCurrentPage: (page: number) => void;
@@ -52,6 +58,7 @@ export interface UseExpensesManagementReturn {
 
   getCurrentStatusLabel: () => string;
   getCurrentTypeLabel: () => string;
+  getCurrentApartmentLabel: () => string;
 
   loadExpenses: () => void;
   handlePaymentRegistered: (updated: Expense) => void;
@@ -67,6 +74,7 @@ export function useExpensesManagement({
   const [expenseTypes, setExpenseTypes] = useState<ExpenseType[]>([]);
   const [expenseStatuses, setExpenseStatuses] = useState<ExpenseStatus[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [apartments, setApartments] = useState<AdminApartment[]>([]);
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(false);
@@ -75,8 +83,10 @@ export function useExpensesManagement({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatusId, setSelectedStatusId] = useState<number | null>(null);
   const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null);
+  const [selectedApartmentId, setSelectedApartmentId] = useState<number | null>(null);
   const [showStatusFilter, setShowStatusFilter] = useState(false);
   const [showTypeFilter, setShowTypeFilter] = useState(false);
+  const [showApartmentFilter, setShowApartmentFilter] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -88,14 +98,16 @@ export function useExpensesManagement({
 
   const loadMeta = useCallback(async () => {
     try {
-      const [types, statuses, methods] = await Promise.all([
+      const [types, statuses, methods, apts] = await Promise.all([
         getExpenseTypes(token),
         getExpenseStatuses(token),
         getPaymentMethods(token),
+        getAdminApartments(token),
       ]);
       setExpenseTypes(types);
       setExpenseStatuses(statuses);
       setPaymentMethods(methods);
+      setApartments(apts.slice().sort((a, b) => a.unit.localeCompare(b.unit)));
     } catch (err) {
       console.error('Error loading expense metadata:', err);
     }
@@ -108,6 +120,7 @@ export function useExpensesManagement({
         page: currentPage,
         limit: 10,
         statusId: selectedStatusId ?? undefined,
+        apartmentId: selectedApartmentId ?? undefined,
       });
       setExpenses(result.expenses);
       setTotalCount(result.pagination.total);
@@ -117,7 +130,7 @@ export function useExpensesManagement({
     } finally {
       setLoading(false);
     }
-  }, [token, currentPage, selectedStatusId]);
+  }, [token, currentPage, selectedStatusId, selectedApartmentId]);
 
   useEffect(() => {
     if (isOpen) {
@@ -133,7 +146,7 @@ export function useExpensesManagement({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedStatusId, selectedTypeId, searchTerm]);
+  }, [selectedStatusId, selectedTypeId, selectedApartmentId, searchTerm]);
 
   const displayedExpenses = expenses.filter((exp) => {
     const q = searchTerm.toLowerCase();
@@ -149,6 +162,12 @@ export function useExpensesManagement({
 
     return matchSearch && matchType;
   });
+
+  const getCurrentApartmentLabel = () => {
+    if (!selectedApartmentId) return 'Todos los deptos.';
+    const apt = apartments.find((a) => a.id === selectedApartmentId);
+    return apt ? `Depto. ${apt.unit}` : 'Departamento';
+  };
 
   const getCurrentStatusLabel = () => {
     if (!selectedStatusId) return 'Todos los estados';
@@ -183,6 +202,7 @@ export function useExpensesManagement({
   const clearFilters = () => {
     setSelectedStatusId(null);
     setSelectedTypeId(null);
+    setSelectedApartmentId(null);
     setSearchTerm('');
   };
 
@@ -192,6 +212,7 @@ export function useExpensesManagement({
     expenseTypes,
     expenseStatuses,
     paymentMethods,
+    apartments,
     loading,
     isDeleting,
     searchTerm,
@@ -200,10 +221,14 @@ export function useExpensesManagement({
     setSelectedStatusId,
     selectedTypeId,
     setSelectedTypeId,
+    selectedApartmentId,
+    setSelectedApartmentId,
     showStatusFilter,
     setShowStatusFilter,
     showTypeFilter,
     setShowTypeFilter,
+    showApartmentFilter,
+    setShowApartmentFilter,
     currentPage,
     setCurrentPage,
     totalPages,
@@ -217,6 +242,7 @@ export function useExpensesManagement({
     displayedExpenses,
     getCurrentStatusLabel,
     getCurrentTypeLabel,
+    getCurrentApartmentLabel,
     loadExpenses,
     handlePaymentRegistered,
     handleDeleteConfirm,

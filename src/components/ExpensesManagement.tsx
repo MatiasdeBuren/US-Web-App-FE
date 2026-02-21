@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Search, Filter, ChevronDown, Plus, FileText, Receipt, Clock } from 'lucide-react';
+import { X, Search, Filter, ChevronDown, Plus, FileText, Receipt, Clock, Building2 } from 'lucide-react';
 import { useExpensesManagement } from '../hooks/useExpensesManagement';
 import { STATUS_ICONS, TYPE_ICONS } from '../utils/expensesHelpers';
 import ExpenseCard from './ExpenseCard';
@@ -21,6 +21,7 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
     expenseTypes,
     expenseStatuses,
     paymentMethods,
+    apartments,
     loading,
     isDeleting,
     searchTerm,
@@ -29,10 +30,14 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
     setSelectedStatusId,
     selectedTypeId,
     setSelectedTypeId,
+    selectedApartmentId,
+    setSelectedApartmentId,
     showStatusFilter,
     setShowStatusFilter,
     showTypeFilter,
     setShowTypeFilter,
+    showApartmentFilter,
+    setShowApartmentFilter,
     currentPage,
     setCurrentPage,
     totalPages,
@@ -46,13 +51,14 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
     displayedExpenses,
     getCurrentStatusLabel,
     getCurrentTypeLabel,
+    getCurrentApartmentLabel,
     loadExpenses,
     handlePaymentRegistered,
     handleDeleteConfirm,
     clearFilters,
   } = useExpensesManagement({ isOpen, token });
 
-  const hasActiveFilters = !!(selectedStatusId || selectedTypeId || searchTerm);
+  const hasActiveFilters = !!(selectedStatusId || selectedTypeId || selectedApartmentId || searchTerm);
 
   const [showExpenseToast, setShowExpenseToast] = useState(false);
   const [toastUnitLabel, setToastUnitLabel] = useState<string | undefined>(undefined);
@@ -127,7 +133,7 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
                 {/* Status filter */}
                 <div className="relative">
                   <button
-                    onClick={() => { setShowStatusFilter(!showStatusFilter); setShowTypeFilter(false); }}
+                    onClick={() => { setShowStatusFilter(!showStatusFilter); setShowTypeFilter(false); setShowApartmentFilter(false); }}
                     className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm hover:border-gray-300 transition-colors cursor-pointer min-w-[170px]"
                   >
                     <Filter className="w-4 h-4 text-gray-400" />
@@ -172,7 +178,7 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
                 {/* Type filter (client-side) */}
                 <div className="relative">
                   <button
-                    onClick={() => { setShowTypeFilter(!showTypeFilter); setShowStatusFilter(false); }}
+                    onClick={() => { setShowTypeFilter(!showTypeFilter); setShowStatusFilter(false); setShowApartmentFilter(false); }}
                     className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm hover:border-gray-300 transition-colors cursor-pointer min-w-[170px]"
                   >
                     <FileText className="w-4 h-4 text-gray-400" />
@@ -209,6 +215,53 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
                             </button>
                           );
                         })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Apartment filter */}
+                <div className="relative">
+                  <button
+                    onClick={() => { setShowApartmentFilter(!showApartmentFilter); setShowStatusFilter(false); setShowTypeFilter(false); }}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm hover:border-gray-300 transition-colors cursor-pointer min-w-[170px]"
+                  >
+                    <Building2 className="w-4 h-4 text-gray-400" />
+                    <span className={selectedApartmentId ? 'text-gray-900 font-medium' : 'text-gray-500'}>
+                      {getCurrentApartmentLabel()}
+                    </span>
+                    <ChevronDown className="w-4 h-4 text-gray-400 ml-auto" />
+                  </button>
+
+                  <AnimatePresence>
+                    {showApartmentFilter && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 py-1 min-w-[180px] max-h-64 overflow-y-auto"
+                      >
+                        <button
+                          onClick={() => { setSelectedApartmentId(null); setShowApartmentFilter(false); }}
+                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors cursor-pointer ${
+                            !selectedApartmentId ? 'font-semibold text-indigo-600' : 'text-gray-700'
+                          }`}
+                        >
+                          Todos los deptos.
+                        </button>
+                        {apartments.map((apt) => (
+                          <button
+                            key={apt.id}
+                            onClick={() => { setSelectedApartmentId(apt.id); setShowApartmentFilter(false); }}
+                            className={`flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors cursor-pointer ${
+                              selectedApartmentId === apt.id ? 'font-semibold text-indigo-600' : 'text-gray-700'
+                            }`}
+                          >
+                            <Building2 className="w-4 h-4 flex-shrink-0" />
+                            <span>Depto. {apt.unit}</span>
+                            <span className="ml-auto text-xs text-gray-400">Piso {apt.floor}</span>
+                          </button>
+                        ))}
                       </motion.div>
                     )}
                   </AnimatePresence>
