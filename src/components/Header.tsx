@@ -17,8 +17,10 @@ interface HeaderProps {
     onLogout?: () => void;
     onClaimsClick?: () => void;
     onDashboardClick?: () => void;
-    activeTab?: 'dashboard' | 'reclamos';
+    onExpensasClick?: () => void;
+    activeTab?: 'dashboard' | 'reclamos' | 'expensas';
     showClaimsTab?: boolean;
+    showExpensasTab?: boolean;
     showAmenitiesTab?: boolean;
     showGamification?: boolean;
     notifications?: Notification[];
@@ -42,8 +44,10 @@ function Header({
     onLogout, 
     onClaimsClick, 
     onDashboardClick, 
+    onExpensasClick,
     activeTab = 'dashboard', 
     showClaimsTab = true, 
+    showExpensasTab = true,
     showAmenitiesTab = true,
     showGamification = true,
     notifications = [],
@@ -145,7 +149,18 @@ function Header({
                                 Reclamos
                             </button>
                         )}
-                    
+                        {showExpensasTab && (
+                            <button
+                                onClick={onExpensasClick}
+                                className={`font-medium transition-colors cursor-pointer ${
+                                    activeTab === 'expensas'
+                                        ? 'text-gray-900 font-semibold'
+                                        : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                Expensas
+                            </button>
+                        )}
                     </nav>
 
                     <div className="md:hidden flex items-center space-x-2">
@@ -268,6 +283,21 @@ function Header({
                                 }`}
                             >
                                 Reclamos
+                            </button>
+                        )}
+                        {showExpensasTab && (
+                            <button
+                                onClick={() => {
+                                    onExpensasClick?.();
+                                    setIsMobileMenuOpen(false);
+                                }}
+                                className={`block w-full text-left px-3 py-2 rounded-lg font-medium transition-colors cursor-pointer ${
+                                    activeTab === 'expensas'
+                                        ? 'text-gray-900 bg-gray-100 font-semibold'
+                                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                }`}
+                            >
+                                Expensas
                             </button>
                         )}
                         {showAmenitiesTab && (

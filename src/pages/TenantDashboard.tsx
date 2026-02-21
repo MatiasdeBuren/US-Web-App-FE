@@ -25,12 +25,14 @@ import ReservationHiddenToast from "../components/ReservationHiddenToast";
 import ReservationSuccessToast from "../components/ReservationSuccessToast";
 import ReservationErrorToast from "../components/ReservationErrorToast";
 import ClaimsPage from "./ClaimsPage";
+import UserExpensesPage from "./UserExpensesPage";
 import useUserNotifications from "../hooks/useUserNotifications";
 import useNotificationToasts from "../hooks/useNotificationToasts";
 import { NotificationToastContainer } from "../components/NotificationToast";
 import { GamificationProvider } from "../contexts/GamificationContext";
 import WelcomeSection from "../components/WelcomeSection";
 import type { UserData, ReservationData, Reservation, Amenity } from "../types";
+import { isTokenExpired, handleUnauthorized } from "../utils/auth";
 
 const API_URL = import.meta.env.VITE_API_URL as string;
 
@@ -52,7 +54,7 @@ function TenantDashboard() {
     const [showSuccessToast, setShowSuccessToast] = useState(false);
     const [showPasswordChangeToast, setShowPasswordChangeToast] = useState(false);
     const [newName, setNewName] = useState("");
-    const [activeTab, setActiveTab] = useState<"dashboard" | "reclamos">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "reclamos" | "expensas">("dashboard");
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [isReserving, setIsReserving] = useState(false);
     const [isCancelling, setIsCancelling] = useState<number | null>(null);
@@ -172,31 +174,35 @@ function TenantDashboard() {
             console.error('Error calculating amenity occupancy:', error);
             return 0;
         }
-    }, [amenities, getCurrentReservationCount]);
+    }, [amenities, getCurrentReservationCount, token]);
 
     useEffect(() => {
         const savedToken = localStorage.getItem("token");
-        if (!savedToken) {
+        if (!savedToken || isTokenExpired(savedToken)) {
+            handleUnauthorized();
             setToken(null);
             setIsInitialLoading(false);
             return;
         }
         setToken(savedToken);
 
+        const authHeaders = {
+            Authorization: `Bearer ${savedToken}`,
+            "Content-Type": "application/json",
+        };
+
         Promise.all([
-            fetch(`${API_URL}/dashboard`, {
-                headers: {
-                    Authorization: `Bearer ${savedToken}`,
-                    "Content-Type": "application/json",
-                },
-            }).then((res) => res.json()),
-            
-            fetch(`${API_URL}/amenities`, {
-                headers: { Authorization: `Bearer ${savedToken}` },
-            }).then((res) => res.json())
+            fetch(`${API_URL}/dashboard`, { headers: authHeaders }).then(async (res) => {
+                if (res.status === 401 || res.status === 403) { handleUnauthorized(); return null; }
+                return res.json();
+            }),
+            fetch(`${API_URL}/amenities`, { headers: authHeaders }).then(async (res) => {
+                if (res.status === 401 || res.status === 403) { handleUnauthorized(); return null; }
+                return res.json();
+            }),
         ])
         .then(([dashboardData, amenitiesData]) => {
-            if (dashboardData && dashboardData.user) {
+            if (dashboardData?.user) {
                 setUserData(dashboardData);
                 setNewName(dashboardData.user.name);
             }
@@ -235,15 +241,20 @@ function TenantDashboard() {
             });
             setSelectedTime("08:00 - 09:00");
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [amenities]);
 
     useEffect(() => {
         if (!token) return;
+        if (isTokenExpired(token)) { handleUnauthorized(); return; }
         fetch(`${API_URL}/reservations`, {
             headers: { Authorization: `Bearer ${token}` },
         })
-            .then((res) => res.json())
-            .then(setUserReservations)
+            .then(async (res) => {
+                if (res.status === 401 || res.status === 403) { handleUnauthorized(); return null; }
+                return res.json();
+            })
+            .then((data) => { if (data) setUserReservations(data); })
             .catch(console.error);
     }, [token]);
 
@@ -507,6 +518,7 @@ function TenantDashboard() {
                     onLogout={handleLogout}
                     onClaimsClick={() => setActiveTab("reclamos")}
                     onDashboardClick={() => setActiveTab("dashboard")}
+                    onExpensasClick={() => setActiveTab("expensas")}
                     activeTab={activeTab}
                 userNotifications={userNotifications}
                 userUnreadCount={userUnreadCount}
@@ -523,9 +535,11 @@ function TenantDashboard() {
                 {/* WELCOME SECTION */}
                 <WelcomeSection userName={userData?.user.name || ""} />
 
-            {/* Mostrar ClaimsPage si activeTab es 'reclamos', sino mostrar el dashboard original */}
+            {/* Mostrar página según el tab activo */}
             {activeTab === "reclamos" ? (
                 <ClaimsPage />
+            ) : activeTab === "expensas" ? (
+                <UserExpensesPage />
             ) : (
                 <>
                     {/* Layout de selección - Amenities a la izquierda, Horario a la derecha */}
