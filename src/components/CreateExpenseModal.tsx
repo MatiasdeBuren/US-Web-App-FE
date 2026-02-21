@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Trash2, AlertCircle, Users, ChevronDown, UserCircle2 } from 'lucide-react';
+import { X, Plus, Trash2, AlertCircle, Users, ChevronDown, UserCircle2, Building2, User } from 'lucide-react';
 import { createExpense, type ExpenseType, type CreateExpenseLineItemInput } from '../api_calls/expenses';
 import { getAdminApartments, getAdminUsers, type AdminApartment, type AdminUser } from '../api_calls/admin';
 import { formatCurrency } from '../utils/expensesHelpers';
@@ -45,6 +45,14 @@ export default function CreateExpenseModal({
   const [loadingResidents, setLoadingResidents] = useState(false);
   const residentsRef = useRef<HTMLDivElement>(null);
 
+  // por usuario
+  const [assignMode, setAssignMode] = useState<'unit' | 'user'>('unit');
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [showAptInfo, setShowAptInfo] = useState(false);
+  const aptInfoRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (isOpen) {
       setApartmentUnit('');
@@ -56,6 +64,10 @@ export default function CreateExpenseModal({
       setError('');
       setShowResidents(false);
       setResidents([]);
+      setAssignMode('unit');
+      setSelectedUserId('');
+      setUsers([]);
+      setShowAptInfo(false);
       setLoadingApartments(true);
       getAdminApartments(token)
         .then((data) => setApartments(data))
@@ -74,6 +86,35 @@ export default function CreateExpenseModal({
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [showResidents]);
+
+  useEffect(() => {
+    if (!showAptInfo) return;
+    const handler = (e: MouseEvent) => {
+      if (aptInfoRef.current && !aptInfoRef.current.contains(e.target as Node)) {
+        setShowAptInfo(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showAptInfo]);
+
+  const handleSwitchMode = async (mode: 'unit' | 'user') => {
+    if (mode === assignMode) return;
+    setAssignMode(mode);
+    setShowResidents(false);
+    setShowAptInfo(false);
+    if (mode === 'user' && users.length === 0) {
+      setLoadingUsers(true);
+      try {
+        const allUsers = await getAdminUsers(token);
+        setUsers(allUsers.filter((u) => u.apartmentId));
+      } catch {
+        setUsers([]);
+      } finally {
+        setLoadingUsers(false);
+      }
+    }
+  };
 
   const handleViewResidents = async () => {
     if (!apartmentUnit) return;
@@ -115,15 +156,27 @@ export default function CreateExpenseModal({
     e.preventDefault();
     setError('');
 
-    if (!apartmentUnit.trim()) return setError('Seleccione un departamento.');
     if (!period) return setError('Seleccione el período.');
     if (!dueDate) return setError('Ingrese la fecha de vencimiento.');
     if (lineItems.some((li) => !li.typeId)) return setError('Todos los rubros deben tener un tipo.');
     if (lineItems.some((li) => !li.amount || parseFloat(li.amount) <= 0))
       return setError('Todos los rubros deben tener un importe mayor a 0.');
 
-    const aptId = parseInt(apartmentUnit.trim());
-    if (isNaN(aptId)) return setError('Departamento inválido.');
+    let aptId: number;
+    let unitLabel: string | undefined;
+
+    if (assignMode === 'unit') {
+      if (!apartmentUnit.trim()) return setError('Seleccione un departamento.');
+      aptId = parseInt(apartmentUnit.trim());
+      if (isNaN(aptId)) return setError('Departamento inválido.');
+      unitLabel = apartments.find((a) => a.id === aptId)?.unit;
+    } else {
+      if (!selectedUserId) return setError('Seleccione un usuario.');
+      const selUser = users.find((u) => String(u.id) === selectedUserId);
+      if (!selUser?.apartmentId) return setError('El usuario seleccionado no tiene departamento asignado.');
+      aptId = selUser.apartmentId;
+      unitLabel = selUser.apartment?.unit;
+    }
 
     setSaving(true);
     try {
@@ -145,8 +198,7 @@ export default function CreateExpenseModal({
         lineItems: items,
       });
 
-      const selectedApt = apartments.find((a) => a.id === aptId);
-      onCreated(selectedApt?.unit);
+      onCreated(unitLabel);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al crear la expensa');
@@ -186,8 +238,40 @@ export default function CreateExpenseModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+
+          {/* Mode toggle — Por Unidad / Por Usuario */}
+          <div className="flex bg-gray-100 rounded-xl p-1 text-sm gap-1">
+            <button
+              type="button"
+              onClick={() => handleSwitchMode('unit')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all cursor-pointer ${
+                assignMode === 'unit'
+                  ? 'bg-white shadow text-indigo-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Building2 className="w-4 h-4" />
+              Por Unidad
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSwitchMode('user')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all cursor-pointer ${
+                assignMode === 'user'
+                  ? 'bg-white shadow text-indigo-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <User className="w-4 h-4" />
+              Por Usuario
+            </button>
+          </div>
+
           {/* Apartment + Period + Due date */}
           <div className="grid md:grid-cols-3 gap-4">
+
+            {/* ── POR UNIDAD ── */}
+            {assignMode === 'unit' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Departamento <span className="text-red-500">*</span>
@@ -290,6 +374,115 @@ export default function CreateExpenseModal({
                 ) : null;
               })()}
             </div>
+            )}
+
+            {/* ── POR USUARIO ── */}
+            {assignMode === 'user' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Usuario <span className="text-red-500">*</span>
+              </label>
+              <div className="relative flex items-center gap-2" ref={aptInfoRef}>
+                {/* Dropdown */}
+                <div className="relative flex-1">
+                  <select
+                    value={selectedUserId}
+                    onChange={(e) => {
+                      setSelectedUserId(e.target.value);
+                      setShowAptInfo(false);
+                    }}
+                    disabled={loadingUsers}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none pr-8 disabled:bg-gray-50 disabled:text-gray-400 cursor-pointer"
+                    required
+                  >
+                    <option value="">
+                      {loadingUsers ? 'Cargando…' : 'Seleccionar usuario…'}
+                    </option>
+                    {users
+                      .slice()
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name}
+                        </option>
+                      ))}
+                  </select>
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                </div>
+
+                {/* View apartment button */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAptInfo((v) => !v)}
+                    disabled={!selectedUserId}
+                    title="Ver departamento del usuario"
+                    className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 hover:bg-indigo-50 hover:border-indigo-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  >
+                    <Building2 className="w-4 h-4 text-indigo-600" />
+                  </button>
+                </div>
+
+                {/* Apartment popover */}
+                <AnimatePresence>
+                  {showAptInfo && (() => {
+                    const selUser = users.find((u) => String(u.id) === selectedUserId);
+                    const apt = selUser?.apartment;
+                    return (
+                      <motion.div
+                        key="apt-popover"
+                        initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute left-0 top-full mt-2 z-50 w-full min-w-[220px] bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden"
+                      >
+                        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                          <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Departamento</span>
+                          <button
+                            type="button"
+                            onClick={() => setShowAptInfo(false)}
+                            className="p-0.5 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5 text-gray-400" />
+                          </button>
+                        </div>
+                        <div className="p-3">
+                          {!apt ? (
+                            <p className="text-xs text-gray-400 text-center py-3">Sin departamento asignado</p>
+                          ) : (
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                                <Building2 className="w-4 h-4 text-indigo-500" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-gray-800">Unidad {apt.unit}</p>
+                                <p className="text-xs text-gray-400">Piso {apt.floor}{apt.rooms ? ` · ${apt.rooms} amb` : ''}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                  })()}
+                </AnimatePresence>
+              </div>
+              {/* Inline apt hint below */}
+              {selectedUserId && (() => {
+                const selUser = users.find((u) => String(u.id) === selectedUserId);
+                const apt = selUser?.apartment;
+                return apt ? (
+                  <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                    <Building2 className="w-3 h-3" />
+                    Unidad {apt.unit} · Piso {apt.floor}
+                  </p>
+                ) : (
+                  <p className="text-xs text-red-400 mt-1">Sin departamento asignado</p>
+                );
+              })()}
+            </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Período <span className="text-red-500">*</span>
