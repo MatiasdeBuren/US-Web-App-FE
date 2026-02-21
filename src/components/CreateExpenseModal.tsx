@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { X, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Plus, Trash2, AlertCircle, Users, ChevronDown, UserCircle2 } from 'lucide-react';
 import { createExpense, type ExpenseType, type CreateExpenseLineItemInput } from '../api_calls/expenses';
+import { getAdminApartments, getAdminUsers, type AdminApartment, type AdminUser } from '../api_calls/admin';
 import { formatCurrency } from '../utils/expensesHelpers';
 
 export interface LineItemForm {
@@ -36,7 +37,14 @@ export default function CreateExpenseModal({
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Reset form when modal opens
+  const [apartments, setApartments] = useState<AdminApartment[]>([]);
+  const [loadingApartments, setLoadingApartments] = useState(false);
+
+  const [showResidents, setShowResidents] = useState(false);
+  const [residents, setResidents] = useState<AdminUser[]>([]);
+  const [loadingResidents, setLoadingResidents] = useState(false);
+  const residentsRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (isOpen) {
       setApartmentUnit('');
@@ -46,8 +54,42 @@ export default function CreateExpenseModal({
       setAdminNotes('');
       setLineItems([{ typeId: 0, subtypeId: null, description: '', amount: '' }]);
       setError('');
+      setShowResidents(false);
+      setResidents([]);
+      setLoadingApartments(true);
+      getAdminApartments(token)
+        .then((data) => setApartments(data))
+        .catch(() => setApartments([]))
+        .finally(() => setLoadingApartments(false));
     }
-  }, [isOpen]);
+  }, [isOpen, token]);
+
+  useEffect(() => {
+    if (!showResidents) return;
+    const handler = (e: MouseEvent) => {
+      if (residentsRef.current && !residentsRef.current.contains(e.target as Node)) {
+        setShowResidents(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showResidents]);
+
+  const handleViewResidents = async () => {
+    if (!apartmentUnit) return;
+    if (showResidents) { setShowResidents(false); return; }
+    setLoadingResidents(true);
+    setShowResidents(true);
+    try {
+      const allUsers = await getAdminUsers(token);
+      const aptId = parseInt(apartmentUnit);
+      setResidents(allUsers.filter((u) => u.apartmentId === aptId));
+    } catch {
+      setResidents([]);
+    } finally {
+      setLoadingResidents(false);
+    }
+  };
 
   const addLineItem = () =>
     setLineItems((prev) => [...prev, { typeId: 0, subtypeId: null, description: '', amount: '' }]);
@@ -73,7 +115,7 @@ export default function CreateExpenseModal({
     e.preventDefault();
     setError('');
 
-    if (!apartmentUnit.trim()) return setError('Ingrese la unidad del departamento.');
+    if (!apartmentUnit.trim()) return setError('Seleccione un departamento.');
     if (!period) return setError('Seleccione el período.');
     if (!dueDate) return setError('Ingrese la fecha de vencimiento.');
     if (lineItems.some((li) => !li.typeId)) return setError('Todos los rubros deben tener un tipo.');
@@ -81,7 +123,7 @@ export default function CreateExpenseModal({
       return setError('Todos los rubros deben tener un importe mayor a 0.');
 
     const aptId = parseInt(apartmentUnit.trim());
-    if (isNaN(aptId)) return setError('Ingrese el ID numérico del departamento.');
+    if (isNaN(aptId)) return setError('Departamento inválido.');
 
     setSaving(true);
     try {
@@ -147,18 +189,105 @@ export default function CreateExpenseModal({
           <div className="grid md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                ID Departamento <span className="text-red-500">*</span>
+                Departamento <span className="text-red-500">*</span>
               </label>
-              <input
-                type="number"
-                min={1}
-                placeholder="Ej: 3"
-                value={apartmentUnit}
-                onChange={(e) => setApartmentUnit(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                required
-              />
-              <p className="text-xs text-gray-400 mt-1">Número de ID del departamento</p>
+              <div className="relative flex items-center gap-2" ref={residentsRef}>
+                {/* Dropdown */}
+                <div className="relative flex-1">
+                  <select
+                    value={apartmentUnit}
+                    onChange={(e) => {
+                      setApartmentUnit(e.target.value);
+                      setShowResidents(false);
+                      setResidents([]);
+                    }}
+                    disabled={loadingApartments}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none pr-8 disabled:bg-gray-50 disabled:text-gray-400 cursor-pointer"
+                    required
+                  >
+                    <option value="">
+                      {loadingApartments ? 'Cargando…' : 'Seleccionar unidad…'}
+                    </option>
+                    {apartments
+                      .slice()
+                      .sort((a, b) => a.unit.localeCompare(b.unit))
+                      .map((apt) => (
+                        <option key={apt.id} value={apt.id}>
+                          {apt.unit} — Piso {apt.floor}
+                        </option>
+                      ))}
+                  </select>
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                </div>
+
+                {/* View residents button */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={handleViewResidents}
+                    disabled={!apartmentUnit}
+                    title="Ver habitantes de la unidad"
+                    className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 hover:bg-indigo-50 hover:border-indigo-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  >
+                    <Users className="w-4 h-4 text-indigo-600" />
+                  </button>
+                </div>
+
+                {/* Residents popover — anchored to the whole field row */}
+                <AnimatePresence>
+                  {showResidents && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute left-0 top-full mt-2 z-50 w-full min-w-[220px] bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden"
+                    >
+                        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                          <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Habitantes</span>
+                          <button
+                            type="button"
+                            onClick={() => setShowResidents(false)}
+                            className="p-0.5 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5 text-gray-400" />
+                          </button>
+                        </div>
+                        <div className="p-3">
+                          {loadingResidents ? (
+                            <div className="flex items-center justify-center py-4">
+                              <div className="w-5 h-5 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
+                            </div>
+                          ) : residents.length === 0 ? (
+                            <p className="text-xs text-gray-400 text-center py-3">Sin habitantes registrados</p>
+                          ) : (
+                            <ul className="space-y-2">
+                              {residents.map((u) => (
+                                <li key={u.id} className="flex items-center gap-2.5">
+                                  <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                                    <UserCircle2 className="w-4 h-4 text-indigo-500" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium text-gray-800 truncate">{u.name}</p>
+                                    <p className="text-xs text-gray-400 truncate">{u.email}</p>
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+              </div>
+              {apartmentUnit && (() => {
+                const apt = apartments.find((a) => String(a.id) === apartmentUnit);
+                return apt ? (
+                  <p className="text-xs text-gray-400 mt-1">
+                    {apt.rooms} amb · {apt.areaM2 ? `${apt.areaM2} m²` : 'sin datos de superficie'}
+                  </p>
+                ) : null;
+              })()}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
