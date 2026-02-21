@@ -21,6 +21,7 @@ import ReservationManagement from "../components/ReservationManagement";
 import ApartmentManagement from "../components/ApartmentManagement";
 import AmenityManagement from "../components/AmenityManagement";
 import ClaimsManagement from "../components/ClaimsManagement";
+import ExpensesManagement from "../components/ExpensesManagement";
 import AnalyticsReports from "../components/AnalyticsReports";
 import AdminRatingsView from "../components/AdminRatingsView";
 import { LoadingOverlay } from "../components/LoadingSpinner";
@@ -53,6 +54,7 @@ function AdminDashboard() {
     const [showApartmentManagement, setShowApartmentManagement] = useState(false);
     const [showAmenityManagement, setShowAmenityManagement] = useState(false);
     const [showClaimsManagement, setShowClaimsManagement] = useState(false);
+    const [showExpensesManagement, setShowExpensesManagement] = useState(false);
     const [showAnalyticsReports, setShowAnalyticsReports] = useState(false);
     const [showRatingsView, setShowRatingsView] = useState(false);
     const [showNotificationsModal, setShowNotificationsModal] = useState(false);
@@ -439,6 +441,28 @@ function AdminDashboard() {
                         className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
+                        onClick={() => setShowExpensesManagement(true)}
+                    >
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                                <BarChart3 className="w-6 h-6 text-white" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-800">Gestión de Expensas</h3>
+                        </div>
+                        <p className="text-gray-600 mb-4">
+                            Administrá expensas, cobros y pagos por departamento
+                        </p>
+                        <div className="text-sm text-gray-500">
+                            • Crear nuevas expensas<br />
+                            • Filtrar por estado y tipo<br />
+                            • Registrar pagos recibidos
+                        </div>
+                    </motion.div>
+
+                    <motion.div 
+                        className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={() => setShowAnalyticsReports(true)}
                     >
                         <div className="flex items-center gap-4 mb-6">
@@ -552,6 +576,14 @@ function AdminDashboard() {
                 <ClaimsManagement
                     isOpen={showClaimsManagement}
                     onClose={() => setShowClaimsManagement(false)}
+                    token={token}
+                />
+            )}
+
+            {token && (
+                <ExpensesManagement
+                    isOpen={showExpensesManagement}
+                    onClose={() => setShowExpensesManagement(false)}
                     token={token}
                 />
             )}
