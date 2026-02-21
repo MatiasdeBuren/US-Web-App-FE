@@ -33,12 +33,16 @@ export interface UseExpensesManagementReturn {
   setSelectedStatusId: (id: number | null) => void;
   selectedTypeId: number | null;
   setSelectedTypeId: (id: number | null) => void;
+  selectedSubtypeId: number | null;
+  setSelectedSubtypeId: (id: number | null) => void;
   selectedApartmentId: number | null;
   setSelectedApartmentId: (id: number | null) => void;
   showStatusFilter: boolean;
   setShowStatusFilter: (open: boolean) => void;
   showTypeFilter: boolean;
   setShowTypeFilter: (open: boolean) => void;
+  showSubtypeFilter: boolean;
+  setShowSubtypeFilter: (open: boolean) => void;
   showApartmentFilter: boolean;
   setShowApartmentFilter: (open: boolean) => void;
 
@@ -83,9 +87,11 @@ export function useExpensesManagement({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatusId, setSelectedStatusId] = useState<number | null>(null);
   const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null);
+  const [selectedSubtypeId, setSelectedSubtypeId] = useState<number | null>(null);
   const [selectedApartmentId, setSelectedApartmentId] = useState<number | null>(null);
   const [showStatusFilter, setShowStatusFilter] = useState(false);
   const [showTypeFilter, setShowTypeFilter] = useState(false);
+  const [showSubtypeFilter, setShowSubtypeFilter] = useState(false);
   const [showApartmentFilter, setShowApartmentFilter] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -144,9 +150,14 @@ export function useExpensesManagement({
     }
   }, [isOpen, loadExpenses]);
 
+  // reset subtype when type changes
+  useEffect(() => {
+    setSelectedSubtypeId(null);
+  }, [selectedTypeId]);
+
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedStatusId, selectedTypeId, selectedApartmentId, searchTerm]);
+  }, [selectedStatusId, selectedTypeId, selectedSubtypeId, selectedApartmentId, searchTerm]);
 
   const displayedExpenses = expenses.filter((exp) => {
     const q = searchTerm.toLowerCase();
@@ -160,7 +171,10 @@ export function useExpensesManagement({
     const matchType =
       !selectedTypeId || exp.lineItems.some((li) => li.typeId === selectedTypeId);
 
-    return matchSearch && matchType;
+    const matchSubtype =
+      !selectedSubtypeId || exp.lineItems.some((li) => li.subtypeId === selectedSubtypeId);
+
+    return matchSearch && matchType && matchSubtype;
   });
 
   const getCurrentApartmentLabel = () => {
@@ -202,6 +216,7 @@ export function useExpensesManagement({
   const clearFilters = () => {
     setSelectedStatusId(null);
     setSelectedTypeId(null);
+    setSelectedSubtypeId(null);
     setSelectedApartmentId(null);
     setSearchTerm('');
   };
@@ -221,12 +236,16 @@ export function useExpensesManagement({
     setSelectedStatusId,
     selectedTypeId,
     setSelectedTypeId,
+    selectedSubtypeId,
+    setSelectedSubtypeId,
     selectedApartmentId,
     setSelectedApartmentId,
     showStatusFilter,
     setShowStatusFilter,
     showTypeFilter,
     setShowTypeFilter,
+    showSubtypeFilter,
+    setShowSubtypeFilter,
     showApartmentFilter,
     setShowApartmentFilter,
     currentPage,

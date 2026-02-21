@@ -12,6 +12,10 @@ export interface UserExpenseType {
   label: string;
 }
 
+export interface UserExpenseTypeWithSubtypes extends UserExpenseType {
+  subtypes: UserExpenseSubtype[];
+}
+
 export interface UserExpenseSubtype {
   id: number;
   name: string;
@@ -142,4 +146,18 @@ export async function getUserExpenseDetail(
   });
   if (!res.ok) throw new Error('Error al obtener la expensa');
   return res.json();
+}
+
+export async function getUserExpenseTypes(
+  token: string
+): Promise<UserExpenseTypeWithSubtypes[]> {
+  const res = await fetch(`${API_URL}/expenses/types`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Error al obtener tipos de expensa');
+  const data = await res.json();
+
+  const raw: { id: number; name: string; label: string; subtypes?: UserExpenseSubtype[] }[] =
+    Array.isArray(data) ? data : (data.types ?? []);
+  return raw.map((t) => ({ ...t, subtypes: t.subtypes ?? [] }));
 }

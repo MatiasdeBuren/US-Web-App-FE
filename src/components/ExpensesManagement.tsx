@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Search, Filter, ChevronDown, Plus, FileText, Receipt, Clock, Building2 } from 'lucide-react';
+import { X, Search, Filter, ChevronDown, ChevronRight, Plus, FileText, Receipt, Clock, Building2, Tag, Layers } from 'lucide-react';
 import { useExpensesManagement } from '../hooks/useExpensesManagement';
 import { STATUS_ICONS, TYPE_ICONS } from '../utils/expensesHelpers';
 import ExpenseCard from './ExpenseCard';
@@ -18,6 +18,7 @@ interface ExpensesManagementProps {
 
 export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesManagementProps) {
   const {
+    expenses,
     expenseTypes,
     expenseStatuses,
     paymentMethods,
@@ -30,12 +31,16 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
     setSelectedStatusId,
     selectedTypeId,
     setSelectedTypeId,
+    selectedSubtypeId,
+    setSelectedSubtypeId,
     selectedApartmentId,
     setSelectedApartmentId,
     showStatusFilter,
     setShowStatusFilter,
     showTypeFilter,
     setShowTypeFilter,
+    showSubtypeFilter,
+    setShowSubtypeFilter,
     showApartmentFilter,
     setShowApartmentFilter,
     currentPage,
@@ -58,7 +63,27 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
     clearFilters,
   } = useExpensesManagement({ isOpen, token });
 
-  const hasActiveFilters = !!(selectedStatusId || selectedTypeId || selectedApartmentId || searchTerm);
+  const hasActiveFilters = !!(selectedStatusId || selectedTypeId || selectedSubtypeId || selectedApartmentId || searchTerm);
+
+  const subtypesByTypeId = useMemo(() => {
+    const map = new Map<number, { id: number; name: string; label: string; typeId: number }[]>();
+    expenses.forEach((exp) => {
+      exp.lineItems.forEach((li) => {
+        if (li.subtypeId && li.subtype) {
+          if (!map.has(li.typeId)) map.set(li.typeId, []);
+          const list = map.get(li.typeId)!;
+          if (!list.find((s) => s.id === li.subtypeId)) {
+            list.push(li.subtype as { id: number; name: string; label: string; typeId: number });
+          }
+        }
+      });
+    });
+    return map;
+  }, [expenses]);
+
+  const selectedType = expenseTypes.find((t) => t.id === selectedTypeId);
+  const availableSubtypes = selectedTypeId ? (subtypesByTypeId.get(selectedTypeId) ?? []) : [];
+  const hasSubtypes = availableSubtypes.length > 0;
 
   const [showExpenseToast, setShowExpenseToast] = useState(false);
   const [toastUnitLabel, setToastUnitLabel] = useState<string | undefined>(undefined);
@@ -175,46 +200,160 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
                   </AnimatePresence>
                 </div>
 
-                {/* Type filter (client-side) */}
-                <div className="relative">
-                  <button
-                    onClick={() => { setShowTypeFilter(!showTypeFilter); setShowStatusFilter(false); setShowApartmentFilter(false); }}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm hover:border-gray-300 transition-colors cursor-pointer min-w-[170px]"
-                  >
-                    <FileText className="w-4 h-4 text-gray-400" />
-                    <span className={selectedTypeId ? 'text-gray-900 font-medium' : 'text-gray-500'}>
-                      {getCurrentTypeLabel()}
-                    </span>
-                    <ChevronDown className="w-4 h-4 text-gray-400 ml-auto" />
-                  </button>
+                {/* ── Type + Subtype cascading filter ── */}
+                <div className="flex items-center gap-1">
 
-                  <AnimatePresence>
-                    {showTypeFilter && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 py-1 min-w-[170px]"
-                      >
-                        <button
-                          onClick={() => { setSelectedTypeId(null); setShowTypeFilter(false); }}
-                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors cursor-pointer ${!selectedTypeId ? 'font-semibold text-indigo-600' : 'text-gray-700'}`}
+                  {/* Type pill */}
+                  <div className="relative">
+                    <button
+                      onClick={() => { setShowTypeFilter(!showTypeFilter); setShowStatusFilter(false); setShowApartmentFilter(false); setShowSubtypeFilter(false); }}
+                      className={`group flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer min-w-[160px] ${
+                        selectedTypeId
+                          ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-md shadow-indigo-200/60 border border-transparent'
+                          : 'bg-white border border-gray-200 text-gray-500 hover:border-indigo-300 hover:shadow-sm hover:text-gray-700'
+                      }`}
+                    >
+                      {selectedTypeId
+                        ? (() => { const Icon = TYPE_ICONS[(selectedType?.name ?? '')] ?? FileText; return <Icon className="w-4 h-4 flex-shrink-0" />; })()
+                        : <Layers className="w-4 h-4 flex-shrink-0 text-gray-400 group-hover:text-indigo-400 transition-colors" />
+                      }
+                      <span className="truncate">{getCurrentTypeLabel()}</span>
+                      <ChevronDown className={`w-4 h-4 ml-auto flex-shrink-0 transition-transform duration-200 ${showTypeFilter ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    <AnimatePresence>
+                      {showTypeFilter && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute top-full left-0 mt-2 bg-white border border-gray-200/80 rounded-2xl shadow-xl shadow-gray-200/60 z-20 py-2 min-w-[180px] overflow-hidden"
                         >
-                          Todos los tipos
-                        </button>
-                        {expenseTypes.map((t) => {
-                          const Icon = TYPE_ICONS[t.name] ?? FileText;
-                          return (
-                            <button
-                              key={t.id}
-                              onClick={() => { setSelectedTypeId(t.id); setShowTypeFilter(false); }}
-                              className={`flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors cursor-pointer ${selectedTypeId === t.id ? 'font-semibold text-indigo-600' : 'text-gray-700'}`}
-                            >
-                              <Icon className="w-4 h-4" />
-                              {t.label}
-                            </button>
-                          );
-                        })}
+                          <div className="px-3 pb-1.5 pt-0.5">
+                            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Tipo de expensa</p>
+                          </div>
+                          <button
+                            onClick={() => { setSelectedTypeId(null); setShowTypeFilter(false); }}
+                            className={`w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer flex items-center gap-2 ${
+                              !selectedTypeId ? 'font-semibold text-indigo-600 bg-indigo-50/60' : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <span className="w-5 h-5 rounded-md bg-gray-100 flex items-center justify-center">
+                              <FileText className="w-3 h-3 text-gray-400" />
+                            </span>
+                            Todos los tipos
+                          </button>
+                          {expenseTypes.map((t) => {
+                            const Icon = TYPE_ICONS[t.name] ?? FileText;
+                            const isActive = selectedTypeId === t.id;
+                            return (
+                              <button
+                                key={t.id}
+                                onClick={() => { setSelectedTypeId(t.id); setShowTypeFilter(false); }}
+                                className={`flex items-center gap-2.5 w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer ${
+                                  isActive ? 'font-semibold text-indigo-600 bg-indigo-50/60' : 'text-gray-700 hover:bg-gray-50'
+                                }`}
+                              >
+                                <span className={`w-5 h-5 rounded-md flex items-center justify-center ${
+                                  isActive ? 'bg-indigo-100' : 'bg-gray-100'
+                                }`}>
+                                  <Icon className={`w-3 h-3 ${isActive ? 'text-indigo-500' : 'text-gray-400'}`} />
+                                </span>
+                                {t.label}
+                                {(subtypesByTypeId.get(t.id)?.length ?? 0) > 0 && (
+                                  <span className="ml-auto text-[10px] bg-purple-50 text-purple-500 border border-purple-100 rounded-full px-1.5 py-0.5 font-semibold">
+                                    {subtypesByTypeId.get(t.id)!.length}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Connector + Subtype pill */}
+                  <AnimatePresence>
+                    {hasSubtypes && (
+                      <motion.div
+                        initial={{ opacity: 0, x: -12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -12 }}
+                        transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+                        className="flex items-center gap-1"
+                      >
+                        {/* Spark connector */}
+                        <div className="flex items-center gap-0 flex-shrink-0">
+                          <div className="w-3 h-px bg-gradient-to-r from-purple-400 to-pink-400" />
+                          <ChevronRight className="w-3.5 h-3.5 text-pink-400 flex-shrink-0" />
+                        </div>
+
+                        {/* Subtype pill */}
+                        <div className="relative">
+                          <button
+                            onClick={() => { setShowSubtypeFilter(!showSubtypeFilter); setShowTypeFilter(false); setShowStatusFilter(false); setShowApartmentFilter(false); }}
+                            className={`group flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer min-w-[168px] ${
+                              selectedSubtypeId
+                                ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white shadow-md shadow-violet-200/60 border border-transparent'
+                                : 'bg-white border border-purple-200 text-gray-500 hover:border-violet-400 hover:shadow-sm hover:text-gray-700'
+                            }`}
+                          >
+                            <Tag className={`w-4 h-4 flex-shrink-0 transition-colors ${
+                              selectedSubtypeId ? 'text-white' : 'text-purple-400 group-hover:text-violet-500'
+                            }`} />
+                            <span className="truncate">{availableSubtypes.find((s) => s.id === selectedSubtypeId)?.label ?? 'Subtipo'}</span>
+                            <ChevronDown className={`w-4 h-4 ml-auto flex-shrink-0 transition-transform duration-200 ${showSubtypeFilter ? 'rotate-180' : ''}`} />
+                          </button>
+
+                          <AnimatePresence>
+                            {showSubtypeFilter && (
+                              <motion.div
+                                initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute top-full left-0 mt-2 bg-white border border-gray-200/80 rounded-2xl shadow-xl shadow-gray-200/60 z-20 py-2 min-w-[180px] overflow-hidden"
+                              >
+                                <div className="px-3 pb-1.5 pt-0.5">
+                                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Subtipo</p>
+                                  <p className="text-[11px] text-gray-400 truncate">{selectedType?.label}</p>
+                                </div>
+                                <button
+                                  onClick={() => { setSelectedSubtypeId(null); setShowSubtypeFilter(false); }}
+                                  className={`w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer flex items-center gap-2 ${
+                                    !selectedSubtypeId ? 'font-semibold text-violet-600 bg-violet-50/60' : 'text-gray-600 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  <span className="w-5 h-5 rounded-md bg-gray-100 flex items-center justify-center">
+                                    <Tag className="w-3 h-3 text-gray-400" />
+                                  </span>
+                                  Todos los subtipos
+                                </button>
+                                {availableSubtypes.map((s) => {
+                                  const isActive = selectedSubtypeId === s.id;
+                                  return (
+                                    <button
+                                      key={s.id}
+                                      onClick={() => { setSelectedSubtypeId(s.id); setShowSubtypeFilter(false); }}
+                                      className={`flex items-center gap-2.5 w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer ${
+                                        isActive ? 'font-semibold text-violet-600 bg-violet-50/60' : 'text-gray-700 hover:bg-gray-50'
+                                      }`}
+                                    >
+                                      <span className={`w-5 h-5 rounded-md flex items-center justify-center ${
+                                        isActive ? 'bg-violet-100' : 'bg-gray-100'
+                                      }`}>
+                                        <Tag className={`w-3 h-3 ${isActive ? 'text-violet-500' : 'text-gray-400'}`} />
+                                      </span>
+                                      {s.label}
+                                    </button>
+                                  );
+                                })}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -283,7 +422,7 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
             {/* ── Expense list ── */}
             <div
               className="flex-1 overflow-y-auto px-6 py-5 min-h-0"
-              onClick={() => { setShowStatusFilter(false); setShowTypeFilter(false); }}
+              onClick={() => { setShowStatusFilter(false); setShowTypeFilter(false); setShowSubtypeFilter(false); }}
             >
               {loading ? (
                 <div className="flex items-center justify-center py-20">
