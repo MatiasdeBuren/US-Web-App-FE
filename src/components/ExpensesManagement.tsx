@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, Filter, ChevronDown, Plus, FileText, Receipt, Clock } from 'lucide-react';
 import { useExpensesManagement } from '../hooks/useExpensesManagement';
@@ -6,8 +7,7 @@ import ExpenseCard from './ExpenseCard';
 import CreateExpenseModal from './CreateExpenseModal';
 import RegisterPaymentModal from './RegisterPaymentModal';
 import ConfirmDeleteExpenseModal from './ConfirmDeleteExpenseModal';
-
-// ─── Props ────────────────────────────────────────────────────────────────────
+import ExpenseSuccessToast from './ExpenseSuccessToast';
 
 interface ExpensesManagementProps {
   isOpen: boolean;
@@ -15,9 +15,6 @@ interface ExpensesManagementProps {
   token: string;
 }
 
-
-
-// ─── Component ─────────────────────────────────────────────────────────────────
 
 export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesManagementProps) {
   const {
@@ -56,6 +53,15 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
   } = useExpensesManagement({ isOpen, token });
 
   const hasActiveFilters = !!(selectedStatusId || selectedTypeId || searchTerm);
+
+  const [showExpenseToast, setShowExpenseToast] = useState(false);
+  const [toastUnitLabel, setToastUnitLabel] = useState<string | undefined>(undefined);
+
+  const handleExpenseCreated = (unitLabel?: string) => {
+    setToastUnitLabel(unitLabel);
+    setShowExpenseToast(true);
+    loadExpenses();
+  };
 
   if (!isOpen) return null;
 
@@ -287,11 +293,18 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
         <CreateExpenseModal
           isOpen={showCreate}
           onClose={() => setShowCreate(false)}
-          onCreated={loadExpenses}
+          onCreated={handleExpenseCreated}
           token={token}
           expenseTypes={expenseTypes}
         />
       )}
+
+      <ExpenseSuccessToast
+        isVisible={showExpenseToast}
+        onComplete={() => setShowExpenseToast(false)}
+        action="created"
+        unitLabel={toastUnitLabel}
+      />
       {expenseToPayment && (
         <RegisterPaymentModal
           isOpen={!!expenseToPayment}

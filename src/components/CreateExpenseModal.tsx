@@ -15,7 +15,7 @@ export interface LineItemForm {
 export interface CreateExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: (unitLabel?: string) => void;
   token: string;
   expenseTypes: ExpenseType[];
 }
@@ -145,7 +145,8 @@ export default function CreateExpenseModal({
         lineItems: items,
       });
 
-      onCreated();
+      const selectedApt = apartments.find((a) => a.id === aptId);
+      onCreated(selectedApt?.unit);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al crear la expensa');

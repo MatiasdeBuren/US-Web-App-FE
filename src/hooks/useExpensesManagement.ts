@@ -18,17 +18,13 @@ interface UseExpensesManagementOptions {
 }
 
 export interface UseExpensesManagementReturn {
-  // Data
   expenses: Expense[];
   expenseTypes: ExpenseType[];
   expenseStatuses: ExpenseStatus[];
   paymentMethods: PaymentMethod[];
-
-  // Loading
   loading: boolean;
   isDeleting: boolean;
 
-  // Search & filters
   searchTerm: string;
   setSearchTerm: (value: string) => void;
   selectedStatusId: number | null;
@@ -40,13 +36,11 @@ export interface UseExpensesManagementReturn {
   showTypeFilter: boolean;
   setShowTypeFilter: (open: boolean) => void;
 
-  // Pagination
   currentPage: number;
   setCurrentPage: (page: number) => void;
   totalPages: number;
   totalCount: number;
 
-  // Modal visibility
   showCreate: boolean;
   setShowCreate: (open: boolean) => void;
   expenseToPayment: Expense | null;
@@ -54,14 +48,11 @@ export interface UseExpensesManagementReturn {
   expenseToDelete: Expense | null;
   setExpenseToDelete: (expense: Expense | null) => void;
 
-  // Filtered view (client-side search + type filter)
   displayedExpenses: Expense[];
 
-  // Label helpers
   getCurrentStatusLabel: () => string;
   getCurrentTypeLabel: () => string;
 
-  // Handlers
   loadExpenses: () => void;
   handlePaymentRegistered: (updated: Expense) => void;
   handleDeleteConfirm: () => Promise<void>;
@@ -131,11 +122,15 @@ export function useExpensesManagement({
   useEffect(() => {
     if (isOpen) {
       loadMeta();
+    }
+  }, [isOpen, loadMeta]);
+
+  useEffect(() => {
+    if (isOpen) {
       loadExpenses();
     }
-  }, [isOpen, loadMeta, loadExpenses]);
+  }, [isOpen, loadExpenses]);
 
-  // Reset to page 1 whenever filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedStatusId, selectedTypeId, searchTerm]);
