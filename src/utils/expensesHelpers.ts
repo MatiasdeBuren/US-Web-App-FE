@@ -1,6 +1,5 @@
 import {
   Building,
-  Calendar,
   CheckCircle,
   Clock,
   AlertCircle,
