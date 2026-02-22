@@ -446,7 +446,8 @@ function UserExpensesPage() {
 
   const displayedExpenses = expenses.filter((exp) => {
     if (periodOption?.mode === 'range' && periodOption.periodFrom && periodOption.periodTo) {
-      if (exp.period < periodOption.periodFrom || exp.period > periodOption.periodTo) return false;
+      const expPeriod = exp.period.substring(0, 7); // extract "YYYY-MM" from ISO date string
+      if (expPeriod < periodOption.periodFrom || expPeriod > periodOption.periodTo) return false;
     }
     if (searchTerm) {
       const q = searchTerm.toLowerCase();

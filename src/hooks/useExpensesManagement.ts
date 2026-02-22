@@ -190,7 +190,8 @@ export function useExpensesManagement({
     const matchPeriod = (() => {
       if (!selectedPeriodOption || selectedPeriodOption.mode === 'all') return true;
       if (selectedPeriodOption.mode === 'range' && selectedPeriodOption.periodFrom && selectedPeriodOption.periodTo) {
-        return exp.period >= selectedPeriodOption.periodFrom && exp.period <= selectedPeriodOption.periodTo;
+        const expPeriod = exp.period.substring(0, 7); // extract "YYYY-MM" from ISO date string
+        return expPeriod >= selectedPeriodOption.periodFrom && expPeriod <= selectedPeriodOption.periodTo;
       }
       return true;
     })();
