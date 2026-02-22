@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import {
-  X, DollarSign, AlertCircle, ChevronDown,
-  CreditCard, Banknote, Wallet, Building2, HelpCircle, CheckCircle,
+  X, DollarSign, AlertCircle,
+  CreditCard, Banknote, Wallet, Building2, HelpCircle,
 } from 'lucide-react';
 import { registerExpensePayment, type Expense, type PaymentMethod } from '../api_calls/expenses';
 import { formatCurrency, formatPeriod } from '../utils/expensesHelpers';
+import PaymentMethodFilterModal from './PaymentMethodFilterModal';
 
 // ─── Icon helper for payment methods ─────────────────────────────────────────
 function getMethodIcon(label: string) {
@@ -35,19 +36,18 @@ export default function RegisterPaymentModal({
   paymentMethods,
 }: RegisterPaymentModalProps) {
   const [methodId, setMethodId] = useState<number | ''>('');
-  const [methodOpen, setMethodOpen] = useState(false);
+  const [showMethodModal, setShowMethodModal] = useState(false);
   const [paidAt, setPaidAt] = useState('');
   const [notes, setNotes] = useState('');
   const [customAmount, setCustomAmount] = useState<string>('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
-  const methodRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen && expense) {
       const rem = expense.totalAmount - expense.paidAmount;
       setMethodId('');
-      setMethodOpen(false);
+      setShowMethodModal(false);
       setPaidAt(new Date().toISOString().split('T')[0]);
       setNotes('');
       setCustomAmount(String(rem));
@@ -60,7 +60,6 @@ export default function RegisterPaymentModal({
   const remaining = expense.totalAmount - expense.paidAmount;
   const selectedMethod = paymentMethods.find((m) => m.id === methodId) ?? null;
   const MethodIcon = selectedMethod ? getMethodIcon(selectedMethod.label) : HelpCircle;
-
   const parsedAmount = parseFloat(customAmount.replace(',', '.'));
   const amountIsValid =
     !isNaN(parsedAmount) && parsedAmount > 0 && parsedAmount <= remaining;
@@ -96,7 +95,7 @@ export default function RegisterPaymentModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60]"
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-[60]"
       onClick={onClose}
     >
       <motion.div
@@ -104,7 +103,7 @@ export default function RegisterPaymentModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.97, y: 8 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Gradient Header ── */}
@@ -179,80 +178,22 @@ export default function RegisterPaymentModal({
             )}
           </div>
 
-          {/* Payment method — custom dropdown */}
+          {/* Payment method — modal trigger */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Método de pago</label>
-            <div className="relative" ref={methodRef}>
-              <button
-                type="button"
-                onClick={() => setMethodOpen((o) => !o)}
-                className={`w-full px-4 py-2.5 text-left border rounded-xl transition-all duration-200 flex items-center justify-between bg-white cursor-pointer ${
-                  methodOpen
-                    ? 'border-emerald-500 ring-2 ring-emerald-500/20'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <MethodIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <span className={`text-sm ${selectedMethod ? 'text-gray-800' : 'text-gray-400'}`}>
-                    {selectedMethod ? selectedMethod.label : 'Sin especificar'}
-                  </span>
-                </div>
-                <ChevronDown
-                  className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
-                    methodOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-
-              <AnimatePresence>
-                {methodOpen && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setMethodOpen(false)} />
-                    <motion.div
-                      initial={{ opacity: 0, y: -4, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -4, scale: 0.98 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden"
-                    >
-                      <div className="p-1.5">
-                        <button
-                          type="button"
-                          onClick={() => { setMethodId(''); setMethodOpen(false); }}
-                          className={`w-full px-3 py-2.5 text-left rounded-lg transition-colors flex items-center gap-2.5 ${
-                            methodId === '' ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-gray-50 text-gray-600'
-                          }`}
-                        >
-                          <HelpCircle className="w-4 h-4 flex-shrink-0 text-gray-400" />
-                          <span className="text-sm">Sin especificar</span>
-                          {methodId === '' && <CheckCircle className="w-3.5 h-3.5 ml-auto text-emerald-500" />}
-                        </button>
-
-                        {paymentMethods.map((m) => {
-                          const Icon = getMethodIcon(m.label);
-                          const isSelected = methodId === m.id;
-                          return (
-                            <button
-                              key={m.id}
-                              type="button"
-                              onClick={() => { setMethodId(m.id); setMethodOpen(false); }}
-                              className={`w-full px-3 py-2.5 text-left rounded-lg transition-colors flex items-center gap-2.5 ${
-                                isSelected ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-gray-50 text-gray-700'
-                              }`}
-                            >
-                              <Icon className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-emerald-500' : 'text-gray-400'}`} />
-                              <span className="text-sm">{m.label}</span>
-                              {isSelected && <CheckCircle className="w-3.5 h-3.5 ml-auto text-emerald-500" />}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowMethodModal(true)}
+              className="w-full px-4 py-2.5 text-left border border-gray-200 rounded-xl transition-all hover:border-gray-300 flex items-center justify-between bg-white cursor-pointer focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+            >
+              <div className="flex items-center gap-2.5">
+                <MethodIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <span className={`text-sm ${selectedMethod ? 'text-gray-800 font-medium' : 'text-gray-400'}`}>
+                  {selectedMethod ? selectedMethod.label : 'Sin especificar'}
+                </span>
+              </div>
+              <span className="text-xs text-indigo-500">Cambiar</span>
+            </button>
           </div>
 
           {/* Payment date */}
@@ -317,6 +258,14 @@ export default function RegisterPaymentModal({
           </div>
         </form>
       </motion.div>
+
+      <PaymentMethodFilterModal
+        isVisible={showMethodModal}
+        onClose={() => setShowMethodModal(false)}
+        selectedMethodId={methodId}
+        onMethodSelect={(id) => setMethodId(id)}
+        paymentMethods={paymentMethods}
+      />
     </div>
   );
 }
