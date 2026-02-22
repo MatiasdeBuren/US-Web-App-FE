@@ -5,6 +5,7 @@ import {
   getExpenseStatuses,
   getPaymentMethods,
   deleteExpense,
+  deleteExpensePayment,
   type Expense,
   type ExpenseType,
   type ExpenseStatus,
@@ -72,6 +73,7 @@ export interface UseExpensesManagementReturn {
   loadExpenses: () => void;
   handlePaymentRegistered: (updated: Expense) => void;
   handleDeleteConfirm: () => Promise<void>;
+  handleDeletePayment: (expenseId: number, paymentId: number) => Promise<void>;
   clearFilters: () => void;
 }
 
@@ -230,6 +232,15 @@ export function useExpensesManagement({
     }
   };
 
+  const handleDeletePayment = async (expenseId: number, paymentId: number) => {
+    try {
+      const updated = await deleteExpensePayment(token, expenseId, paymentId);
+      setExpenses((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+    } catch (err) {
+      console.error('Error deleting payment:', err);
+    }
+  };
+
   const clearFilters = () => {
     setSelectedStatusId(null);
     setSelectedTypeId(null);
@@ -287,6 +298,7 @@ export function useExpensesManagement({
     loadExpenses,
     handlePaymentRegistered,
     handleDeleteConfirm,
+    handleDeletePayment,
     clearFilters,
   };
 }

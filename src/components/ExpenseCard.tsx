@@ -9,6 +9,7 @@ import {
   ChevronUp,
   Receipt,
   Clock,
+  X,
 } from 'lucide-react';
 import type { Expense } from '../api_calls/expenses';
 import {
@@ -25,9 +26,10 @@ export interface ExpenseCardProps {
   expense: Expense;
   onRegisterPayment: (expense: Expense) => void;
   onDelete: (expense: Expense) => void;
+  onDeletePayment?: (expenseId: number, paymentId: number) => void;
 }
 
-export default function ExpenseCard({ expense, onRegisterPayment, onDelete }: ExpenseCardProps) {
+export default function ExpenseCard({ expense, onRegisterPayment, onDelete, onDeletePayment }: ExpenseCardProps) {
   const [expanded, setExpanded] = useState(false);
   const StatusIcon = STATUS_ICONS[expense.status?.name] ?? Clock;
   const pct = progressPercent(expense.paidAmount, expense.totalAmount);
@@ -244,6 +246,15 @@ export default function ExpenseCard({ expense, onRegisterPayment, onDelete }: Ex
                             )}
                           </div>
                         </div>
+                        {onDeletePayment && (
+                          <button
+                            onClick={() => onDeletePayment(expense.id, p.id)}
+                            className="ml-2 p-1 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-md transition-colors cursor-pointer flex-shrink-0"
+                            title="Eliminar pago"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
