@@ -11,6 +11,7 @@ import {
   type PaymentMethod,
 } from '../api_calls/expenses';
 import { getAdminApartments, type AdminApartment } from '../api_calls/admin';
+import type { PeriodFilterOption } from '../components/ExpensePeriodFilterModal';
 
 
 interface UseExpensesManagementOptions {
@@ -45,6 +46,10 @@ export interface UseExpensesManagementReturn {
   setShowSubtypeFilter: (open: boolean) => void;
   showApartmentFilter: boolean;
   setShowApartmentFilter: (open: boolean) => void;
+  selectedPeriodOption: PeriodFilterOption | null;
+  setSelectedPeriodOption: (opt: PeriodFilterOption | null) => void;
+  showPeriodModal: boolean;
+  setShowPeriodModal: (open: boolean) => void;
 
   currentPage: number;
   setCurrentPage: (page: number) => void;
@@ -93,6 +98,8 @@ export function useExpensesManagement({
   const [showTypeFilter, setShowTypeFilter] = useState(false);
   const [showSubtypeFilter, setShowSubtypeFilter] = useState(false);
   const [showApartmentFilter, setShowApartmentFilter] = useState(false);
+  const [selectedPeriodOption, setSelectedPeriodOption] = useState<PeriodFilterOption | null>(null);
+  const [showPeriodModal, setShowPeriodModal] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -122,21 +129,23 @@ export function useExpensesManagement({
   const loadExpenses = useCallback(async () => {
     setLoading(true);
     try {
+      const isRange = selectedPeriodOption?.mode === 'range';
       const result = await getExpenses(token, {
-        page: currentPage,
-        limit: 10,
+        page: isRange ? 1 : currentPage,
+        limit: isRange ? 500 : 10,
         statusId: selectedStatusId ?? undefined,
         apartmentId: selectedApartmentId ?? undefined,
+        period: selectedPeriodOption?.mode === 'single' ? selectedPeriodOption.period : undefined,
       });
       setExpenses(result.expenses);
       setTotalCount(result.pagination.total);
-      setTotalPages(result.pagination.totalPages);
+      setTotalPages(isRange ? 1 : result.pagination.totalPages);
     } catch (err) {
       console.error('Error loading expenses:', err);
     } finally {
       setLoading(false);
     }
-  }, [token, currentPage, selectedStatusId, selectedApartmentId]);
+  }, [token, currentPage, selectedStatusId, selectedApartmentId, selectedPeriodOption]);
 
   useEffect(() => {
     if (isOpen) {
@@ -157,7 +166,7 @@ export function useExpensesManagement({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedStatusId, selectedTypeId, selectedSubtypeId, selectedApartmentId, searchTerm]);
+  }, [selectedStatusId, selectedTypeId, selectedSubtypeId, selectedApartmentId, searchTerm, selectedPeriodOption]);
 
   const displayedExpenses = expenses.filter((exp) => {
     const q = searchTerm.toLowerCase();
@@ -174,7 +183,15 @@ export function useExpensesManagement({
     const matchSubtype =
       !selectedSubtypeId || exp.lineItems.some((li) => li.subtypeId === selectedSubtypeId);
 
-    return matchSearch && matchType && matchSubtype;
+    const matchPeriod = (() => {
+      if (!selectedPeriodOption || selectedPeriodOption.mode === 'all') return true;
+      if (selectedPeriodOption.mode === 'range' && selectedPeriodOption.periodFrom && selectedPeriodOption.periodTo) {
+        return exp.period >= selectedPeriodOption.periodFrom && exp.period <= selectedPeriodOption.periodTo;
+      }
+      return true;
+    })();
+
+    return matchSearch && matchType && matchSubtype && matchPeriod;
   });
 
   const getCurrentApartmentLabel = () => {
@@ -218,6 +235,7 @@ export function useExpensesManagement({
     setSelectedTypeId(null);
     setSelectedSubtypeId(null);
     setSelectedApartmentId(null);
+    setSelectedPeriodOption(null);
     setSearchTerm('');
   };
 
@@ -248,6 +266,10 @@ export function useExpensesManagement({
     setShowSubtypeFilter,
     showApartmentFilter,
     setShowApartmentFilter,
+    selectedPeriodOption,
+    setSelectedPeriodOption,
+    showPeriodModal,
+    setShowPeriodModal,
     currentPage,
     setCurrentPage,
     totalPages,

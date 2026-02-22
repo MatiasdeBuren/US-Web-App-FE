@@ -1,13 +1,18 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Search, Filter, ChevronDown, ChevronRight, Plus, FileText, Receipt, Clock, Building2, Tag, Layers } from 'lucide-react';
+import { X, Search, Filter, ChevronDown, ChevronRight, Plus, Receipt, Building2, Tag, Layers, Calendar } from 'lucide-react';
 import { useExpensesManagement } from '../hooks/useExpensesManagement';
-import { STATUS_ICONS, TYPE_ICONS } from '../utils/expensesHelpers';
 import ExpenseCard from './ExpenseCard';
 import CreateExpenseModal from './CreateExpenseModal';
 import RegisterPaymentModal from './RegisterPaymentModal';
 import ConfirmDeleteExpenseModal from './ConfirmDeleteExpenseModal';
 import ExpenseSuccessToast from './ExpenseSuccessToast';
+import ExpensePeriodFilterModal from './ExpensePeriodFilterModal';
+import ExpenseStatusFilterModal from './ExpenseStatusFilterModal';
+import ExpenseTypeFilterModal from './ExpenseTypeFilterModal';
+import ExpenseSubtypeFilterModal from './ExpenseSubtypeFilterModal';
+import ExpenseApartmentFilterModal from './ExpenseApartmentFilterModal';
+import type { UserExpenseTypeWithSubtypes, UserExpenseSubtype } from '../api_calls/user_expenses';
 
 interface ExpensesManagementProps {
   isOpen: boolean;
@@ -20,7 +25,6 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
   const {
     expenses,
     expenseTypes,
-    expenseStatuses,
     paymentMethods,
     apartments,
     loading,
@@ -43,6 +47,10 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
     setShowSubtypeFilter,
     showApartmentFilter,
     setShowApartmentFilter,
+    selectedPeriodOption,
+    setSelectedPeriodOption,
+    showPeriodModal,
+    setShowPeriodModal,
     currentPage,
     setCurrentPage,
     totalPages,
@@ -63,7 +71,7 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
     clearFilters,
   } = useExpensesManagement({ isOpen, token });
 
-  const hasActiveFilters = !!(selectedStatusId || selectedTypeId || selectedSubtypeId || selectedApartmentId || searchTerm);
+  const hasActiveFilters = !!(selectedStatusId || selectedTypeId || selectedSubtypeId || selectedApartmentId || searchTerm || (selectedPeriodOption && selectedPeriodOption.value !== 'all'));
 
   const subtypesByTypeId = useMemo(() => {
     const map = new Map<number, { id: number; name: string; label: string; typeId: number }[]>();
@@ -140,280 +148,131 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
             </div>
 
             {/* ── Filter bar ── */}
-            <div className="flex-shrink-0 px-6 py-4 border-b border-gray-100 bg-gray-50">
+            <div className="flex-shrink-0 px-6 py-4 border-b border-gray-100 bg-white">
               <div className="flex flex-wrap gap-3 items-center">
 
                 {/* Search */}
                 <div className="relative flex-1 min-w-[200px]">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
                     placeholder="Buscar por depto. o inquilino…"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
                 </div>
 
-                {/* Status filter */}
-                <div className="relative">
+                {/* Period */}
+                <button
+                  type="button"
+                  onClick={() => setShowPeriodModal(true)}
+                  className={`flex items-center justify-between gap-2 px-4 py-3 text-sm rounded-xl border transition-colors cursor-pointer min-w-[160px] ${
+                    selectedPeriodOption && selectedPeriodOption.value !== 'all'
+                      ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-medium'
+                      : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate">{selectedPeriodOption && selectedPeriodOption.value !== 'all' ? selectedPeriodOption.label : 'Período'}</span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                </button>
+
+                {/* Status */}
+                <button
+                  type="button"
+                  onClick={() => setShowStatusFilter(true)}
+                  className={`flex items-center justify-between gap-2 px-4 py-3 text-sm rounded-xl border transition-colors cursor-pointer min-w-[170px] ${
+                    selectedStatusId
+                      ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-medium'
+                      : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate">{getCurrentStatusLabel()}</span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                </button>
+
+                {/* Type + Subtype */}
+                <div className="flex items-center gap-1">
                   <button
-                    onClick={() => { setShowStatusFilter(!showStatusFilter); setShowTypeFilter(false); setShowApartmentFilter(false); }}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm hover:border-gray-300 transition-colors cursor-pointer min-w-[170px]"
+                    type="button"
+                    onClick={() => setShowTypeFilter(true)}
+                    className={`flex items-center justify-between gap-2 px-4 py-3 text-sm rounded-xl border transition-colors cursor-pointer min-w-[160px] ${
+                      selectedTypeId
+                        ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-medium'
+                        : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                    }`}
                   >
-                    <Filter className="w-4 h-4 text-gray-400" />
-                    <span className={selectedStatusId ? 'text-gray-900 font-medium' : 'text-gray-500'}>
-                      {getCurrentStatusLabel()}
-                    </span>
-                    <ChevronDown className="w-4 h-4 text-gray-400 ml-auto" />
+                    <div className="flex items-center gap-2">
+                      <Layers className="w-4 h-4 flex-shrink-0 text-gray-400" />
+                      <span className="truncate">{getCurrentTypeLabel()}</span>
+                    </div>
+                    <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
                   </button>
 
-                  <AnimatePresence>
-                    {showStatusFilter && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 py-1 min-w-[170px]"
-                      >
-                        <button
-                          onClick={() => { setSelectedStatusId(null); setShowStatusFilter(false); }}
-                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors cursor-pointer ${!selectedStatusId ? 'font-semibold text-indigo-600' : 'text-gray-700'}`}
-                        >
-                          Todos los estados
-                        </button>
-                        {expenseStatuses.map((s) => {
-                          const Icon = STATUS_ICONS[s.name] ?? Clock;
-                          return (
-                            <button
-                              key={s.id}
-                              onClick={() => { setSelectedStatusId(s.id); setShowStatusFilter(false); }}
-                              className={`flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors cursor-pointer ${selectedStatusId === s.id ? 'font-semibold text-indigo-600' : 'text-gray-700'}`}
-                            >
-                              <Icon className="w-4 h-4" />
-                              {s.label}
-                            </button>
-                          );
-                        })}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* ── Type + Subtype cascading filter ── */}
-                <div className="flex items-center gap-1">
-
-                  {/* Type pill */}
-                  <div className="relative">
-                    <button
-                      onClick={() => { setShowTypeFilter(!showTypeFilter); setShowStatusFilter(false); setShowApartmentFilter(false); setShowSubtypeFilter(false); }}
-                      className={`group flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer min-w-[160px] ${
-                        selectedTypeId
-                          ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-md shadow-indigo-200/60 border border-transparent'
-                          : 'bg-white border border-gray-200 text-gray-500 hover:border-indigo-300 hover:shadow-sm hover:text-gray-700'
-                      }`}
-                    >
-                      {selectedTypeId
-                        ? (() => { const Icon = TYPE_ICONS[(selectedType?.name ?? '')] ?? FileText; return <Icon className="w-4 h-4 flex-shrink-0" />; })()
-                        : <Layers className="w-4 h-4 flex-shrink-0 text-gray-400 group-hover:text-indigo-400 transition-colors" />
-                      }
-                      <span className="truncate">{getCurrentTypeLabel()}</span>
-                      <ChevronDown className={`w-4 h-4 ml-auto flex-shrink-0 transition-transform duration-200 ${showTypeFilter ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    <AnimatePresence>
-                      {showTypeFilter && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -6, scale: 0.97 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                          transition={{ duration: 0.15 }}
-                          className="absolute top-full left-0 mt-2 bg-white border border-gray-200/80 rounded-2xl shadow-xl shadow-gray-200/60 z-20 py-2 min-w-[180px] overflow-hidden"
-                        >
-                          <div className="px-3 pb-1.5 pt-0.5">
-                            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Tipo de expensa</p>
-                          </div>
-                          <button
-                            onClick={() => { setSelectedTypeId(null); setShowTypeFilter(false); }}
-                            className={`w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer flex items-center gap-2 ${
-                              !selectedTypeId ? 'font-semibold text-indigo-600 bg-indigo-50/60' : 'text-gray-600 hover:bg-gray-50'
-                            }`}
-                          >
-                            <span className="w-5 h-5 rounded-md bg-gray-100 flex items-center justify-center">
-                              <FileText className="w-3 h-3 text-gray-400" />
-                            </span>
-                            Todos los tipos
-                          </button>
-                          {expenseTypes.map((t) => {
-                            const Icon = TYPE_ICONS[t.name] ?? FileText;
-                            const isActive = selectedTypeId === t.id;
-                            return (
-                              <button
-                                key={t.id}
-                                onClick={() => { setSelectedTypeId(t.id); setShowTypeFilter(false); }}
-                                className={`flex items-center gap-2.5 w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer ${
-                                  isActive ? 'font-semibold text-indigo-600 bg-indigo-50/60' : 'text-gray-700 hover:bg-gray-50'
-                                }`}
-                              >
-                                <span className={`w-5 h-5 rounded-md flex items-center justify-center ${
-                                  isActive ? 'bg-indigo-100' : 'bg-gray-100'
-                                }`}>
-                                  <Icon className={`w-3 h-3 ${isActive ? 'text-indigo-500' : 'text-gray-400'}`} />
-                                </span>
-                                {t.label}
-                                {(subtypesByTypeId.get(t.id)?.length ?? 0) > 0 && (
-                                  <span className="ml-auto text-[10px] bg-purple-50 text-purple-500 border border-purple-100 rounded-full px-1.5 py-0.5 font-semibold">
-                                    {subtypesByTypeId.get(t.id)!.length}
-                                  </span>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-
-                  {/* Connector + Subtype pill */}
                   <AnimatePresence>
                     {hasSubtypes && (
                       <motion.div
-                        initial={{ opacity: 0, x: -12 }}
+                        initial={{ opacity: 0, x: -8 }}
                         animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -12 }}
+                        exit={{ opacity: 0, x: -8 }}
                         transition={{ type: 'spring', stiffness: 380, damping: 28 }}
                         className="flex items-center gap-1"
                       >
-                        {/* Spark connector */}
-                        <div className="flex items-center gap-0 flex-shrink-0">
+                        <div className="flex items-center flex-shrink-0">
                           <div className="w-3 h-px bg-gradient-to-r from-purple-400 to-pink-400" />
                           <ChevronRight className="w-3.5 h-3.5 text-pink-400 flex-shrink-0" />
                         </div>
-
-                        {/* Subtype pill */}
-                        <div className="relative">
-                          <button
-                            onClick={() => { setShowSubtypeFilter(!showSubtypeFilter); setShowTypeFilter(false); setShowStatusFilter(false); setShowApartmentFilter(false); }}
-                            className={`group flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer min-w-[168px] ${
-                              selectedSubtypeId
-                                ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white shadow-md shadow-violet-200/60 border border-transparent'
-                                : 'bg-white border border-purple-200 text-gray-500 hover:border-violet-400 hover:shadow-sm hover:text-gray-700'
-                            }`}
-                          >
-                            <Tag className={`w-4 h-4 flex-shrink-0 transition-colors ${
-                              selectedSubtypeId ? 'text-white' : 'text-purple-400 group-hover:text-violet-500'
-                            }`} />
-                            <span className="truncate">{availableSubtypes.find((s) => s.id === selectedSubtypeId)?.label ?? 'Subtipo'}</span>
-                            <ChevronDown className={`w-4 h-4 ml-auto flex-shrink-0 transition-transform duration-200 ${showSubtypeFilter ? 'rotate-180' : ''}`} />
-                          </button>
-
-                          <AnimatePresence>
-                            {showSubtypeFilter && (
-                              <motion.div
-                                initial={{ opacity: 0, y: -6, scale: 0.97 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                                transition={{ duration: 0.15 }}
-                                className="absolute top-full left-0 mt-2 bg-white border border-gray-200/80 rounded-2xl shadow-xl shadow-gray-200/60 z-20 py-2 min-w-[180px] overflow-hidden"
-                              >
-                                <div className="px-3 pb-1.5 pt-0.5">
-                                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Subtipo</p>
-                                  <p className="text-[11px] text-gray-400 truncate">{selectedType?.label}</p>
-                                </div>
-                                <button
-                                  onClick={() => { setSelectedSubtypeId(null); setShowSubtypeFilter(false); }}
-                                  className={`w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer flex items-center gap-2 ${
-                                    !selectedSubtypeId ? 'font-semibold text-violet-600 bg-violet-50/60' : 'text-gray-600 hover:bg-gray-50'
-                                  }`}
-                                >
-                                  <span className="w-5 h-5 rounded-md bg-gray-100 flex items-center justify-center">
-                                    <Tag className="w-3 h-3 text-gray-400" />
-                                  </span>
-                                  Todos los subtipos
-                                </button>
-                                {availableSubtypes.map((s) => {
-                                  const isActive = selectedSubtypeId === s.id;
-                                  return (
-                                    <button
-                                      key={s.id}
-                                      onClick={() => { setSelectedSubtypeId(s.id); setShowSubtypeFilter(false); }}
-                                      className={`flex items-center gap-2.5 w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer ${
-                                        isActive ? 'font-semibold text-violet-600 bg-violet-50/60' : 'text-gray-700 hover:bg-gray-50'
-                                      }`}
-                                    >
-                                      <span className={`w-5 h-5 rounded-md flex items-center justify-center ${
-                                        isActive ? 'bg-violet-100' : 'bg-gray-100'
-                                      }`}>
-                                        <Tag className={`w-3 h-3 ${isActive ? 'text-violet-500' : 'text-gray-400'}`} />
-                                      </span>
-                                      {s.label}
-                                    </button>
-                                  );
-                                })}
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Apartment filter */}
-                <div className="relative">
-                  <button
-                    onClick={() => { setShowApartmentFilter(!showApartmentFilter); setShowStatusFilter(false); setShowTypeFilter(false); }}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm hover:border-gray-300 transition-colors cursor-pointer min-w-[170px]"
-                  >
-                    <Building2 className="w-4 h-4 text-gray-400" />
-                    <span className={selectedApartmentId ? 'text-gray-900 font-medium' : 'text-gray-500'}>
-                      {getCurrentApartmentLabel()}
-                    </span>
-                    <ChevronDown className="w-4 h-4 text-gray-400 ml-auto" />
-                  </button>
-
-                  <AnimatePresence>
-                    {showApartmentFilter && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 py-1 min-w-[180px] max-h-64 overflow-y-auto"
-                      >
                         <button
-                          onClick={() => { setSelectedApartmentId(null); setShowApartmentFilter(false); }}
-                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors cursor-pointer ${
-                            !selectedApartmentId ? 'font-semibold text-indigo-600' : 'text-gray-700'
+                          type="button"
+                          onClick={() => setShowSubtypeFilter(true)}
+                          className={`flex items-center justify-between gap-2 px-4 py-3 text-sm rounded-xl border transition-colors cursor-pointer min-w-[150px] ${
+                            selectedSubtypeId
+                              ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white border-transparent shadow-sm'
+                              : 'bg-white border-purple-200 text-gray-600 hover:border-violet-400 hover:bg-gray-50'
                           }`}
                         >
-                          Todos los deptos.
+                          <div className="flex items-center gap-2">
+                            <Tag className={`w-4 h-4 flex-shrink-0 ${selectedSubtypeId ? 'text-white' : 'text-purple-400'}`} />
+                            <span className="truncate">{availableSubtypes.find((s) => s.id === selectedSubtypeId)?.label ?? 'Subtipo'}</span>
+                          </div>
+                          <ChevronDown className={`w-4 h-4 flex-shrink-0 ${selectedSubtypeId ? 'text-white/70' : 'text-gray-400'}`} />
                         </button>
-                        {apartments.map((apt) => (
-                          <button
-                            key={apt.id}
-                            onClick={() => { setSelectedApartmentId(apt.id); setShowApartmentFilter(false); }}
-                            className={`flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors cursor-pointer ${
-                              selectedApartmentId === apt.id ? 'font-semibold text-indigo-600' : 'text-gray-700'
-                            }`}
-                          >
-                            <Building2 className="w-4 h-4 flex-shrink-0" />
-                            <span>Depto. {apt.unit}</span>
-                            <span className="ml-auto text-xs text-gray-400">Piso {apt.floor}</span>
-                          </button>
-                        ))}
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
+
+                {/* Apartment */}
+                <button
+                  type="button"
+                  onClick={() => setShowApartmentFilter(true)}
+                  className={`flex items-center justify-between gap-2 px-4 py-3 text-sm rounded-xl border transition-colors cursor-pointer min-w-[170px] ${
+                    selectedApartmentId
+                      ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-medium'
+                      : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 flex-shrink-0 text-gray-400" />
+                    <span className="truncate">{getCurrentApartmentLabel()}</span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                </button>
 
                 {/* Clear filters */}
                 {hasActiveFilters && (
                   <button
                     onClick={clearFilters}
-                    className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 px-4 py-3 text-sm text-gray-500 hover:text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
                   >
-                    <X className="w-3.5 h-3.5" />
-                    Limpiar filtros
+                    <X className="w-4 h-4" />
+                    Limpiar
                   </button>
                 )}
               </div>
@@ -422,7 +281,6 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
             {/* ── Expense list ── */}
             <div
               className="flex-1 overflow-y-auto px-6 py-5 min-h-0"
-              onClick={() => { setShowStatusFilter(false); setShowTypeFilter(false); setShowSubtypeFilter(false); }}
             >
               {loading ? (
                 <div className="flex items-center justify-center py-20">
@@ -479,6 +337,43 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
           </motion.div>
         </div>
       </AnimatePresence>
+
+      {/* ── Filter modals ── */}
+      <ExpensePeriodFilterModal
+        isVisible={showPeriodModal}
+        onClose={() => setShowPeriodModal(false)}
+        selectedValue={selectedPeriodOption?.value ?? 'all'}
+        onPeriodSelect={(opt) => setSelectedPeriodOption(opt)}
+      />
+      <ExpenseStatusFilterModal
+        isVisible={showStatusFilter}
+        onClose={() => setShowStatusFilter(false)}
+        selectedStatus={selectedStatusId ? String(selectedStatusId) : ''}
+        onStatusSelect={(val) => { setSelectedStatusId(val ? parseInt(val) : null); }}
+      />
+      <ExpenseTypeFilterModal
+        isVisible={showTypeFilter}
+        onClose={() => setShowTypeFilter(false)}
+        selectedTypeId={selectedTypeId ? String(selectedTypeId) : ''}
+        onTypeSelect={(val) => { setSelectedTypeId(val ? parseInt(val) : null); setSelectedSubtypeId(null); }}
+        expenseTypes={(expenseTypes as unknown as UserExpenseTypeWithSubtypes[])}
+      />
+      <ExpenseSubtypeFilterModal
+        isVisible={showSubtypeFilter}
+        onClose={() => setShowSubtypeFilter(false)}
+        selectedSubtypeId={selectedSubtypeId ? String(selectedSubtypeId) : ''}
+        onSubtypeSelect={(val) => { setSelectedSubtypeId(val ? parseInt(val) : null); }}
+        subtypes={(availableSubtypes as unknown as UserExpenseSubtype[])}
+        parentTypeLabel={selectedType?.label}
+      />
+
+      <ExpenseApartmentFilterModal
+        isVisible={showApartmentFilter}
+        onClose={() => setShowApartmentFilter(false)}
+        apartments={apartments}
+        selectedApartmentId={selectedApartmentId}
+        onApartmentSelect={(id) => setSelectedApartmentId(id)}
+      />
 
       {/* ── Sub-modals ── */}
       {showCreate && (
