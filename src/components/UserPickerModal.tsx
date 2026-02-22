@@ -44,7 +44,7 @@ export default function UserPickerModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[70] flex items-center justify-center">
+      <div className="fixed inset-0 z-[70] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

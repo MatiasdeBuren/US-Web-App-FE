@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Trash2, AlertCircle, Users, UserCircle2, Building2, User } from 'lucide-react';
+import { X, Plus, Trash2, AlertCircle, Users, UserCircle2, Building2, User, Layers, Tag } from 'lucide-react';
 import { createExpense, type ExpenseType, type CreateExpenseLineItemInput } from '../api_calls/expenses';
 import { getAdminApartments, getAdminUsers, type AdminApartment, type AdminUser } from '../api_calls/admin';
 import { formatCurrency } from '../utils/expensesHelpers';
 import ApartmentPickerModal from './ApartmentPickerModal';
 import UserPickerModal from './UserPickerModal';
+import LineItemTypePickerModal from './LineItemTypePickerModal';
+import LineItemSubtypePickerModal from './LineItemSubtypePickerModal';
 
 export interface LineItemForm {
   typeId: number;
@@ -38,6 +40,7 @@ export default function CreateExpenseModal({
   ]);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const [apartments, setApartments] = useState<AdminApartment[]>([]);
   const [loadingApartments, setLoadingApartments] = useState(false);
@@ -55,6 +58,8 @@ export default function CreateExpenseModal({
   // picker modals
   const [showApartmentPicker, setShowApartmentPicker] = useState(false);
   const [showUserPicker, setShowUserPicker] = useState(false);
+  const [typePickerIndex, setTypePickerIndex] = useState<number | null>(null);
+  const [subtypePickerIndex, setSubtypePickerIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -65,6 +70,7 @@ export default function CreateExpenseModal({
       setAdminNotes('');
       setLineItems([{ typeId: 0, subtypeId: null, description: '', amount: '' }]);
       setError('');
+      setSubmitted(false);
       setShowResidents(false);
       setResidents([]);
       setAssignMode('unit');
@@ -133,11 +139,16 @@ export default function CreateExpenseModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitted(true);
     setError('');
 
     if (!period) return setError('Seleccione el período.');
     if (!dueDate) return setError('Ingrese la fecha de vencimiento.');
-    if (lineItems.some((li) => !li.typeId)) return setError('Todos los rubros deben tener un tipo.');
+    if (lineItems.some((li) => !li.typeId)) return setError('Todos los rubros deben tener un tipo seleccionado.');
+    if (lineItems.some((li) => {
+      const t = expenseTypes.find((t) => t.id === li.typeId);
+      return t && (t.subtypes?.length ?? 0) > 0 && li.subtypeId === null;
+    })) return setError('Los rubros con subrubros deben tener uno seleccionado.');
     if (lineItems.some((li) => !li.amount || parseFloat(li.amount) <= 0))
       return setError('Todos los rubros deben tener un importe mayor a 0.');
 
@@ -333,14 +344,6 @@ export default function CreateExpenseModal({
                 ) : null;
               })()}
 
-              <ApartmentPickerModal
-                isVisible={showApartmentPicker}
-                onClose={() => setShowApartmentPicker(false)}
-                onSelect={(apt) => { setApartmentUnit(String(apt.id)); setShowResidents(false); setResidents([]); }}
-                selectedId={apartmentUnit}
-                apartments={apartments}
-                loading={loadingApartments}
-              />
             </div>
             )}
 
@@ -388,14 +391,6 @@ export default function CreateExpenseModal({
                 );
               })()}
 
-              <UserPickerModal
-                isVisible={showUserPicker}
-                onClose={() => setShowUserPicker(false)}
-                onSelect={(u) => setSelectedUserId(String(u.id))}
-                selectedId={selectedUserId}
-                users={users}
-                loading={loadingUsers}
-              />
             </div>
             )}
 
@@ -445,42 +440,61 @@ export default function CreateExpenseModal({
               {lineItems.map((li, i) => {
                 const selectedType = expenseTypes.find((t) => t.id === li.typeId);
                 const subtypes = selectedType?.subtypes ?? [];
+                const typeError = submitted && li.typeId === 0;
+                const subtypeError = submitted && subtypes.length > 0 && li.subtypeId === null;
 
                 return (
                   <div key={i} className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-3">
                     <div className="grid sm:grid-cols-2 gap-3">
-                      {/* Type select */}
+                      {/* Type picker */}
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
-                        <select
-                          value={li.typeId}
-                          onChange={(e) => updateLineItem(i, 'typeId', parseInt(e.target.value))}
-                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                          required
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          Tipo <span className="text-red-500">*</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setTypePickerIndex(i)}
+                          className={`w-full flex items-center gap-2 border rounded-xl px-3 py-2.5 text-sm transition-colors cursor-pointer ${
+                            typeError
+                              ? 'border-red-300 bg-red-50 text-red-400 ring-1 ring-red-200'
+                              : li.typeId !== 0
+                                ? 'border-indigo-300 bg-indigo-50 text-indigo-800'
+                                : 'border-gray-200 bg-white text-gray-400 hover:border-indigo-300 hover:bg-indigo-50/40'
+                          }`}
                         >
-                          <option value={0} disabled>Seleccionar tipo…</option>
-                          {expenseTypes.map((t) => (
-                            <option key={t.id} value={t.id}>{t.label}</option>
-                          ))}
-                        </select>
+                          <Layers className={`w-4 h-4 flex-shrink-0 ${typeError ? 'text-red-400' : li.typeId !== 0 ? 'text-indigo-500' : 'text-gray-400'}`} />
+                          <span className="truncate">
+                            {li.typeId !== 0
+                              ? expenseTypes.find((t) => t.id === li.typeId)?.label ?? 'Seleccionar tipo…'
+                              : 'Seleccionar tipo…'}
+                          </span>
+                        </button>
                       </div>
 
-                      {/* Subtype select (only when subtypes exist) */}
+                      {/* Subtype picker (only when subtypes exist) */}
                       {subtypes.length > 0 && (
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Subrubro</label>
-                          <select
-                            value={li.subtypeId ?? ''}
-                            onChange={(e) =>
-                              updateLineItem(i, 'subtypeId', e.target.value ? parseInt(e.target.value) : null)
-                            }
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Subrubro <span className="text-red-500">*</span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setSubtypePickerIndex(i)}
+                            className={`w-full flex items-center gap-2 border rounded-xl px-3 py-2.5 text-sm transition-colors cursor-pointer ${
+                              subtypeError
+                                ? 'border-red-300 bg-red-50 text-red-400 ring-1 ring-red-200'
+                                : li.subtypeId !== null
+                                  ? 'border-violet-300 bg-violet-50 text-violet-800'
+                                  : 'border-gray-200 bg-white text-gray-400 hover:border-violet-300 hover:bg-violet-50/40'
+                            }`}
                           >
-                            <option value="">Sin subrubro</option>
-                            {subtypes.map((s) => (
-                              <option key={s.id} value={s.id}>{s.label}</option>
-                            ))}
-                          </select>
+                            <Tag className={`w-4 h-4 flex-shrink-0 ${subtypeError ? 'text-red-400' : li.subtypeId !== null ? 'text-violet-500' : 'text-gray-400'}`} />
+                            <span className="truncate">
+                              {li.subtypeId !== null
+                                ? subtypes.find((s) => s.id === li.subtypeId)?.label ?? 'Seleccionar subrubro…'
+                                : 'Seleccionar subrubro…'}
+                            </span>
+                          </button>
                         </div>
                       )}
                     </div>
@@ -591,6 +605,59 @@ export default function CreateExpenseModal({
           </div>
         </form>
       </motion.div>
+
+      <LineItemTypePickerModal
+        isVisible={typePickerIndex !== null}
+        onClose={() => setTypePickerIndex(null)}
+        onSelect={(type) => {
+          if (typePickerIndex !== null) updateLineItem(typePickerIndex, 'typeId', type.id);
+          setTypePickerIndex(null);
+        }}
+        selectedId={typePickerIndex !== null ? lineItems[typePickerIndex].typeId : 0}
+        types={expenseTypes}
+        usedTypeIds={
+          typePickerIndex !== null
+            ? lineItems
+                .filter((_, j) => j !== typePickerIndex)
+                .map((li) => li.typeId)
+                .filter((id) => id !== 0 && (expenseTypes.find((t) => t.id === id)?.subtypes?.length ?? 0) === 0)
+            : []
+        }
+      />
+      <LineItemSubtypePickerModal
+        isVisible={subtypePickerIndex !== null}
+        onClose={() => setSubtypePickerIndex(null)}
+        onSelect={(subtype) => {
+          if (subtypePickerIndex !== null) updateLineItem(subtypePickerIndex, 'subtypeId', subtype?.id ?? null);
+          setSubtypePickerIndex(null);
+        }}
+        selectedId={subtypePickerIndex !== null ? lineItems[subtypePickerIndex].subtypeId : null}
+        subtypes={subtypePickerIndex !== null ? (expenseTypes.find((t) => t.id === lineItems[subtypePickerIndex].typeId)?.subtypes ?? []) : []}
+        typeName={subtypePickerIndex !== null ? (expenseTypes.find((t) => t.id === lineItems[subtypePickerIndex].typeId)?.label ?? '') : ''}
+        usedSubtypeIds={
+          subtypePickerIndex !== null
+            ? lineItems
+                .filter((_, j) => j !== subtypePickerIndex && lineItems[j].typeId === lineItems[subtypePickerIndex].typeId && lineItems[j].subtypeId !== null)
+                .map((li) => li.subtypeId as number)
+            : []
+        }
+      />
+      <ApartmentPickerModal
+        isVisible={showApartmentPicker}
+        onClose={() => setShowApartmentPicker(false)}
+        onSelect={(apt) => { setApartmentUnit(String(apt.id)); setShowResidents(false); setResidents([]); }}
+        selectedId={apartmentUnit}
+        apartments={apartments}
+        loading={loadingApartments}
+      />
+      <UserPickerModal
+        isVisible={showUserPicker}
+        onClose={() => setShowUserPicker(false)}
+        onSelect={(u) => setSelectedUserId(String(u.id))}
+        selectedId={selectedUserId}
+        users={users}
+        loading={loadingUsers}
+      />
     </div>
   );
 }
