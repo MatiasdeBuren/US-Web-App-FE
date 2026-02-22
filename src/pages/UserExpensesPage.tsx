@@ -35,20 +35,20 @@ interface SummaryCardsProps {
 
 function SummaryCards({ summary }: SummaryCardsProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
       {/* Total debt */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0 }}
-        className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-start gap-4"
+        className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-start gap-3"
       >
-        <div className="w-11 h-11 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
-          <TrendingDown className="w-5 h-5 text-red-500" />
+        <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
+          <TrendingDown className="w-4 h-4 text-red-500" />
         </div>
         <div className="min-w-0">
-          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Deuda acumulada</p>
-          <p className="text-xl font-bold text-red-600 mt-0.5 truncate">{formatCurrency(summary.totalDebt)}</p>
+          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide leading-tight">Deuda acumulada</p>
+          <p className="text-base font-bold text-red-600 mt-0.5 break-words">{formatCurrency(summary.totalDebt)}</p>
           <p className="text-xs text-gray-400 mt-0.5">{summary.pendingCount} exp. pendiente{summary.pendingCount !== 1 ? 's' : ''}</p>
         </div>
       </motion.div>
@@ -58,14 +58,14 @@ function SummaryCards({ summary }: SummaryCardsProps) {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
-        className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-start gap-4"
+        className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-start gap-3"
       >
-        <div className="w-11 h-11 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0">
-          <AlertCircle className="w-5 h-5 text-orange-500" />
+        <div className="w-9 h-9 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0">
+          <AlertCircle className="w-4 h-4 text-orange-500" />
         </div>
         <div className="min-w-0">
-          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Deuda vencida</p>
-          <p className="text-xl font-bold text-orange-600 mt-0.5 truncate">{formatCurrency(summary.overdueDebt)}</p>
+          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide leading-tight">Deuda vencida</p>
+          <p className="text-base font-bold text-orange-600 mt-0.5 break-words">{formatCurrency(summary.overdueDebt)}</p>
           <p className="text-xs text-gray-400 mt-0.5">{summary.overdueCount} exp. vencida{summary.overdueCount !== 1 ? 's' : ''}</p>
         </div>
       </motion.div>
@@ -75,15 +75,15 @@ function SummaryCards({ summary }: SummaryCardsProps) {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-start gap-4 sm:col-span-2"
+        className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-start gap-3 col-span-2"
       >
-        <div className="w-11 h-11 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
-          <Banknote className="w-5 h-5 text-green-500" />
+        <div className="w-9 h-9 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
+          <Banknote className="w-4 h-4 text-green-500" />
         </div>
         {summary.lastPayment ? (
           <div className="min-w-0">
             <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Último pago</p>
-            <p className="text-xl font-bold text-green-600 mt-0.5">{formatCurrency(summary.lastPayment.amount)}</p>
+            <p className="text-base font-bold text-green-600 mt-0.5">{formatCurrency(summary.lastPayment.amount)}</p>
             <p className="text-xs text-gray-400 mt-0.5">
               {formatDate(summary.lastPayment.paidAt)}
               {summary.lastPayment.paymentMethod && ` · ${summary.lastPayment.paymentMethod.label}`}
@@ -120,7 +120,7 @@ function ExpenseRow({ expense, onClick }: ExpenseRowProps) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       onClick={onClick}
-      className="w-full text-left bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-200 transition-all p-4 group"
+      className="w-full text-left bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-200 transition-all p-6 group"
     >
       <div className="flex items-start justify-between gap-3">
         {/* Left: period + unit */}
@@ -479,59 +479,40 @@ function UserExpensesPage() {
   if (!token) return null;
 
   return (
-    <div className="max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-sm">
-          <Receipt className="w-5 h-5 text-white" />
+    <div>
+      {/* Header Section */}
+      <div className="mb-8">
+        <div className="mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Mis Expensas</h1>
+          <p className="text-gray-600">{totalCount} expensa{totalCount !== 1 ? 's' : ''} registrada{totalCount !== 1 ? 's' : ''}</p>
         </div>
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">Mis Expensas</h2>
-          <p className="text-sm text-gray-500">{totalCount} expensa{totalCount !== 1 ? 's' : ''} en total</p>
-        </div>
-      </div>
 
-      {/* Summary */}
-      {summary && <SummaryCards summary={summary} />}
+        {/* Summary cards — only in list view */}
+        {summary && selectedExpenseId === null && <SummaryCards summary={summary} />}
 
-      {/* Detail view */}
-      <AnimatePresence mode="wait">
-        {selectedExpenseId !== null ? (
-          <ExpenseDetail
-            key={selectedExpenseId}
-            expenseId={selectedExpenseId}
-            token={token}
-            onBack={() => setSelectedExpenseId(null)}
-          />
-        ) : (
-          <motion.div
-            key="list"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="space-y-4"
-          >
-            {/* Filters */}
-            <div className="flex flex-wrap gap-2">
+        {/* Search and Filters — only in list view */}
+        {selectedExpenseId === null && (
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="flex flex-wrap gap-4">
               {/* Search */}
-              <div className="relative flex-1 min-w-[180px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Buscar por unidad, período, tipo…"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
-              {/* Filter buttons row */}
-              <div className="flex gap-2 flex-wrap">
+              {/* Filter buttons */}
+              <div className="flex gap-3 flex-wrap items-center">
                 {/* Period modal trigger */}
                 <button
                   type="button"
                   onClick={() => setShowPeriodModal(true)}
-                  className={`flex items-center justify-between gap-2 px-4 py-2 text-sm rounded-xl border transition-colors cursor-pointer min-w-[160px] ${
+                  className={`flex items-center justify-between gap-2 px-4 py-3 text-sm rounded-xl border transition-colors cursor-pointer min-w-[160px] ${
                     periodLabel
                       ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-medium'
                       : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
@@ -548,7 +529,7 @@ function UserExpensesPage() {
                 <button
                   type="button"
                   onClick={() => setShowStatusModal(true)}
-                  className={`flex items-center justify-between gap-2 px-4 py-2 text-sm rounded-xl border transition-colors cursor-pointer min-w-[160px] ${
+                  className={`flex items-center justify-between gap-2 px-4 py-3 text-sm rounded-xl border transition-colors cursor-pointer min-w-[160px] ${
                     statusLabel
                       ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-medium'
                       : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
@@ -565,7 +546,7 @@ function UserExpensesPage() {
                 <button
                   type="button"
                   onClick={() => setShowTypeModal(true)}
-                  className={`flex items-center justify-between gap-2 px-4 py-2 text-sm rounded-xl border transition-colors cursor-pointer min-w-[150px] ${
+                  className={`flex items-center justify-between gap-2 px-4 py-3 text-sm rounded-xl border transition-colors cursor-pointer min-w-[150px] ${
                     typeFilter
                       ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-medium'
                       : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
@@ -578,7 +559,7 @@ function UserExpensesPage() {
                   <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 </button>
 
-                {/* Subtype modal trigger — only shown when selected type has subtypes */}
+                {/* Subtype modal trigger */}
                 <AnimatePresence>
                   {hasSubtypes && (
                     <motion.div
@@ -595,7 +576,7 @@ function UserExpensesPage() {
                       <button
                         type="button"
                         onClick={() => setShowSubtypeModal(true)}
-                        className={`flex items-center justify-between gap-2 px-4 py-2 text-sm rounded-xl border transition-colors cursor-pointer min-w-[150px] ${
+                        className={`flex items-center justify-between gap-2 px-4 py-3 text-sm rounded-xl border transition-colors cursor-pointer min-w-[150px] ${
                           subtypeFilter
                             ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white border-transparent shadow-sm'
                             : 'bg-white border-purple-200 text-gray-600 hover:border-violet-400 hover:bg-gray-50'
@@ -616,56 +597,80 @@ function UserExpensesPage() {
                   <button
                     type="button"
                     onClick={() => { setPeriodOption(null); setStatusFilter(''); setSearchTerm(''); setTypeFilter(''); setSubtypeFilter(''); }}
-                    className="flex items-center gap-1 px-3 py-2 text-sm text-gray-500 hover:text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 px-4 py-3 text-sm text-gray-500 hover:text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
                   >
-                    <X className="w-3.5 h-3.5" /> Limpiar
+                    <X className="w-4 h-4" /> Limpiar
                   </button>
                 )}
               </div>
             </div>
+          </div>
+        )}
+      </div>
 
-            {/* Filter modals */}
-            <ExpensePeriodFilterModal
-              isVisible={showPeriodModal}
-              onClose={() => setShowPeriodModal(false)}
-              selectedValue={periodOption?.value ?? 'all'}
-              onPeriodSelect={(opt) => setPeriodOption(opt)}
-            />
-            <ExpenseStatusFilterModal
-              isVisible={showStatusModal}
-              onClose={() => setShowStatusModal(false)}
-              selectedStatus={statusFilter}
-              onStatusSelect={(val) => setStatusFilter(val)}
-            />
-            <ExpenseTypeFilterModal
-              isVisible={showTypeModal}
-              onClose={() => setShowTypeModal(false)}
-              selectedTypeId={typeFilter}
-              onTypeSelect={(val) => { setTypeFilter(val); setSubtypeFilter(''); }}
-              expenseTypes={allExpenseTypes}
-            />
-            <ExpenseSubtypeFilterModal
-              isVisible={showSubtypeModal}
-              onClose={() => setShowSubtypeModal(false)}
-              selectedSubtypeId={subtypeFilter}
-              onSubtypeSelect={(val) => setSubtypeFilter(val)}
-              subtypes={availableSubtypes}
-              parentTypeLabel={selectedTypeObj?.label}
-            />
+      {/* Filter modals */}
+      <ExpensePeriodFilterModal
+        isVisible={showPeriodModal}
+        onClose={() => setShowPeriodModal(false)}
+        selectedValue={periodOption?.value ?? 'all'}
+        onPeriodSelect={(opt) => setPeriodOption(opt)}
+      />
+      <ExpenseStatusFilterModal
+        isVisible={showStatusModal}
+        onClose={() => setShowStatusModal(false)}
+        selectedStatus={statusFilter}
+        onStatusSelect={(val) => setStatusFilter(val)}
+      />
+      <ExpenseTypeFilterModal
+        isVisible={showTypeModal}
+        onClose={() => setShowTypeModal(false)}
+        selectedTypeId={typeFilter}
+        onTypeSelect={(val) => { setTypeFilter(val); setSubtypeFilter(''); }}
+        expenseTypes={allExpenseTypes}
+      />
+      <ExpenseSubtypeFilterModal
+        isVisible={showSubtypeModal}
+        onClose={() => setShowSubtypeModal(false)}
+        selectedSubtypeId={subtypeFilter}
+        onSubtypeSelect={(val) => setSubtypeFilter(val)}
+        subtypes={availableSubtypes}
+        parentTypeLabel={selectedTypeObj?.label}
+      />
 
-            {/* List */}
+      {/* Detail or List view */}
+      <AnimatePresence mode="wait">
+        {selectedExpenseId !== null ? (
+          <ExpenseDetail
+            key={selectedExpenseId}
+            expenseId={selectedExpenseId}
+            token={token}
+            onBack={() => setSelectedExpenseId(null)}
+          />
+        ) : (
+          <motion.div
+            key="list"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="space-y-4"
+          >
             {loading ? (
-              <div className="flex flex-col items-center justify-center gap-4 py-16 text-gray-400">
-                <div className="w-8 h-8 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
-                <p className="text-sm">Cargando expensas…</p>
+              <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
+                <div className="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4" />
+                <p className="text-gray-500">Cargando expensas…</p>
               </div>
             ) : displayedExpenses.length === 0 ? (
-              <div className="flex flex-col items-center gap-3 py-16 text-gray-400">
-                <Receipt className="w-10 h-10 opacity-40" />
-                <p className="text-sm font-medium">Sin expensas para los filtros seleccionados</p>
+              <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
+                <Receipt className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-600 mb-2">No hay expensas</h3>
+                <p className="text-gray-500">
+                  {searchTerm || statusFilter || typeFilter || subtypeFilter || (periodOption && periodOption.value !== 'all')
+                    ? 'No se encontraron expensas con los filtros aplicados.'
+                    : 'Aún no tienes expensas registradas.'}
+                </p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {displayedExpenses.map((exp) => (
                   <ExpenseRow
                     key={exp.id}
@@ -681,7 +686,7 @@ function UserExpensesPage() {
                       type="button"
                       disabled={loadingMore}
                       onClick={() => loadExpenses(currentPage + 1, true)}
-                      className="px-5 py-2 text-sm text-indigo-600 hover:text-indigo-800 border border-indigo-200 hover:border-indigo-300 rounded-xl bg-white hover:bg-indigo-50 transition-colors cursor-pointer disabled:opacity-50"
+                      className="px-6 py-3 text-sm text-indigo-600 hover:text-indigo-800 border border-indigo-200 hover:border-indigo-300 rounded-xl bg-white hover:bg-indigo-50 transition-colors cursor-pointer disabled:opacity-50"
                     >
                       {loadingMore ? 'Cargando…' : 'Cargar más'}
                     </button>
