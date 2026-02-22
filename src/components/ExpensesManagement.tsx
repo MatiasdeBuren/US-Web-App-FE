@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, Filter, ChevronDown, ChevronRight, Plus, Receipt, Building2, Tag, Layers, Calendar } from 'lucide-react';
 import { useExpensesManagement } from '../hooks/useExpensesManagement';
@@ -12,7 +12,7 @@ import ExpenseStatusFilterModal from './ExpenseStatusFilterModal';
 import ExpenseTypeFilterModal from './ExpenseTypeFilterModal';
 import ExpenseSubtypeFilterModal from './ExpenseSubtypeFilterModal';
 import ExpenseApartmentFilterModal from './ExpenseApartmentFilterModal';
-import type { UserExpenseTypeWithSubtypes, UserExpenseSubtype } from '../api_calls/user_expenses';
+import type { UserExpenseSubtype } from '../api_calls/user_expenses';
 
 interface ExpensesManagementProps {
   isOpen: boolean;
@@ -23,7 +23,6 @@ interface ExpensesManagementProps {
 
 export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesManagementProps) {
   const {
-    expenses,
     expenseTypes,
     paymentMethods,
     apartments,
@@ -75,24 +74,8 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
 
   const hasActiveFilters = !!(selectedStatusId || selectedTypeId || selectedSubtypeId || selectedApartmentId || searchTerm || (selectedPeriodOption && selectedPeriodOption.value !== 'all'));
 
-  const subtypesByTypeId = useMemo(() => {
-    const map = new Map<number, { id: number; name: string; label: string; typeId: number }[]>();
-    expenses.forEach((exp) => {
-      exp.lineItems.forEach((li) => {
-        if (li.subtypeId && li.subtype) {
-          if (!map.has(li.typeId)) map.set(li.typeId, []);
-          const list = map.get(li.typeId)!;
-          if (!list.find((s) => s.id === li.subtypeId)) {
-            list.push(li.subtype as { id: number; name: string; label: string; typeId: number });
-          }
-        }
-      });
-    });
-    return map;
-  }, [expenses]);
-
   const selectedType = expenseTypes.find((t) => t.id === selectedTypeId);
-  const availableSubtypes = selectedTypeId ? (subtypesByTypeId.get(selectedTypeId) ?? []) : [];
+  const availableSubtypes = selectedType?.subtypes ?? [];
   const hasSubtypes = availableSubtypes.length > 0;
 
   const [showExpenseToast, setShowExpenseToast] = useState(false);
@@ -360,14 +343,14 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
         onClose={() => setShowTypeFilter(false)}
         selectedTypeId={selectedTypeId ? String(selectedTypeId) : ''}
         onTypeSelect={(val) => { setSelectedTypeId(val ? parseInt(val) : null); setSelectedSubtypeId(null); }}
-        expenseTypes={(expenseTypes as unknown as UserExpenseTypeWithSubtypes[])}
+        expenseTypes={expenseTypes.map((t) => ({ ...t, subtypes: t.subtypes ?? [] }))}
       />
       <ExpenseSubtypeFilterModal
         isVisible={showSubtypeFilter}
         onClose={() => setShowSubtypeFilter(false)}
         selectedSubtypeId={selectedSubtypeId ? String(selectedSubtypeId) : ''}
         onSubtypeSelect={(val) => { setSelectedSubtypeId(val ? parseInt(val) : null); }}
-        subtypes={(availableSubtypes as unknown as UserExpenseSubtype[])}
+        subtypes={availableSubtypes as UserExpenseSubtype[]}
         parentTypeLabel={selectedType?.label}
       />
 

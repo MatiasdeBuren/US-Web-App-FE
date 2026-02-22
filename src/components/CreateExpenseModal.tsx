@@ -199,6 +199,9 @@ export default function CreateExpenseModal({
 
   if (!isOpen) return null;
 
+  const selectedApartment = apartments.find((a) => String(a.id) === apartmentUnit) ?? null;
+  const selectedUser = users.find((u) => String(u.id) === selectedUserId) ?? null;
+
   return (
     <div
       className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-[60]"
@@ -284,19 +287,17 @@ export default function CreateExpenseModal({
                     {loadingApartments
                       ? 'Cargando…'
                       : apartmentUnit
-                        ? (() => { const a = apartments.find((x) => String(x.id) === apartmentUnit); return a ? `Unidad ${a.unit} — Piso ${a.floor}` : 'Seleccionar…'; })()
+                      ? (selectedApartment ? `Unidad ${selectedApartment.unit} — Piso ${selectedApartment.floor}` : 'Seleccionar…')
                         : 'Seleccionar departamento…'}
                   </span>
                 </div>
               </button>
 
               {/* Detail + residents toggle below selected */}
-              {apartmentUnit && (() => {
-                const apt = apartments.find((a) => String(a.id) === apartmentUnit);
-                return apt ? (
+              {selectedApartment && (
                   <div className="mt-2 space-y-1">
                     <p className="text-xs text-gray-400">
-                      {apt.rooms ? `${apt.rooms} amb` : ''}{apt.areaM2 ? ` · ${apt.areaM2} m²` : ''}
+                      {selectedApartment.rooms ? `${selectedApartment.rooms} amb` : ''}{selectedApartment.areaM2 ? ` · ${selectedApartment.areaM2} m²` : ''}
                     </p>
                     <button
                       type="button"
@@ -341,8 +342,7 @@ export default function CreateExpenseModal({
                       )}
                     </AnimatePresence>
                   </div>
-                ) : null;
-              })()}
+              )}
 
             </div>
             )}
@@ -371,25 +371,23 @@ export default function CreateExpenseModal({
                     {loadingUsers
                       ? 'Cargando…'
                       : selectedUserId
-                        ? (() => { const u = users.find((x) => String(x.id) === selectedUserId); return u ? u.name : 'Seleccionar…'; })()
+                      ? (selectedUser?.name ?? 'Seleccionar…')
                         : 'Seleccionar usuario…'}
                   </span>
                 </div>
               </button>
 
               {/* Apartment hint below selected user */}
-              {selectedUserId && (() => {
-                const selUser = users.find((u) => String(u.id) === selectedUserId);
-                const apt = selUser?.apartment;
-                return apt ? (
+              {selectedUserId && (
+                selectedUser?.apartment ? (
                   <p className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
                     <Building2 className="w-3 h-3" />
-                    Unidad {apt.unit} · Piso {apt.floor}
+                    Unidad {selectedUser.apartment.unit} · Piso {selectedUser.apartment.floor}
                   </p>
                 ) : (
                   <p className="text-xs text-red-400 mt-1.5">Sin departamento asignado</p>
-                );
-              })()}
+                )
+              )}
 
             </div>
             )}

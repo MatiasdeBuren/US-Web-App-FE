@@ -100,13 +100,7 @@ function getDescription(option: PeriodFilterOption): string {
     case 'current_month':
       return option.period ? formatPeriodLabel(option.period) : '';
     case 'last_3':
-      return option.periodFrom && option.periodTo
-        ? `${formatPeriodLabel(option.periodFrom)} → ${formatPeriodLabel(option.periodTo)}`
-        : '';
     case 'last_6':
-      return option.periodFrom && option.periodTo
-        ? `${formatPeriodLabel(option.periodFrom)} → ${formatPeriodLabel(option.periodTo)}`
-        : '';
     case 'last_year':
       return option.periodFrom && option.periodTo
         ? `${formatPeriodLabel(option.periodFrom)} → ${formatPeriodLabel(option.periodTo)}`
