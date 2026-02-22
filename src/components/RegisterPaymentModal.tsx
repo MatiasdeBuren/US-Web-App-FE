@@ -165,17 +165,12 @@ export default function RegisterPaymentModal({
                 step="1"
                 value={customAmount}
                 onChange={(e) => setCustomAmount(e.target.value)}
-                className={`w-full border rounded-xl pl-9 pr-4 py-2.5 text-sm font-semibold outline-none transition-all ${
+                className={`w-full border rounded-xl pl-9 pr-4 py-2.5 text-sm font-semibold outline-none transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${
                   customAmount !== '' && !amountIsValid
                     ? 'border-red-400 bg-red-50 text-red-700 focus:ring-2 focus:ring-red-400/20'
-                    : 'border-emerald-300 bg-emerald-50 text-emerald-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500'
+                    : 'border-gray-200 bg-white text-gray-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500'
                 }`}
               />
-              {customAmount !== '' && amountIsValid && (
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5">
-                  <CheckCircle className="w-4 h-4 text-emerald-500" />
-                </div>
-              )}
             </div>
             {customAmount !== '' && !amountIsValid && (
               <p className="mt-1 text-xs text-red-500">
