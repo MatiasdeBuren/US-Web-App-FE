@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Receipt, AlertCircle, CheckCircle, Clock,
+  Receipt, AlertCircle, Clock,
   CreditCard, ChevronDown, ChevronRight, X, ArrowLeft,
-  Building, Calendar, Search, TrendingDown, Banknote, Layers, Tag, FileText,
+  Building, Calendar, Search, TrendingDown, Banknote, Layers, Tag, Filter,
 } from 'lucide-react';
 import {
   getUserExpenses,
@@ -24,29 +24,10 @@ import {
   TYPE_ICONS,
 } from '../utils/expensesHelpers';
 import { isTokenExpired, handleUnauthorized } from '../utils/auth';
-
-
-const STATUS_OPTIONS = [
-  { value: '', label: 'Todos los estados' },
-  { value: '1', label: 'Pendiente' },
-  { value: '2', label: 'Parcial' },
-  { value: '3', label: 'Pagado' },
-  { value: '4', label: 'Vencido' },
-];
-
-function buildPeriodOptions(): { value: string; label: string }[] {
-  const options: { value: string; label: string }[] = [{ value: '', label: 'Todos los períodos' }];
-  const now = new Date();
-  for (let i = 0; i < 18; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    const label = d.toLocaleDateString('es-AR', { year: 'numeric', month: 'long' });
-    options.push({ value, label });
-  }
-  return options;
-}
-
-const PERIOD_OPTIONS = buildPeriodOptions();
+import ExpensePeriodFilterModal, { type PeriodFilterOption } from '../components/ExpensePeriodFilterModal';
+import ExpenseStatusFilterModal from '../components/ExpenseStatusFilterModal';
+import ExpenseTypeFilterModal from '../components/ExpenseTypeFilterModal';
+import ExpenseSubtypeFilterModal from '../components/ExpenseSubtypeFilterModal';
 
 interface SummaryCardsProps {
   summary: UserExpensesSummary;
@@ -396,15 +377,15 @@ function UserExpensesPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedExpenseId, setSelectedExpenseId] = useState<number | null>(null);
 
-  const [periodFilter, setPeriodFilter] = useState('');
+  const [periodOption, setPeriodOption] = useState<PeriodFilterOption | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
-  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showPeriodModal, setShowPeriodModal] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
   const [typeFilter, setTypeFilter] = useState('');
   const [subtypeFilter, setSubtypeFilter] = useState('');
-  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
-  const [showSubtypeDropdown, setShowSubtypeDropdown] = useState(false);
+  const [showTypeModal, setShowTypeModal] = useState(false);
+  const [showSubtypeModal, setShowSubtypeModal] = useState(false);
   const [allExpenseTypes, setAllExpenseTypes] = useState<UserExpenseTypeWithSubtypes[]>([]);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -436,23 +417,24 @@ function UserExpensesPage() {
       if (!token) return;
       if (append) { setLoadingMore(true); } else { setLoading(true); }
       try {
+        const isRange = periodOption?.mode === 'range';
         const res = await getUserExpenses(token, {
-          page,
-          limit: 10,
+          page: isRange ? 1 : page,
+          limit: isRange ? 500 : 10,
           statusId: statusFilter ? parseInt(statusFilter) : undefined,
-          period: periodFilter || undefined,
+          period: periodOption?.mode === 'single' ? periodOption.period : undefined,
         });
-        setExpenses((prev) => (append ? [...prev, ...res.expenses] : res.expenses));
-        setTotalPages(res.pagination.totalPages);
+        setExpenses((prev) => (append && !isRange ? [...prev, ...res.expenses] : res.expenses));
+        setTotalPages(isRange ? 1 : res.pagination.totalPages);
         setTotalCount(res.pagination.total);
-        setCurrentPage(page);
+        setCurrentPage(isRange ? 1 : page);
       } catch {
         // silently keep previous results
       } finally {
         if (append) { setLoadingMore(false); } else { setLoading(false); }
       }
     },
-    [token, statusFilter, periodFilter]
+    [token, statusFilter, periodOption]
   );
 
   useEffect(() => {
@@ -462,11 +444,10 @@ function UserExpensesPage() {
 
   useEffect(() => { setSubtypeFilter(''); }, [typeFilter]);
 
-  const selectedTypeObj = allExpenseTypes.find((t) => String(t.id) === typeFilter);
-  const availableSubtypes = selectedTypeObj?.subtypes ?? [];
-  const hasSubtypes = availableSubtypes.length > 0;
-
   const displayedExpenses = expenses.filter((exp) => {
+    if (periodOption?.mode === 'range' && periodOption.periodFrom && periodOption.periodTo) {
+      if (exp.period < periodOption.periodFrom || exp.period > periodOption.periodTo) return false;
+    }
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
       if (
@@ -485,6 +466,15 @@ function UserExpensesPage() {
     }
     return true;
   });
+
+  const periodLabel = periodOption && periodOption.value !== 'all' ? periodOption.label : null;
+  const statusLabel = statusFilter
+    ? (['', 'Pendiente', 'Parcial', 'Pagado', 'Vencido'][parseInt(statusFilter)] ?? null)
+    : null;
+  const selectedTypeObj = allExpenseTypes.find((t) => String(t.id) === typeFilter);
+  const availableSubtypes = selectedTypeObj?.subtypes ?? [];
+  const hasSubtypes = availableSubtypes.length > 0;
+  const selectedSubtypeObj = availableSubtypes.find((s) => String(s.id) === subtypeFilter);
 
   if (!token) return null;
 
@@ -535,246 +525,133 @@ function UserExpensesPage() {
                 />
               </div>
 
-              {/* Period dropdown */}
-              <div className="relative">
+              {/* Filter buttons row */}
+              <div className="flex gap-2 flex-wrap">
+                {/* Period modal trigger */}
                 <button
                   type="button"
-                  onClick={() => { setShowPeriodDropdown((o) => !o); setShowStatusDropdown(false); setShowTypeDropdown(false); setShowSubtypeDropdown(false); }}
-                  className={`flex items-center gap-2 px-3 py-2 text-sm rounded-xl border transition-colors cursor-pointer ${periodFilter ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                  onClick={() => setShowPeriodModal(true)}
+                  className={`flex items-center justify-between gap-2 px-4 py-2 text-sm rounded-xl border transition-colors cursor-pointer min-w-[160px] ${
+                    periodLabel
+                      ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-medium'
+                      : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
                 >
-                  <Calendar className="w-4 h-4" />
-                  {periodFilter ? PERIOD_OPTIONS.find((o) => o.value === periodFilter)?.label : 'Período'}
-                  <ChevronDown className="w-3.5 h-3.5" />
-                </button>
-                <AnimatePresence>
-                  {showPeriodDropdown && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      className="absolute left-0 top-full mt-1 z-20 w-52 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden"
-                    >
-                      <ul className="max-h-56 overflow-y-auto py-1">
-                        {PERIOD_OPTIONS.map((opt) => (
-                          <li key={opt.value}>
-                            <button
-                              type="button"
-                              className={`w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer ${periodFilter === opt.value ? 'bg-indigo-50 text-indigo-700 font-medium' : 'hover:bg-gray-50 text-gray-700'}`}
-                              onClick={() => { setPeriodFilter(opt.value); setShowPeriodDropdown(false); }}
-                            >
-                              {opt.label}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Status dropdown */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => { setShowStatusDropdown((o) => !o); setShowPeriodDropdown(false); setShowTypeDropdown(false); setShowSubtypeDropdown(false); }}
-                  className={`flex items-center gap-2 px-3 py-2 text-sm rounded-xl border transition-colors cursor-pointer ${statusFilter ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  {statusFilter ? STATUS_OPTIONS.find((o) => o.value === statusFilter)?.label : 'Estado'}
-                  <ChevronDown className="w-3.5 h-3.5" />
-                </button>
-                <AnimatePresence>
-                  {showStatusDropdown && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      className="absolute left-0 top-full mt-1 z-20 w-44 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden"
-                    >
-                      <ul className="py-1">
-                        {STATUS_OPTIONS.map((opt) => (
-                          <li key={opt.value}>
-                            <button
-                              type="button"
-                              className={`w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer ${statusFilter === opt.value ? 'bg-indigo-50 text-indigo-700 font-medium' : 'hover:bg-gray-50 text-gray-700'}`}
-                              onClick={() => { setStatusFilter(opt.value); setShowStatusDropdown(false); }}
-                            >
-                              {opt.label}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Type + Subtype cascade — always visible */}
-              <div className="flex items-center gap-1">
-                  {/* Type pill */}
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => { setShowTypeDropdown((o) => !o); setShowPeriodDropdown(false); setShowStatusDropdown(false); setShowSubtypeDropdown(false); }}
-                      className={`group flex items-center gap-2 px-3 py-2 text-sm rounded-xl border font-medium transition-all duration-200 cursor-pointer ${
-                        typeFilter
-                          ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-transparent shadow-md shadow-indigo-200/60'
-                          : 'bg-white border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-gray-700 hover:shadow-sm'
-                      }`}
-                    >
-                      {typeFilter
-                        ? (() => { const Icon = TYPE_ICONS[selectedTypeObj?.name ?? ''] ?? FileText; return <Icon className="w-4 h-4 flex-shrink-0" />; })()
-                        : <Layers className="w-4 h-4 flex-shrink-0 text-gray-400 group-hover:text-indigo-400 transition-colors" />
-                      }
-                      <span className="truncate">{selectedTypeObj?.label ?? 'Tipo'}</span>
-                      <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${showTypeDropdown ? 'rotate-180' : ''}`} />
-                    </button>
-                    <AnimatePresence>
-                      {showTypeDropdown && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -6, scale: 0.97 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                          transition={{ duration: 0.15 }}
-                          className="absolute left-0 top-full mt-2 z-30 bg-white border border-gray-200/80 rounded-2xl shadow-xl shadow-gray-200/60 py-2 min-w-[186px] overflow-hidden"
-                        >
-                          <div className="px-3 pb-1.5 pt-0.5">
-                            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Tipo de expensa</p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => { setTypeFilter(''); setShowTypeDropdown(false); }}
-                            className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 transition-colors cursor-pointer ${
-                              !typeFilter ? 'font-semibold text-indigo-600 bg-indigo-50/60' : 'text-gray-600 hover:bg-gray-50'
-                            }`}
-                          >
-                            <span className="w-5 h-5 rounded-md bg-gray-100 flex items-center justify-center">
-                              <FileText className="w-3 h-3 text-gray-400" />
-                            </span>
-                            Todos los tipos
-                          </button>
-                          {allExpenseTypes.map((t) => {
-                            const Icon = TYPE_ICONS[t.name] ?? FileText;
-                            const isActive = typeFilter === String(t.id);
-                            return (
-                              <button
-                                key={t.id}
-                                type="button"
-                                onClick={() => { setTypeFilter(String(t.id)); setShowTypeDropdown(false); }}
-                                className={`flex items-center gap-2.5 w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer ${
-                                  isActive ? 'font-semibold text-indigo-600 bg-indigo-50/60' : 'text-gray-700 hover:bg-gray-50'
-                                }`}
-                              >
-                                <span className={`w-5 h-5 rounded-md flex items-center justify-center ${isActive ? 'bg-indigo-100' : 'bg-gray-100'}`}>
-                                  <Icon className={`w-3 h-3 ${isActive ? 'text-indigo-500' : 'text-gray-400'}`} />
-                                </span>
-                                {t.label}
-                                {t.subtypes.length > 0 && (
-                                  <span className="ml-auto text-[10px] bg-purple-50 text-purple-500 border border-purple-100 rounded-full px-1.5 py-0.5 font-semibold">
-                                    {t.subtypes.length}
-                                  </span>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate">{periodLabel ?? 'Período'}</span>
                   </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                </button>
 
-                  {/* Connector + Subtype pill */}
-                  <AnimatePresence>
-                    {hasSubtypes && (
-                      <motion.div
-                        initial={{ opacity: 0, x: -12 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -12 }}
-                        transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-                        className="flex items-center gap-1"
-                      >
-                        <div className="flex items-center flex-shrink-0">
-                          <div className="w-3 h-px bg-gradient-to-r from-purple-400 to-pink-400" />
-                          <ChevronRight className="w-3.5 h-3.5 text-pink-400" />
-                        </div>
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={() => { setShowSubtypeDropdown((o) => !o); setShowTypeDropdown(false); setShowPeriodDropdown(false); setShowStatusDropdown(false); }}
-                            className={`group flex items-center gap-2 px-3 py-2 text-sm rounded-xl border font-medium transition-all duration-200 cursor-pointer ${
-                              subtypeFilter
-                                ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white border-transparent shadow-md shadow-violet-200/60'
-                                : 'bg-white border-purple-200 text-gray-500 hover:border-violet-400 hover:shadow-sm'
-                            }`}
-                          >
-                            <Tag className={`w-4 h-4 flex-shrink-0 transition-colors ${
-                              subtypeFilter ? 'text-white' : 'text-purple-400 group-hover:text-violet-500'
-                            }`} />
-                            <span className="truncate">{availableSubtypes.find((s) => String(s.id) === subtypeFilter)?.label ?? 'Subtipo'}</span>
-                            <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${showSubtypeDropdown ? 'rotate-180' : ''}`} />
-                          </button>
-                          <AnimatePresence>
-                            {showSubtypeDropdown && (
-                              <motion.div
-                                initial={{ opacity: 0, y: -6, scale: 0.97 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                                transition={{ duration: 0.15 }}
-                                className="absolute left-0 top-full mt-2 z-30 bg-white border border-gray-200/80 rounded-2xl shadow-xl shadow-gray-200/60 py-2 min-w-[180px] overflow-hidden"
-                              >
-                                <div className="px-3 pb-1.5 pt-0.5">
-                                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Subtipo</p>
-                                  <p className="text-[11px] text-gray-400 truncate">{selectedTypeObj?.label}</p>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => { setSubtypeFilter(''); setShowSubtypeDropdown(false); }}
-                                  className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 transition-colors cursor-pointer ${
-                                    !subtypeFilter ? 'font-semibold text-violet-600 bg-violet-50/60' : 'text-gray-600 hover:bg-gray-50'
-                                  }`}
-                                >
-                                  <span className="w-5 h-5 rounded-md bg-gray-100 flex items-center justify-center">
-                                    <Tag className="w-3 h-3 text-gray-400" />
-                                  </span>
-                                  Todos los subtipos
-                                </button>
-                                {availableSubtypes.map((s) => {
-                                  const isActive = subtypeFilter === String(s.id);
-                                  return (
-                                    <button
-                                      key={s.id}
-                                      type="button"
-                                      onClick={() => { setSubtypeFilter(String(s.id)); setShowSubtypeDropdown(false); }}
-                                      className={`flex items-center gap-2.5 w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer ${
-                                        isActive ? 'font-semibold text-violet-600 bg-violet-50/60' : 'text-gray-700 hover:bg-gray-50'
-                                      }`}
-                                    >
-                                      <span className={`w-5 h-5 rounded-md flex items-center justify-center ${isActive ? 'bg-violet-100' : 'bg-gray-100'}`}>
-                                        <Tag className={`w-3 h-3 ${isActive ? 'text-violet-500' : 'text-gray-400'}`} />
-                                      </span>
-                                      {s.label}
-                                    </button>
-                                  );
-                                })}
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-              {/* Clear filters */}
-              {(periodFilter || statusFilter || searchTerm || typeFilter || subtypeFilter) && (
+                {/* Status modal trigger */}
                 <button
                   type="button"
-                  onClick={() => { setPeriodFilter(''); setStatusFilter(''); setSearchTerm(''); setTypeFilter(''); setSubtypeFilter(''); }}
-                  className="flex items-center gap-1 px-3 py-2 text-sm text-gray-500 hover:text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => setShowStatusModal(true)}
+                  className={`flex items-center justify-between gap-2 px-4 py-2 text-sm rounded-xl border transition-colors cursor-pointer min-w-[160px] ${
+                    statusLabel
+                      ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-medium'
+                      : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
                 >
-                  <X className="w-3.5 h-3.5" /> Limpiar
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate">{statusLabel ?? 'Estado'}</span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 </button>
-              )}
+
+                {/* Type modal trigger */}
+                <button
+                  type="button"
+                  onClick={() => setShowTypeModal(true)}
+                  className={`flex items-center justify-between gap-2 px-4 py-2 text-sm rounded-xl border transition-colors cursor-pointer min-w-[150px] ${
+                    typeFilter
+                      ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-medium'
+                      : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate">{selectedTypeObj?.label ?? 'Tipo'}</span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                </button>
+
+                {/* Subtype modal trigger — only shown when selected type has subtypes */}
+                <AnimatePresence>
+                  {hasSubtypes && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -8 }}
+                      transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+                      className="flex items-center gap-1"
+                    >
+                      <div className="flex items-center flex-shrink-0">
+                        <div className="w-3 h-px bg-gradient-to-r from-purple-400 to-pink-400" />
+                        <ChevronRight className="w-3.5 h-3.5 text-pink-400" />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowSubtypeModal(true)}
+                        className={`flex items-center justify-between gap-2 px-4 py-2 text-sm rounded-xl border transition-colors cursor-pointer min-w-[150px] ${
+                          subtypeFilter
+                            ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white border-transparent shadow-sm'
+                            : 'bg-white border-purple-200 text-gray-600 hover:border-violet-400 hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Tag className={`w-4 h-4 flex-shrink-0 ${subtypeFilter ? 'text-white' : 'text-purple-400'}`} />
+                          <span className="truncate">{selectedSubtypeObj?.label ?? 'Subtipo'}</span>
+                        </div>
+                        <ChevronDown className={`w-4 h-4 flex-shrink-0 ${subtypeFilter ? 'text-white/70' : 'text-gray-400'}`} />
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Clear filters */}
+                {(periodOption?.value !== 'all' && periodOption !== null || statusFilter || searchTerm || typeFilter || subtypeFilter) && (
+                  <button
+                    type="button"
+                    onClick={() => { setPeriodOption(null); setStatusFilter(''); setSearchTerm(''); setTypeFilter(''); setSubtypeFilter(''); }}
+                    className="flex items-center gap-1 px-3 py-2 text-sm text-gray-500 hover:text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" /> Limpiar
+                  </button>
+                )}
+              </div>
             </div>
+
+            {/* Filter modals */}
+            <ExpensePeriodFilterModal
+              isVisible={showPeriodModal}
+              onClose={() => setShowPeriodModal(false)}
+              selectedValue={periodOption?.value ?? 'all'}
+              onPeriodSelect={(opt) => setPeriodOption(opt)}
+            />
+            <ExpenseStatusFilterModal
+              isVisible={showStatusModal}
+              onClose={() => setShowStatusModal(false)}
+              selectedStatus={statusFilter}
+              onStatusSelect={(val) => setStatusFilter(val)}
+            />
+            <ExpenseTypeFilterModal
+              isVisible={showTypeModal}
+              onClose={() => setShowTypeModal(false)}
+              selectedTypeId={typeFilter}
+              onTypeSelect={(val) => { setTypeFilter(val); setSubtypeFilter(''); }}
+              expenseTypes={allExpenseTypes}
+            />
+            <ExpenseSubtypeFilterModal
+              isVisible={showSubtypeModal}
+              onClose={() => setShowSubtypeModal(false)}
+              selectedSubtypeId={subtypeFilter}
+              onSubtypeSelect={(val) => setSubtypeFilter(val)}
+              subtypes={availableSubtypes}
+              parentTypeLabel={selectedTypeObj?.label}
+            />
 
             {/* List */}
             {loading ? (
