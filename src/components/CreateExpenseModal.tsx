@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Trash2, AlertCircle, Users, ChevronDown, UserCircle2, Building2, User } from 'lucide-react';
+import { X, Plus, Trash2, AlertCircle, Users, UserCircle2, Building2, User } from 'lucide-react';
 import { createExpense, type ExpenseType, type CreateExpenseLineItemInput } from '../api_calls/expenses';
 import { getAdminApartments, getAdminUsers, type AdminApartment, type AdminUser } from '../api_calls/admin';
 import { formatCurrency } from '../utils/expensesHelpers';
+import ApartmentPickerModal from './ApartmentPickerModal';
+import UserPickerModal from './UserPickerModal';
 
 export interface LineItemForm {
   typeId: number;
@@ -43,15 +45,16 @@ export default function CreateExpenseModal({
   const [showResidents, setShowResidents] = useState(false);
   const [residents, setResidents] = useState<AdminUser[]>([]);
   const [loadingResidents, setLoadingResidents] = useState(false);
-  const residentsRef = useRef<HTMLDivElement>(null);
 
   // por usuario
   const [assignMode, setAssignMode] = useState<'unit' | 'user'>('unit');
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
-  const [showAptInfo, setShowAptInfo] = useState(false);
-  const aptInfoRef = useRef<HTMLDivElement>(null);
+
+  // picker modals
+  const [showApartmentPicker, setShowApartmentPicker] = useState(false);
+  const [showUserPicker, setShowUserPicker] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -67,7 +70,6 @@ export default function CreateExpenseModal({
       setAssignMode('unit');
       setSelectedUserId('');
       setUsers([]);
-      setShowAptInfo(false);
       setLoadingApartments(true);
       getAdminApartments(token)
         .then((data) => setApartments(data))
@@ -76,33 +78,10 @@ export default function CreateExpenseModal({
     }
   }, [isOpen, token]);
 
-  useEffect(() => {
-    if (!showResidents) return;
-    const handler = (e: MouseEvent) => {
-      if (residentsRef.current && !residentsRef.current.contains(e.target as Node)) {
-        setShowResidents(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showResidents]);
-
-  useEffect(() => {
-    if (!showAptInfo) return;
-    const handler = (e: MouseEvent) => {
-      if (aptInfoRef.current && !aptInfoRef.current.contains(e.target as Node)) {
-        setShowAptInfo(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showAptInfo]);
-
   const handleSwitchMode = async (mode: 'unit' | 'user') => {
     if (mode === assignMode) return;
     setAssignMode(mode);
     setShowResidents(false);
-    setShowAptInfo(false);
     if (mode === 'user' && users.length === 0) {
       setLoadingUsers(true);
       try {
@@ -276,103 +255,92 @@ export default function CreateExpenseModal({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Departamento <span className="text-red-500">*</span>
               </label>
-              <div className="relative flex items-center gap-2" ref={residentsRef}>
-                {/* Dropdown */}
-                <div className="relative flex-1">
-                  <select
-                    value={apartmentUnit}
-                    onChange={(e) => {
-                      setApartmentUnit(e.target.value);
-                      setShowResidents(false);
-                      setResidents([]);
-                    }}
-                    disabled={loadingApartments}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none pr-8 disabled:bg-gray-50 disabled:text-gray-400 cursor-pointer"
-                    required
-                  >
-                    <option value="">
-                      {loadingApartments ? 'Cargando…' : 'Seleccionar unidad…'}
-                    </option>
-                    {apartments
-                      .slice()
-                      .sort((a, b) => a.unit.localeCompare(b.unit))
-                      .map((apt) => (
-                        <option key={apt.id} value={apt.id}>
-                          {apt.unit} — Piso {apt.floor}
-                        </option>
-                      ))}
-                  </select>
-                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                </div>
 
-                {/* View residents button */}
-                <div>
-                  <button
-                    type="button"
-                    onClick={handleViewResidents}
-                    disabled={!apartmentUnit}
-                    title="Ver habitantes de la unidad"
-                    className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 hover:bg-indigo-50 hover:border-indigo-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                  >
-                    <Users className="w-4 h-4 text-indigo-600" />
-                  </button>
+              {/* Picker trigger */}
+              <button
+                type="button"
+                onClick={() => setShowApartmentPicker(true)}
+                disabled={loadingApartments}
+                className={`w-full flex items-center justify-between gap-2 border rounded-xl px-3 py-2.5 text-sm transition-colors cursor-pointer ${
+                  apartmentUnit
+                    ? 'border-indigo-300 bg-indigo-50 text-indigo-800'
+                    : 'border-gray-200 bg-white text-gray-400 hover:border-indigo-300 hover:bg-gray-50'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <Building2 className={`w-4 h-4 flex-shrink-0 ${apartmentUnit ? 'text-indigo-500' : 'text-gray-400'}`} />
+                  <span className="truncate">
+                    {loadingApartments
+                      ? 'Cargando…'
+                      : apartmentUnit
+                        ? (() => { const a = apartments.find((x) => String(x.id) === apartmentUnit); return a ? `Unidad ${a.unit} — Piso ${a.floor}` : 'Seleccionar…'; })()
+                        : 'Seleccionar departamento…'}
+                  </span>
                 </div>
+              </button>
 
-                {/* Residents popover — anchored to the whole field row */}
-                <AnimatePresence>
-                  {showResidents && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -6, scale: 0.97 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute left-0 top-full mt-2 z-50 w-full min-w-[220px] bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden"
-                    >
-                        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                          <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Habitantes</span>
-                          <button
-                            type="button"
-                            onClick={() => setShowResidents(false)}
-                            className="p-0.5 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-                          >
-                            <X className="w-3.5 h-3.5 text-gray-400" />
-                          </button>
-                        </div>
-                        <div className="p-3">
-                          {loadingResidents ? (
-                            <div className="flex items-center justify-center py-4">
-                              <div className="w-5 h-5 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
-                            </div>
-                          ) : residents.length === 0 ? (
-                            <p className="text-xs text-gray-400 text-center py-3">Sin habitantes registrados</p>
-                          ) : (
-                            <ul className="space-y-2">
-                              {residents.map((u) => (
-                                <li key={u.id} className="flex items-center gap-2.5">
-                                  <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                                    <UserCircle2 className="w-4 h-4 text-indigo-500" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <p className="text-sm font-medium text-gray-800 truncate">{u.name}</p>
-                                    <p className="text-xs text-gray-400 truncate">{u.email}</p>
-                                  </div>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-              </div>
+              {/* Detail + residents toggle below selected */}
               {apartmentUnit && (() => {
                 const apt = apartments.find((a) => String(a.id) === apartmentUnit);
                 return apt ? (
-                  <p className="text-xs text-gray-400 mt-1">
-                    {apt.rooms} amb · {apt.areaM2 ? `${apt.areaM2} m²` : 'sin datos de superficie'}
-                  </p>
+                  <div className="mt-2 space-y-1">
+                    <p className="text-xs text-gray-400">
+                      {apt.rooms ? `${apt.rooms} amb` : ''}{apt.areaM2 ? ` · ${apt.areaM2} m²` : ''}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleViewResidents}
+                      className="flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700 transition-colors cursor-pointer"
+                    >
+                      <Users className="w-3 h-3" />
+                      {showResidents ? 'Ocultar habitantes' : 'Ver habitantes'}
+                    </button>
+                    <AnimatePresence>
+                      {showResidents && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="bg-gray-50 rounded-xl border border-gray-100 p-3 mt-1">
+                            {loadingResidents ? (
+                              <div className="flex items-center justify-center py-3">
+                                <div className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
+                              </div>
+                            ) : residents.length === 0 ? (
+                              <p className="text-xs text-gray-400 text-center py-1">Sin habitantes registrados</p>
+                            ) : (
+                              <ul className="space-y-2">
+                                {residents.map((u) => (
+                                  <li key={u.id} className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                                      <UserCircle2 className="w-3.5 h-3.5 text-indigo-500" />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-xs font-medium text-gray-800 truncate">{u.name}</p>
+                                      <p className="text-xs text-gray-400 truncate">{u.email}</p>
+                                    </div>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 ) : null;
               })()}
+
+              <ApartmentPickerModal
+                isVisible={showApartmentPicker}
+                onClose={() => setShowApartmentPicker(false)}
+                onSelect={(apt) => { setApartmentUnit(String(apt.id)); setShowResidents(false); setResidents([]); }}
+                selectedId={apartmentUnit}
+                apartments={apartments}
+                loading={loadingApartments}
+              />
             </div>
             )}
 
@@ -382,104 +350,52 @@ export default function CreateExpenseModal({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Usuario <span className="text-red-500">*</span>
               </label>
-              <div className="relative flex items-center gap-2" ref={aptInfoRef}>
-                {/* Dropdown */}
-                <div className="relative flex-1">
-                  <select
-                    value={selectedUserId}
-                    onChange={(e) => {
-                      setSelectedUserId(e.target.value);
-                      setShowAptInfo(false);
-                    }}
-                    disabled={loadingUsers}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none pr-8 disabled:bg-gray-50 disabled:text-gray-400 cursor-pointer"
-                    required
-                  >
-                    <option value="">
-                      {loadingUsers ? 'Cargando…' : 'Seleccionar usuario…'}
-                    </option>
-                    {users
-                      .slice()
-                      .sort((a, b) => a.name.localeCompare(b.name))
-                      .map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.name}
-                        </option>
-                      ))}
-                  </select>
-                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                </div>
 
-                {/* View apartment button */}
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => setShowAptInfo((v) => !v)}
-                    disabled={!selectedUserId}
-                    title="Ver departamento del usuario"
-                    className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 hover:bg-indigo-50 hover:border-indigo-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                  >
-                    <Building2 className="w-4 h-4 text-indigo-600" />
-                  </button>
+              {/* Picker trigger */}
+              <button
+                type="button"
+                onClick={() => setShowUserPicker(true)}
+                disabled={loadingUsers}
+                className={`w-full flex items-center justify-between gap-2 border rounded-xl px-3 py-2.5 text-sm transition-colors cursor-pointer ${
+                  selectedUserId
+                    ? 'border-indigo-300 bg-indigo-50 text-indigo-800'
+                    : 'border-gray-200 bg-white text-gray-400 hover:border-indigo-300 hover:bg-gray-50'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <UserCircle2 className={`w-4 h-4 flex-shrink-0 ${selectedUserId ? 'text-indigo-500' : 'text-gray-400'}`} />
+                  <span className="truncate">
+                    {loadingUsers
+                      ? 'Cargando…'
+                      : selectedUserId
+                        ? (() => { const u = users.find((x) => String(x.id) === selectedUserId); return u ? u.name : 'Seleccionar…'; })()
+                        : 'Seleccionar usuario…'}
+                  </span>
                 </div>
+              </button>
 
-                {/* Apartment popover */}
-                <AnimatePresence>
-                  {showAptInfo && (() => {
-                    const selUser = users.find((u) => String(u.id) === selectedUserId);
-                    const apt = selUser?.apartment;
-                    return (
-                      <motion.div
-                        key="apt-popover"
-                        initial={{ opacity: 0, y: -6, scale: 0.97 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute left-0 top-full mt-2 z-50 w-full min-w-[220px] bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden"
-                      >
-                        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                          <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Departamento</span>
-                          <button
-                            type="button"
-                            onClick={() => setShowAptInfo(false)}
-                            className="p-0.5 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-                          >
-                            <X className="w-3.5 h-3.5 text-gray-400" />
-                          </button>
-                        </div>
-                        <div className="p-3">
-                          {!apt ? (
-                            <p className="text-xs text-gray-400 text-center py-3">Sin departamento asignado</p>
-                          ) : (
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                                <Building2 className="w-4 h-4 text-indigo-500" />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium text-gray-800">Unidad {apt.unit}</p>
-                                <p className="text-xs text-gray-400">Piso {apt.floor}{apt.rooms ? ` · ${apt.rooms} amb` : ''}</p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </motion.div>
-                    );
-                  })()}
-                </AnimatePresence>
-              </div>
-              {/* Inline apt hint below */}
+              {/* Apartment hint below selected user */}
               {selectedUserId && (() => {
                 const selUser = users.find((u) => String(u.id) === selectedUserId);
                 const apt = selUser?.apartment;
                 return apt ? (
-                  <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                  <p className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
                     <Building2 className="w-3 h-3" />
                     Unidad {apt.unit} · Piso {apt.floor}
                   </p>
                 ) : (
-                  <p className="text-xs text-red-400 mt-1">Sin departamento asignado</p>
+                  <p className="text-xs text-red-400 mt-1.5">Sin departamento asignado</p>
                 );
               })()}
+
+              <UserPickerModal
+                isVisible={showUserPicker}
+                onClose={() => setShowUserPicker(false)}
+                onSelect={(u) => setSelectedUserId(String(u.id))}
+                selectedId={selectedUserId}
+                users={users}
+                loading={loadingUsers}
+              />
             </div>
             )}
 
