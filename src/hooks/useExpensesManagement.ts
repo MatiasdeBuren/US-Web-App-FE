@@ -74,6 +74,7 @@ export interface UseExpensesManagementReturn {
   handlePaymentRegistered: (updated: Expense) => void;
   handleDeleteConfirm: () => Promise<void>;
   handleDeletePayment: (expenseId: number, paymentId: number) => Promise<void>;
+  deletingPaymentIds: Set<number>;
   clearFilters: () => void;
 }
 
@@ -110,6 +111,7 @@ export function useExpensesManagement({
   const [showCreate, setShowCreate] = useState(false);
   const [expenseToPayment, setExpenseToPayment] = useState<Expense | null>(null);
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
+  const [deletingPaymentIds, setDeletingPaymentIds] = useState<Set<number>>(new Set());
 
   const loadMeta = useCallback(async () => {
     try {
@@ -233,11 +235,18 @@ export function useExpensesManagement({
   };
 
   const handleDeletePayment = async (expenseId: number, paymentId: number) => {
+    setDeletingPaymentIds((prev) => new Set(prev).add(paymentId));
     try {
       const updated = await deleteExpensePayment(token, expenseId, paymentId);
       setExpenses((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
     } catch (err) {
       console.error('Error deleting payment:', err);
+    } finally {
+      setDeletingPaymentIds((prev) => {
+        const next = new Set(prev);
+        next.delete(paymentId);
+        return next;
+      });
     }
   };
 
@@ -299,6 +308,7 @@ export function useExpensesManagement({
     handlePaymentRegistered,
     handleDeleteConfirm,
     handleDeletePayment,
+    deletingPaymentIds,
     clearFilters,
   };
 }

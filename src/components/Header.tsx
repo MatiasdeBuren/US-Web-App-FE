@@ -21,6 +21,7 @@ interface HeaderProps {
     activeTab?: 'dashboard' | 'reclamos' | 'expensas';
     showClaimsTab?: boolean;
     showExpensasTab?: boolean;
+    showReservasTab?: boolean;
     showAmenitiesTab?: boolean;
     showGamification?: boolean;
     notifications?: Notification[];
@@ -48,6 +49,7 @@ function Header({
     activeTab = 'dashboard', 
     showClaimsTab = true, 
     showExpensasTab = true,
+    showReservasTab = true,
     showAmenitiesTab = true,
     showGamification = true,
     notifications = [],
@@ -127,6 +129,7 @@ function Header({
                     </div>
 
                     <nav className="hidden md:flex items-center space-x-8">
+                        {showReservasTab && (
                         <button 
                             onClick={onDashboardClick}
                             className={`font-medium transition-colors cursor-pointer ${
@@ -137,6 +140,7 @@ function Header({
                         >
                             Reservas
                         </button>
+                        )}
                         {showClaimsTab && (
                             <button 
                                 onClick={onClaimsClick}
@@ -257,6 +261,7 @@ function Header({
             {isMobileMenuOpen && (
                 <div ref={mobileMenuRef} className="md:hidden bg-white border-t border-gray-200 shadow-lg">
                     <div className="px-4 py-2 space-y-1">
+                        {showReservasTab && (
                         <button 
                             onClick={() => {
                                 onDashboardClick?.();
@@ -270,6 +275,7 @@ function Header({
                         >
                             Dashboard
                         </button>
+                        )}
                         {showClaimsTab && (
                             <button 
                                 onClick={() => {

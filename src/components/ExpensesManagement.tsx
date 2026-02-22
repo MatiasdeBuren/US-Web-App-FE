@@ -69,6 +69,7 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
     handlePaymentRegistered,
     handleDeleteConfirm,
     handleDeletePayment,
+    deletingPaymentIds,
     clearFilters,
   } = useExpensesManagement({ isOpen, token });
 
@@ -306,6 +307,7 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
                       onRegisterPayment={setExpenseToPayment}
                       onDelete={setExpenseToDelete}
                       onDeletePayment={handleDeletePayment}
+                      deletingPaymentIds={deletingPaymentIds}
                     />
                   ))}
                 </div>

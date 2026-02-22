@@ -27,9 +27,10 @@ export interface ExpenseCardProps {
   onRegisterPayment: (expense: Expense) => void;
   onDelete: (expense: Expense) => void;
   onDeletePayment?: (expenseId: number, paymentId: number) => void;
+  deletingPaymentIds?: Set<number>;
 }
 
-export default function ExpenseCard({ expense, onRegisterPayment, onDelete, onDeletePayment }: ExpenseCardProps) {
+export default function ExpenseCard({ expense, onRegisterPayment, onDelete, onDeletePayment, deletingPaymentIds }: ExpenseCardProps) {
   const [expanded, setExpanded] = useState(false);
   const StatusIcon = STATUS_ICONS[expense.status?.name] ?? Clock;
   const pct = progressPercent(expense.paidAmount, expense.totalAmount);
@@ -249,10 +250,13 @@ export default function ExpenseCard({ expense, onRegisterPayment, onDelete, onDe
                         {onDeletePayment && (
                           <button
                             onClick={() => onDeletePayment(expense.id, p.id)}
-                            className="ml-2 p-1 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-md transition-colors cursor-pointer flex-shrink-0"
+                            disabled={deletingPaymentIds?.has(p.id)}
+                            className="ml-2 p-1 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-md transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                             title="Eliminar pago"
                           >
-                            <X className="w-3.5 h-3.5" />
+                            {deletingPaymentIds?.has(p.id)
+                              ? <div className="w-3.5 h-3.5 border-2 border-red-300 border-t-red-500 rounded-full animate-spin" />
+                              : <X className="w-3.5 h-3.5" />}
                           </button>
                         )}
                       </div>
