@@ -83,11 +83,20 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
 
   const [showExpenseToast, setShowExpenseToast] = useState(false);
   const [toastUnitLabel, setToastUnitLabel] = useState<string | undefined>(undefined);
+  const [toastAction, setToastAction] = useState<'created' | 'edited'>('created');
 
   const handleExpenseCreated = (unitLabel?: string) => {
+    setToastAction('created');
     setToastUnitLabel(unitLabel);
     setShowExpenseToast(true);
     loadExpenses();
+  };
+
+  const handleEditedWithToast = (updated: import('../api_calls/expenses').Expense) => {
+    setToastAction('edited');
+    setToastUnitLabel(updated.apartment?.unit);
+    setShowExpenseToast(true);
+    handleExpenseEdited(updated);
   };
 
   if (!isOpen) return null;
@@ -380,7 +389,7 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
       <ExpenseSuccessToast
         isVisible={showExpenseToast}
         onComplete={() => setShowExpenseToast(false)}
-        action="created"
+        action={toastAction}
         unitLabel={toastUnitLabel}
       />
       {expenseToEdit && (
@@ -388,7 +397,7 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
           isOpen={!!expenseToEdit}
           expense={expenseToEdit}
           onClose={() => setExpenseToEdit(null)}
-          onEdited={handleExpenseEdited}
+          onEdited={handleEditedWithToast}
           token={token}
           expenseTypes={expenseTypes}
         />

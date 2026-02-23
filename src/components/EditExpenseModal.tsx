@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Plus, Trash2, AlertCircle, Building2, Layers, Tag, Pencil } from 'lucide-react';
+import { X, Plus, Trash2, AlertCircle, Building2, Layers, Tag, Pencil, Lock } from 'lucide-react';
 import { updateExpense, type Expense, type ExpenseType } from '../api_calls/expenses';
 import { formatCurrency } from '../utils/expensesHelpers';
 import type { LineItemForm } from './CreateExpenseModal';
@@ -67,6 +67,8 @@ export default function EditExpenseModal({
           : li
       )
     );
+
+  const isPaid = expense.status?.name === 'pagado';
 
   const totalPreview = lineItems.reduce((sum, li) => {
     const v = parseFloat(li.amount);
@@ -195,20 +197,30 @@ export default function EditExpenseModal({
             </div>
           </div>
 
+          {/* Paid notice */}
+          {isPaid && (
+            <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+              <Lock className="w-4 h-4 flex-shrink-0" />
+              Los importes no pueden modificarse porque la expensa ya fue <strong>pagada</strong>.
+            </div>
+          )}
+
           {/* Line items */}
           <div>
             <div className="flex items-center justify-between mb-3">
               <label className="text-sm font-semibold text-gray-700">
                 Rubros <span className="text-red-500">*</span>
               </label>
-              <button
-                type="button"
-                onClick={addLineItem}
-                className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Agregar gasto
-              </button>
+              {!isPaid && (
+                <button
+                  type="button"
+                  onClick={addLineItem}
+                  className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Agregar gasto
+                </button>
+              )}
             </div>
 
             <div className="space-y-3">
@@ -293,6 +305,7 @@ export default function EditExpenseModal({
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">
                           Importe (ARS) <span className="text-red-500">*</span>
+                          {isPaid && <Lock className="inline-block w-3 h-3 ml-1 text-amber-500" />}
                         </label>
                         <div className="flex items-center gap-2">
                           <input
@@ -302,11 +315,16 @@ export default function EditExpenseModal({
                             step="0.01"
                             placeholder="0.00"
                             value={li.amount}
-                            onChange={(e) => updateLineItem(i, 'amount', e.target.value)}
-                            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            onChange={(e) => !isPaid && updateLineItem(i, 'amount', e.target.value)}
+                            disabled={isPaid}
+                            className={`flex-1 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                              isPaid
+                                ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'border-gray-200'
+                            }`}
                             required
                           />
-                          {lineItems.length > 1 && (
+                          {lineItems.length > 1 && !isPaid && (
                             <button
                               type="button"
                               onClick={() => removeLineItem(i)}
