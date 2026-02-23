@@ -479,7 +479,7 @@ export async function deleteApartment(token: string, apartmentId: number): Promi
                 throw new Error('Departamento no encontrado.');
             }
             if (response.status === 409) {
-                throw new Error('No se puede eliminar: el apartamento tiene reservas activas o usuarios asignados.');
+                throw new Error('No se puede eliminar este departamento porque tiene usuarios asignados o reservas activas. Desasigna todos los usuarios y cancela las reservas antes de eliminarlo.');
             }
             const error = await response.json();
             throw new Error(error.message || `Error al eliminar apartamento: ${response.status}`);

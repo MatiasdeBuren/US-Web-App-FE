@@ -202,6 +202,17 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
 
     const confirmDeleteApartment = async () => {
         if (!apartmentToDelete) return;
+
+        const userCount = getUserCount(apartmentToDelete);
+        if (userCount > 0) {
+            showToast(
+                `No se puede eliminar el departamento Unidad ${apartmentToDelete.unit} porque tiene ${userCount} usuario(s) asignado(s). Primero debes desasignar todos los usuarios desde la opción de edición.`,
+                "error"
+            );
+            setApartmentToDelete(null);
+            return;
+        }
+
         setProcessing(true);
         try {
             await deleteApartment(token, apartmentToDelete.id);
