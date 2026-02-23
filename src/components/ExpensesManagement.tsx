@@ -12,7 +12,6 @@ import ExpenseStatusFilterModal from './ExpenseStatusFilterModal';
 import ExpenseTypeFilterModal from './ExpenseTypeFilterModal';
 import ExpenseSubtypeFilterModal from './ExpenseSubtypeFilterModal';
 import ExpenseApartmentFilterModal from './ExpenseApartmentFilterModal';
-import type { UserExpenseSubtype } from '../api_calls/user_expenses';
 
 interface ExpensesManagementProps {
   isOpen: boolean;
@@ -141,7 +140,7 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Buscar por depto. o inquilino…"
+                    placeholder="Buscar por depto. o piso…"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -350,7 +349,7 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
         onClose={() => setShowSubtypeFilter(false)}
         selectedSubtypeId={selectedSubtypeId ? String(selectedSubtypeId) : ''}
         onSubtypeSelect={(val) => { setSelectedSubtypeId(val ? parseInt(val) : null); }}
-        subtypes={availableSubtypes as UserExpenseSubtype[]}
+        subtypes={availableSubtypes}
         parentTypeLabel={selectedType?.label}
       />
 

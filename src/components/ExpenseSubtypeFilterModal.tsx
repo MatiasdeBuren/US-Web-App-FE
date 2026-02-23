@@ -1,14 +1,14 @@
 import { Tag } from 'lucide-react';
 import GenericFilterModal from './GenericFilterModal';
 import type { FilterOption } from './GenericFilterModal';
-import type { UserExpenseSubtype } from '../api_calls/user_expenses';
+import type { ExpenseSubtype } from '../api_calls/expenses';
 
 interface ExpenseSubtypeFilterModalProps {
   isVisible: boolean;
   onClose: () => void;
   selectedSubtypeId: string;
   onSubtypeSelect: (subtypeId: string) => void;
-  subtypes: UserExpenseSubtype[];
+  subtypes: ExpenseSubtype[];
   parentTypeLabel?: string;
 }
 

@@ -23,7 +23,7 @@ export default function ConfirmDeleteExpenseModal({
 
   const expenseName = expense.apartment
     ? `Depto. ${expense.apartment.unit}`
-    : expense.user?.name ?? '—';
+    : '—';
 
   return (
     <div

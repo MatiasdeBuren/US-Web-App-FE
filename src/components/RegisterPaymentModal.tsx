@@ -118,7 +118,7 @@ export default function RegisterPaymentModal({
                 <p className="text-sm text-emerald-100 mt-0.5">
                   {expense.apartment
                     ? `Depto. ${expense.apartment.unit} — ${formatPeriod(expense.period)}`
-                    : expense.user?.name}
+                    : '—'}
                 </p>
               </div>
             </div>

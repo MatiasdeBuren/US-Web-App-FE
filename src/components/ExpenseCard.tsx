@@ -52,7 +52,7 @@ export default function ExpenseCard({ expense, onRegisterPayment, onDelete, onDe
 
           {/* Info */}
           <div className="flex-1 min-w-0">
-            {/* Title: apartment / user + period */}
+            {/* Title: apartment + period */}
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <span className="font-semibold text-gray-900 text-sm truncate">
                 {expense.apartment
