@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Building, Search, Plus, Edit3, Trash2, User, Users, Home, X, ChevronDown, Layers, UserCheck } from "lucide-react";
 import { useToast } from "./Toast";
@@ -15,7 +15,10 @@ import GenericFilterModal, { type FilterOption } from "./GenericFilterModal";
 import GenericConfirmModal from "./GenericConfirmModal";
 
 const getUserCount = (apartment: AdminApartment): number => {
-    return apartment._count?.users ?? apartment.userCount ?? 0;
+    if (apartment.tenants !== undefined) {
+        return apartment.tenants.length + (apartment.owner ? 1 : 0);
+    }
+    return (apartment.tenant ? 1 : 0) + (apartment.owner ? 1 : 0);
 };
 
 const getReservationCount = (apartment: AdminApartment): number => {
@@ -52,15 +55,45 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
         rooms: "",
         areaM2: "",
         observations: "",
-        ownerId: ""
+        ownerId: "",
+        tenantIds: [] as number[]
     });
+
+    const loadApartments = useCallback(async () => {
+        setLoading(true);
+        try {
+            const apartmentsData = await getAdminApartments(token);
+            if (Array.isArray(apartmentsData)) {
+                setApartments(apartmentsData);
+            } else {
+                console.error("Apartments data is not an array:", apartmentsData);
+                setApartments([]);
+            }
+        } catch (error) {
+            console.error("Error loading apartments:", error);
+            setApartments([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [token]);
+
+    const loadUsers = useCallback(async () => {
+        try {
+            const usersData = await getAdminUsers(token);
+            if (Array.isArray(usersData)) {
+                setUsers(usersData);
+            }
+        } catch (error) {
+            console.error("Error loading users:", error);
+        }
+    }, [token]);
 
     useEffect(() => {
         if (isOpen && token) {
             loadApartments();
             loadUsers();
         }
-    }, [isOpen, token]);
+    }, [isOpen, token, loadApartments, loadUsers]);
 
     useEffect(() => {
         let filtered = apartments;
@@ -89,35 +122,6 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
         setFilteredApartments(filtered);
     }, [apartments, searchTerm, filterFloor, filterOccupancy]);
 
-    const loadApartments = async () => {
-        setLoading(true);
-        try {
-            const apartmentsData = await getAdminApartments(token);
-            if (Array.isArray(apartmentsData)) {
-                setApartments(apartmentsData);
-            } else {
-                console.error("Apartments data is not an array:", apartmentsData);
-                setApartments([]);
-            }
-        } catch (error) {
-            console.error("Error loading apartments:", error);
-            setApartments([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const loadUsers = async () => {
-        try {
-            const usersData = await getAdminUsers(token);
-            if (Array.isArray(usersData)) {
-                setUsers(usersData);
-            }
-        } catch (error) {
-            console.error("Error loading users:", error);
-        }
-    };
-
     const handleCreateApartment = async (e: React.FormEvent) => {
         e.preventDefault();
         setProcessing(true);
@@ -135,7 +139,7 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
             await createApartment(token, apartmentData);
             await loadApartments();
             setShowCreateModal(false);
-            setFormData({ unit: "", floor: "", rooms: "", areaM2: "", observations: "", ownerId: "" });
+            setFormData({ unit: "", floor: "", rooms: "", areaM2: "", observations: "", ownerId: "", tenantIds: [] });
             showToast("Departamento creado exitosamente", "success");
         } catch (error) {
             console.error("Error creating apartment:", error);
@@ -172,6 +176,13 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                 updateData.ownerId = formData.ownerId ? parseInt(formData.ownerId) : null;
             }
 
+            const currentTenantIds = selectedApartment.tenants?.map(t => t.id) ?? (selectedApartment.tenant ? [selectedApartment.tenant.id] : []);
+            const sortedCurrent = [...currentTenantIds].sort((a, b) => a - b);
+            const sortedNew = [...formData.tenantIds].sort((a, b) => a - b);
+            if (JSON.stringify(sortedCurrent) !== JSON.stringify(sortedNew)) {
+                updateData.tenantIds = formData.tenantIds;
+            }
+
             await updateApartment(token, selectedApartment.id, updateData);
             await loadApartments();
             setShowEditModal(false);
@@ -206,7 +217,7 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
     };
 
     const openCreateModal = () => {
-        setFormData({ unit: "", floor: "", rooms: "", areaM2: "", observations: "", ownerId: "" });
+        setFormData({ unit: "", floor: "", rooms: "", areaM2: "", observations: "", ownerId: "", tenantIds: [] });
         setShowCreateModal(true);
     };
 
@@ -218,7 +229,8 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
             rooms: apartment.rooms.toString(),
             areaM2: apartment.areaM2?.toString() || "",
             observations: apartment.observations || "",
-            ownerId: apartment.owner?.id?.toString() || ""
+            ownerId: apartment.owner?.id?.toString() || "",
+            tenantIds: apartment.tenants?.map(t => t.id) ?? (apartment.tenant ? [apartment.tenant.id] : [])
         });
         setShowEditModal(true);
     };
@@ -422,7 +434,9 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
 
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                             <Users className="w-4 h-4" />
-                                            <span>Inquilino: {apartment.tenant?.name ?? "Sin inquilino"}</span>
+                                            <span>Inquilino: {apartment.tenants && apartment.tenants.length > 0
+                                                ? apartment.tenants.map(t => t.name).join(", ")
+                                                : apartment.tenant?.name ?? "Sin inquilino"}</span>
                                         </div>
 
                                         <div className="flex items-center gap-4 text-sm text-gray-500">
@@ -595,69 +609,82 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
-                                className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl"
+                                className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl scrollbar-hidden"
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                                    Editar Departamento {selectedApartment.unit}
-                                </h3>
-                                
-                                <form onSubmit={handleEditApartment} className="space-y-4">
+                                {/* Header */}
+                                <div className="flex items-center justify-between px-8 pt-8 pb-6 border-b border-gray-100">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Unidad *
-                                        </label>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={formData.unit}
-                                            onChange={(e) => setFormData({...formData, unit: e.target.value})}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        />
+                                        <h3 className="text-2xl font-bold text-gray-800">
+                                            Editar Departamento
+                                        </h3>
+                                        <p className="text-gray-500 mt-1">Unidad {selectedApartment.unit} — Piso {selectedApartment.floor}</p>
                                     </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowEditModal(false)}
+                                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                                    >
+                                        <X className="w-5 h-5 text-gray-500" />
+                                    </button>
+                                </div>
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Piso *
-                                        </label>
-                                        <input
-                                            type="number"
-                                            required
-                                            min="1"
-                                            value={formData.floor}
-                                            onChange={(e) => setFormData({...formData, floor: e.target.value})}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Habitaciones *
-                                        </label>
-                                        <input
-                                            type="number"
-                                            required
-                                            min="1"
-                                            max="10"
-                                            value={formData.rooms}
-                                            onChange={(e) => setFormData({...formData, rooms: e.target.value})}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Área (m²) (opcional)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            step="0.1"
-                                            value={formData.areaM2}
-                                            onChange={(e) => setFormData({...formData, areaM2: e.target.value})}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            placeholder="Ej: 85.5"
-                                        />
+                                <form onSubmit={handleEditApartment} className="px-8 py-6 space-y-6">
+                                    {/* Grid: Unidad + Piso + Habitaciones + Área */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Unidad *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={formData.unit}
+                                                onChange={(e) => setFormData({...formData, unit: e.target.value})}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Piso *
+                                            </label>
+                                            <input
+                                                type="number"
+                                                required
+                                                min="1"
+                                                value={formData.floor}
+                                                onChange={(e) => setFormData({...formData, floor: e.target.value})}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Habitaciones *
+                                            </label>
+                                            <input
+                                                type="number"
+                                                required
+                                                min="1"
+                                                max="10"
+                                                value={formData.rooms}
+                                                onChange={(e) => setFormData({...formData, rooms: e.target.value})}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Área (m²) (opcional)
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                step="0.1"
+                                                value={formData.areaM2}
+                                                onChange={(e) => setFormData({...formData, areaM2: e.target.value})}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="Ej: 85.5"
+                                            />
+                                        </div>
                                     </div>
 
                                     <div>
@@ -665,7 +692,7 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                                             Observaciones (opcional)
                                         </label>
                                         <textarea
-                                            rows={3}
+                                            rows={2}
                                             value={formData.observations}
                                             onChange={(e) => setFormData({...formData, observations: e.target.value})}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
@@ -683,7 +710,7 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         >
                                             <option value="">Sin asignar</option>
-                                            {users.map(user => (
+                                            {users.filter(u => u.role === "owner" || u.role === "admin").map(user => (
                                                 <option key={user.id} value={user.id.toString()}>
                                                     {user.name} ({user.email})
                                                 </option>
@@ -691,21 +718,73 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                                         </select>
                                     </div>
 
-                                    <div className="flex items-center gap-3 pt-4">
-                                        <button
-                                            type="submit"
-                                            disabled={processing}
-                                            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 cursor-pointer"
-                                        >
-                                            {processing ? "Actualizando..." : "Actualizar"}
-                                        </button>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Inquilinos
+                                        </label>
+                                        <div className="border border-gray-200 rounded-xl overflow-hidden max-h-52 overflow-y-auto">
+                                            {users.filter(u => u.role === "tenant").length === 0 ? (
+                                                <p className="text-sm text-gray-500 p-4">No hay usuarios con rol de inquilino</p>
+                                            ) : (
+                                                users.filter(u => u.role === "tenant").map(user => {
+                                                    const isAssignedElsewhere =
+                                                        user.apartmentId != null &&
+                                                        Number(user.apartmentId) !== Number(selectedApartment.id);
+                                                    const isChecked = formData.tenantIds.includes(user.id);
+                                                    return (
+                                                        <label
+                                                            key={user.id}
+                                                            className={`flex items-center gap-3 px-4 py-3 border-b border-gray-100 last:border-0 ${
+                                                                isAssignedElsewhere
+                                                                    ? "opacity-50 cursor-not-allowed bg-gray-50"
+                                                                    : "hover:bg-blue-50 cursor-pointer"
+                                                            }`}
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                disabled={isAssignedElsewhere}
+                                                                checked={isChecked}
+                                                                onChange={(e) => {
+                                                                    if (e.target.checked) {
+                                                                        setFormData(prev => ({...prev, tenantIds: [...prev.tenantIds, user.id]}));
+                                                                    } else {
+                                                                        setFormData(prev => ({...prev, tenantIds: prev.tenantIds.filter(id => id !== user.id)}));
+                                                                    }
+                                                                }}
+                                                                className="w-4 h-4 text-blue-600 rounded accent-blue-600"
+                                                            />
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-sm font-medium text-gray-800 truncate">{user.name}</p>
+                                                                <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                                                            </div>
+                                                            {isAssignedElsewhere && (
+                                                                <span className="text-xs text-amber-600 font-medium flex-shrink-0">Otra unidad</span>
+                                                            )}
+                                                            {isChecked && !isAssignedElsewhere && (
+                                                                <span className="text-xs text-blue-600 font-medium flex-shrink-0">Asignado</span>
+                                                            )}
+                                                        </label>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 pt-2 pb-2">
                                         <button
                                             type="button"
                                             onClick={() => setShowEditModal(false)}
                                             disabled={processing}
-                                            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors disabled:opacity-50 cursor-pointer"
+                                            className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50 cursor-pointer"
                                         >
                                             Cancelar
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={processing}
+                                            className="flex-1 bg-blue-600 text-white py-2.5 px-4 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 cursor-pointer font-medium"
+                                        >
+                                            {processing ? "Actualizando..." : "Actualizar"}
                                         </button>
                                     </div>
                                 </form>

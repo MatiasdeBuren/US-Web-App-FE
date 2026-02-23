@@ -92,7 +92,7 @@ export default function CreateExpenseModal({
       setLoadingUsers(true);
       try {
         const allUsers = await getAdminUsers(token);
-        setUsers(allUsers.filter((u) => u.apartmentId));
+        setUsers(allUsers.filter((u) => u.apartmentId && u.role === 'tenant'));
       } catch {
         setUsers([]);
       } finally {
@@ -109,7 +109,7 @@ export default function CreateExpenseModal({
     try {
       const allUsers = await getAdminUsers(token);
       const aptId = parseInt(apartmentUnit);
-      setResidents(allUsers.filter((u) => u.apartmentId === aptId));
+      setResidents(allUsers.filter((u) => u.apartmentId === aptId && u.role === 'tenant'));
     } catch {
       setResidents([]);
     } finally {

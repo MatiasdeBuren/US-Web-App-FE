@@ -125,13 +125,15 @@ function Register() {
             placeholder="Selecciona un apartamento"
             value={apartmentId || ''}
             onChange={(value) => setApartmentId(value)}
-            options={apartments.map(apartment => ({
-              value: apartment.id.toString(),
-              label: apartment.ownerId
-                ? `Unidad ${apartment.unit} — Ocupado`
-                : `Unidad ${apartment.unit} — Libre`,
-              disabled: !!apartment.ownerId
-            }))}
+            options={apartments.map(apartment => {
+              const tenantCount = apartment._count?.tenants ?? apartment.tenantCount ?? 0;
+              return {
+                value: apartment.id.toString(),
+                label: tenantCount > 0
+                  ? `Unidad ${apartment.unit} — ${tenantCount} inquilino${tenantCount !== 1 ? 's' : ''}`
+                  : `Unidad ${apartment.unit} — Sin inquilinos`,
+              };
+            })}
             icon={HiOutlineHome}
             error={errors.apartment}
             disabled={isRegistering}

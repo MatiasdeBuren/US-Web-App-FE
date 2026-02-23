@@ -66,6 +66,11 @@ export interface AdminApartment {
         name: string;
         email: string;
     };
+    tenants?: Array<{
+        id: number;
+        name: string;
+        email: string;
+    }>;
     _count?: {
         reservations: number;
         users: number;
@@ -416,7 +421,7 @@ export async function updateApartment(
         areaM2?: number | null;
         observations?: string | null;
         ownerId?: number | null;
-        tenantId?: number | null;
+        tenantIds?: number[];
     }
 ): Promise<AdminApartment> {
     try {
