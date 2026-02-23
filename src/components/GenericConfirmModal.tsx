@@ -58,7 +58,7 @@ function GenericConfirmModal({
     <AnimatePresence>
       <div 
         className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-        onClick={onClose}
+        onClick={(e) => { e.stopPropagation(); onClose(); }}
       >
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}

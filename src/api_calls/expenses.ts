@@ -1,7 +1,5 @@
 const API_URL = import.meta.env.VITE_API_URL as string;
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export interface ExpenseStatus {
   id: number;
   name: string; // "pendiente" | "parcial" | "pagado" | "vencido"
@@ -67,12 +65,6 @@ export interface Expense {
     unit: string;
     floor: number;
   } | null;
-  userId?: number | null;
-  user?: {
-    id: number;
-    name: string;
-    email: string;
-  } | null;
   period: string;
   dueDate: string;
   totalAmount: number;
@@ -86,7 +78,6 @@ export interface Expense {
   updatedAt: string;
 }
 
-// ─── GET helpers ─────────────────────────────────────────────────────────────
 
 export async function getExpenseTypes(token: string): Promise<ExpenseType[]> {
   const res = await fetch(`${API_URL}/admin/expenses/types`, {
@@ -120,7 +111,6 @@ export interface GetExpensesParams {
   limit?: number;
   statusId?: number;
   apartmentId?: number;
-  userId?: number;
   period?: string; // "YYYY-MM"
 }
 
@@ -143,7 +133,6 @@ export async function getExpenses(
   if (params.limit)       query.set('limit',       String(params.limit));
   if (params.statusId)    query.set('statusId',    String(params.statusId));
   if (params.apartmentId) query.set('apartmentId', String(params.apartmentId));
-  if (params.userId)      query.set('userId',      String(params.userId));
   if (params.period)      query.set('period',      params.period);
 
   const res = await fetch(`${API_URL}/admin/expenses?${query.toString()}`, {
@@ -153,7 +142,6 @@ export async function getExpenses(
   return res.json();
 }
 
-// ─── Create / Update / Delete ─────────────────────────────────────────────────
 
 export interface CreateExpenseLineItemInput {
   typeId: number;
@@ -163,8 +151,7 @@ export interface CreateExpenseLineItemInput {
 }
 
 export interface CreateExpenseInput {
-  apartmentId?: number | null;
-  userId?: number | null;
+  apartmentId: number;
   period: string;       // ISO date string (first of month)
   dueDate: string;      // ISO date string
   adminNotes?: string | null;
@@ -196,7 +183,34 @@ export async function deleteExpense(token: string, id: number): Promise<void> {
   }
 }
 
-// ─── Payments ─────────────────────────────────────────────────────────────────
+export interface UpdateExpenseInput {
+  period?: string;
+  dueDate?: string;
+  adminNotes?: string | null;
+  lineItems?: CreateExpenseLineItemInput[];
+}
+
+export async function updateExpense(
+  token: string,
+  id: number,
+  data: UpdateExpenseInput
+): Promise<Expense> {
+  const res = await fetch(`${API_URL}/admin/expenses/${id}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({}));
+    throw new Error(json.message || `Error al actualizar la expensa (${res.status})`);
+  }
+  const json = await res.json();
+  return json.expense;
+}
+
 
 export interface RegisterPaymentInput {
   amount: number;

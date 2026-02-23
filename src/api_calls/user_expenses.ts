@@ -47,7 +47,6 @@ export interface UserExpense {
   id: number;
   apartmentId?: number | null;
   apartment?: { id: number; unit: string; floor: number } | null;
-  userId?: number | null;
   period: string;
   dueDate: string;
   totalAmount: number;

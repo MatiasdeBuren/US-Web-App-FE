@@ -4,7 +4,7 @@ import GenericToast from './GenericToast';
 interface ExpenseSuccessToastProps {
   isVisible: boolean;
   onComplete: () => void;
-  action?: 'created' | 'deleted' | 'payment';
+  action?: 'created' | 'edited' | 'deleted' | 'payment';
   unitLabel?: string;
 }
 
@@ -17,6 +17,7 @@ function ExpenseSuccessToast({
   const getTitle = () => {
     switch (action) {
       case 'created': return 'Expensa creada';
+      case 'edited':  return 'Expensa actualizada';
       case 'deleted': return 'Expensa eliminada';
       case 'payment': return 'Pago registrado';
       default: return 'Operación exitosa';
@@ -29,6 +30,10 @@ function ExpenseSuccessToast({
         return unitLabel
           ? `La expensa para la unidad ${unitLabel} fue creada exitosamente.`
           : 'La expensa fue creada exitosamente.';
+      case 'edited':
+        return unitLabel
+          ? `La expensa para la unidad ${unitLabel} fue actualizada exitosamente.`
+          : 'La expensa fue actualizada exitosamente.';
       case 'deleted':
         return 'La expensa fue eliminada exitosamente.';
       case 'payment':

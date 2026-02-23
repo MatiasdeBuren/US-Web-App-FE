@@ -63,6 +63,9 @@ export interface UseExpensesManagementReturn {
   setExpenseToPayment: (expense: Expense | null) => void;
   expenseToDelete: Expense | null;
   setExpenseToDelete: (expense: Expense | null) => void;
+  expenseToEdit: Expense | null;
+  setExpenseToEdit: (expense: Expense | null) => void;
+  handleExpenseEdited: (updated: Expense) => void;
 
   displayedExpenses: Expense[];
 
@@ -111,6 +114,7 @@ export function useExpensesManagement({
   const [showCreate, setShowCreate] = useState(false);
   const [expenseToPayment, setExpenseToPayment] = useState<Expense | null>(null);
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
+  const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
   const [deletingPaymentIds, setDeletingPaymentIds] = useState<Set<number>>(new Set());
 
   const loadMeta = useCallback(async () => {
@@ -177,8 +181,6 @@ export function useExpensesManagement({
     const matchSearch =
       !q ||
       exp.apartment?.unit.toLowerCase().includes(q) ||
-      exp.user?.name.toLowerCase().includes(q) ||
-      exp.user?.email.toLowerCase().includes(q) ||
       String(exp.apartment?.floor).includes(q);
 
     const matchType =
@@ -218,6 +220,11 @@ export function useExpensesManagement({
 
   const handlePaymentRegistered = (updated: Expense) => {
     setExpenses((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+  };
+
+  const handleExpenseEdited = (updated: Expense) => {
+    setExpenses((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+    setExpenseToEdit(null);
   };
 
   const handleDeleteConfirm = async () => {
@@ -301,6 +308,8 @@ export function useExpensesManagement({
     setExpenseToPayment,
     expenseToDelete,
     setExpenseToDelete,
+    expenseToEdit,
+    setExpenseToEdit,
     displayedExpenses,
     getCurrentStatusLabel,
     getCurrentTypeLabel,
@@ -309,6 +318,7 @@ export function useExpensesManagement({
     handlePaymentRegistered,
     handleDeleteConfirm,
     handleDeletePayment,
+    handleExpenseEdited,
     deletingPaymentIds,
     clearFilters,
   };

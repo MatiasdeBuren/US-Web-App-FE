@@ -66,6 +66,11 @@ export interface AdminApartment {
         name: string;
         email: string;
     };
+    tenants?: Array<{
+        id: number;
+        name: string;
+        email: string;
+    }>;
     _count?: {
         reservations: number;
         users: number;
@@ -416,7 +421,7 @@ export async function updateApartment(
         areaM2?: number | null;
         observations?: string | null;
         ownerId?: number | null;
-        tenantId?: number | null;
+        tenantIds?: number[];
     }
 ): Promise<AdminApartment> {
     try {
@@ -474,7 +479,7 @@ export async function deleteApartment(token: string, apartmentId: number): Promi
                 throw new Error('Departamento no encontrado.');
             }
             if (response.status === 409) {
-                throw new Error('No se puede eliminar: el apartamento tiene reservas activas o usuarios asignados.');
+                throw new Error('No se puede eliminar este departamento porque tiene usuarios asignados o reservas activas. Desasigna todos los usuarios y cancela las reservas antes de eliminarlo.');
             }
             const error = await response.json();
             throw new Error(error.message || `Error al eliminar apartamento: ${response.status}`);

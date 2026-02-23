@@ -8,6 +8,11 @@ export interface Apartment {
   observations?: string;
   rooms: number;
   ownerId: number;
+  tenants?: Array<{ id: number; name: string; email: string }>;
+  _count?: {
+    tenants: number;
+  };
+  tenantCount?: number;
 }
 
 export async function getApartments() {

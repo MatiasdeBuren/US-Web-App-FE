@@ -1,5 +1,6 @@
 import { useEffect, useState, createContext, useContext, useCallback } from "react";
-import { CheckCircle, XCircle, AlertCircle, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { CheckCircle, XCircle, AlertTriangle, Info, X } from "lucide-react";
 
 export interface ToastProps {
   id: string;
@@ -10,85 +11,91 @@ export interface ToastProps {
 }
 
 export function Toast({ id, message, type, duration = 4000, onClose }: ToastProps) {
-  const [isVisible, setIsVisible] = useState(false);
-  const [isLeaving, setIsLeaving] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    
-    setTimeout(() => setIsVisible(true), 10);
-    const timer = setTimeout(() => {
-      setIsLeaving(true);
-      setTimeout(() => onClose(id), 300);
-    }, duration);
-
+    setTimeout(() => setMounted(true), 10);
+    const timer = setTimeout(() => onClose(id), duration);
     return () => clearTimeout(timer);
   }, [id, duration, onClose]);
 
-  const handleClose = () => {
-    setIsLeaving(true);
-    setTimeout(() => onClose(id), 300);
+  const typeConfig = {
+    success: {
+      icon: CheckCircle,
+      borderColor: 'border-green-200',
+      iconBg: 'bg-green-100',
+      iconColor: 'text-green-600',
+      textColor: 'text-green-800',
+      progressColor: 'bg-green-500',
+    },
+    error: {
+      icon: XCircle,
+      borderColor: 'border-red-200',
+      iconBg: 'bg-red-100',
+      iconColor: 'text-red-600',
+      textColor: 'text-red-800',
+      progressColor: 'bg-red-500',
+    },
+    warning: {
+      icon: AlertTriangle,
+      borderColor: 'border-yellow-200',
+      iconBg: 'bg-yellow-100',
+      iconColor: 'text-yellow-600',
+      textColor: 'text-yellow-800',
+      progressColor: 'bg-yellow-500',
+    },
+    info: {
+      icon: Info,
+      borderColor: 'border-blue-200',
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-600',
+      textColor: 'text-blue-800',
+      progressColor: 'bg-blue-500',
+    },
   };
 
-  const getTypeConfig = () => {
-    switch (type) {
-      case 'success':
-        return {
-          icon: <CheckCircle className="w-5 h-5" />,
-          bgColor: 'bg-green-500',
-          textColor: 'text-white',
-          borderColor: 'border-green-600'
-        };
-      case 'error':
-        return {
-          icon: <XCircle className="w-5 h-5" />,
-          bgColor: 'bg-red-500',
-          textColor: 'text-white',
-          borderColor: 'border-red-600'
-        };
-      case 'warning':
-        return {
-          icon: <AlertCircle className="w-5 h-5" />,
-          bgColor: 'bg-yellow-500',
-          textColor: 'text-white',
-          borderColor: 'border-yellow-600'
-        };
-      case 'info':
-        return {
-          icon: <AlertCircle className="w-5 h-5" />,
-          bgColor: 'bg-blue-500',
-          textColor: 'text-white',
-          borderColor: 'border-blue-600'
-        };
-    }
-  };
-
-  const config = getTypeConfig();
+  const config = typeConfig[type];
+  const IconComponent = config.icon;
 
   return (
-    <div
-      className={`
-        fixed top-4 right-4 z-[9999] max-w-sm w-full
-        transform transition-all duration-300 ease-in-out
-        ${isVisible && !isLeaving 
-          ? 'translate-x-0 opacity-100' 
-          : 'translate-x-full opacity-0'
-        }
-      `}
-    >
-      <div className={`
-        ${config.bgColor} ${config.textColor} ${config.borderColor}
-        border-l-4 rounded-lg shadow-lg p-4 flex items-center gap-3
-      `}>
-        {config.icon}
-        <p className="flex-1 font-medium">{message}</p>
-        <button
-          onClick={handleClose}
-          className="hover:bg-black/10 rounded-full p-1 transition-colors"
+    <AnimatePresence>
+      {mounted && (
+        <motion.div
+          initial={{ x: 400, y: -100, opacity: 0 }}
+          animate={{ x: 0, y: 0, opacity: 1 }}
+          exit={{ x: 400, y: -100, opacity: 0 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
+          <div className={`bg-white rounded-xl shadow-lg border-2 ${config.borderColor} min-w-[320px] max-w-[400px] overflow-hidden`}>
+            {/* Progress bar */}
+            <div className="h-1 bg-gray-200">
+              <motion.div
+                className={`h-full ${config.progressColor}`}
+                initial={{ width: '100%' }}
+                animate={{ width: '0%' }}
+                transition={{ duration: duration / 1000, ease: 'linear' }}
+              />
+            </div>
+
+            {/* Content */}
+            <div className="p-4">
+              <div className="flex items-start gap-3">
+                <div className={`${config.iconBg} p-2 rounded-lg flex-shrink-0`}>
+                  <IconComponent className={`w-5 h-5 ${config.iconColor}`} />
+                </div>
+                <p className={`flex-1 font-semibold text-sm ${config.textColor} pt-1`}>{message}</p>
+                <button
+                  onClick={() => onClose(id)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer flex-shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -122,12 +129,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ showToast }}>
       {children}
       {/* Render toasts */}
-      <div className="fixed top-0 right-0 z-[9999] pointer-events-none">
-        {toasts.map((toast, index) => (
+      <div className="fixed top-4 right-4 z-[9999] pointer-events-none flex flex-col gap-3">
+        {toasts.map((toast) => (
           <div 
             key={toast.id}
             className="pointer-events-auto"
-            style={{ marginTop: `${index * 80}px` }}
           >
             <Toast
               {...toast}

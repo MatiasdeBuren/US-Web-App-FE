@@ -4,6 +4,7 @@ import { X, Search, Filter, ChevronDown, ChevronRight, Plus, Receipt, Building2,
 import { useExpensesManagement } from '../hooks/useExpensesManagement';
 import ExpenseCard from './ExpenseCard';
 import CreateExpenseModal from './CreateExpenseModal';
+import EditExpenseModal from './EditExpenseModal';
 import RegisterPaymentModal from './RegisterPaymentModal';
 import ConfirmDeleteExpenseModal from './ConfirmDeleteExpenseModal';
 import ExpenseSuccessToast from './ExpenseSuccessToast';
@@ -12,7 +13,6 @@ import ExpenseStatusFilterModal from './ExpenseStatusFilterModal';
 import ExpenseTypeFilterModal from './ExpenseTypeFilterModal';
 import ExpenseSubtypeFilterModal from './ExpenseSubtypeFilterModal';
 import ExpenseApartmentFilterModal from './ExpenseApartmentFilterModal';
-import type { UserExpenseSubtype } from '../api_calls/user_expenses';
 
 interface ExpensesManagementProps {
   isOpen: boolean;
@@ -60,6 +60,9 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
     setExpenseToPayment,
     expenseToDelete,
     setExpenseToDelete,
+    expenseToEdit,
+    setExpenseToEdit,
+    handleExpenseEdited,
     displayedExpenses,
     getCurrentStatusLabel,
     getCurrentTypeLabel,
@@ -80,11 +83,20 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
 
   const [showExpenseToast, setShowExpenseToast] = useState(false);
   const [toastUnitLabel, setToastUnitLabel] = useState<string | undefined>(undefined);
+  const [toastAction, setToastAction] = useState<'created' | 'edited'>('created');
 
   const handleExpenseCreated = (unitLabel?: string) => {
+    setToastAction('created');
     setToastUnitLabel(unitLabel);
     setShowExpenseToast(true);
     loadExpenses();
+  };
+
+  const handleEditedWithToast = (updated: import('../api_calls/expenses').Expense) => {
+    setToastAction('edited');
+    setToastUnitLabel(updated.apartment?.unit);
+    setShowExpenseToast(true);
+    handleExpenseEdited(updated);
   };
 
   if (!isOpen) return null;
@@ -141,7 +153,7 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Buscar por depto. o inquilino…"
+                    placeholder="Buscar por depto. o piso…"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -288,6 +300,7 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
                       key={exp.id}
                       expense={exp}
                       onRegisterPayment={setExpenseToPayment}
+                      onEdit={setExpenseToEdit}
                       onDelete={setExpenseToDelete}
                       onDeletePayment={handleDeletePayment}
                       deletingPaymentIds={deletingPaymentIds}
@@ -350,7 +363,7 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
         onClose={() => setShowSubtypeFilter(false)}
         selectedSubtypeId={selectedSubtypeId ? String(selectedSubtypeId) : ''}
         onSubtypeSelect={(val) => { setSelectedSubtypeId(val ? parseInt(val) : null); }}
-        subtypes={availableSubtypes as UserExpenseSubtype[]}
+        subtypes={availableSubtypes}
         parentTypeLabel={selectedType?.label}
       />
 
@@ -376,9 +389,19 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
       <ExpenseSuccessToast
         isVisible={showExpenseToast}
         onComplete={() => setShowExpenseToast(false)}
-        action="created"
+        action={toastAction}
         unitLabel={toastUnitLabel}
       />
+      {expenseToEdit && (
+        <EditExpenseModal
+          isOpen={!!expenseToEdit}
+          expense={expenseToEdit}
+          onClose={() => setExpenseToEdit(null)}
+          onEdited={handleEditedWithToast}
+          token={token}
+          expenseTypes={expenseTypes}
+        />
+      )}
       {expenseToPayment && (
         <RegisterPaymentModal
           isOpen={!!expenseToPayment}

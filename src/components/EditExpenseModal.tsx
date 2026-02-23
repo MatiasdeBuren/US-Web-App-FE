@@ -1,93 +1,57 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Trash2, AlertCircle, Users, UserCircle2, Building2, Layers, Tag } from 'lucide-react';
-import { createExpense, type ExpenseType, type CreateExpenseLineItemInput } from '../api_calls/expenses';
-import { getAdminApartments, getAdminUsers, type AdminApartment, type AdminUser } from '../api_calls/admin';
+import { motion } from 'framer-motion';
+import { X, Plus, Trash2, AlertCircle, Building2, Layers, Tag, Pencil, Lock } from 'lucide-react';
+import { updateExpense, type Expense, type ExpenseType } from '../api_calls/expenses';
 import { formatCurrency } from '../utils/expensesHelpers';
-import ApartmentPickerModal from './ApartmentPickerModal';
+import type { LineItemForm } from './CreateExpenseModal';
 import LineItemTypePickerModal from './LineItemTypePickerModal';
 import LineItemSubtypePickerModal from './LineItemSubtypePickerModal';
 
-export interface LineItemForm {
-  typeId: number;
-  subtypeId: number | null;
-  description: string;
-  amount: string;
-}
-
-export interface CreateExpenseModalProps {
+export interface EditExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreated: (unitLabel?: string) => void;
+  onEdited: (updated: Expense) => void;
   token: string;
+  expense: Expense;
   expenseTypes: ExpenseType[];
 }
 
-export default function CreateExpenseModal({
+export default function EditExpenseModal({
   isOpen,
   onClose,
-  onCreated,
+  onEdited,
   token,
+  expense,
   expenseTypes,
-}: CreateExpenseModalProps) {
-  const [apartmentUnit, setApartmentUnit] = useState('');
+}: EditExpenseModalProps) {
   const [period, setPeriod] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [adminNotes, setAdminNotes] = useState('');
-  const [lineItems, setLineItems] = useState<LineItemForm[]>([
-    { typeId: 0, subtypeId: null, description: '', amount: '' },
-  ]);
+  const [lineItems, setLineItems] = useState<LineItemForm[]>([]);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const [apartments, setApartments] = useState<AdminApartment[]>([]);
-  const [loadingApartments, setLoadingApartments] = useState(false);
-
-  const [showResidents, setShowResidents] = useState(false);
-  const [residents, setResidents] = useState<AdminUser[]>([]);
-  const [loadingResidents, setLoadingResidents] = useState(false);
-
-  // picker modals
-  const [showApartmentPicker, setShowApartmentPicker] = useState(false);
   const [typePickerIndex, setTypePickerIndex] = useState<number | null>(null);
   const [subtypePickerIndex, setSubtypePickerIndex] = useState<number | null>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      setApartmentUnit('');
-      const now = new Date();
-      setPeriod(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
-      setDueDate('');
-      setAdminNotes('');
-      setLineItems([{ typeId: 0, subtypeId: null, description: '', amount: '' }]);
+    if (isOpen && expense) {
+      setPeriod(expense.period.substring(0, 7));
+      setDueDate(expense.dueDate.substring(0, 10));
+      setAdminNotes(expense.adminNotes ?? '');
+      setLineItems(
+        expense.lineItems.map((li) => ({
+          typeId: li.typeId,
+          subtypeId: li.subtypeId ?? null,
+          description: li.description ?? '',
+          amount: String(li.amount),
+        }))
+      );
       setError('');
       setSubmitted(false);
-      setShowResidents(false);
-      setResidents([]);
-      setLoadingApartments(true);
-      getAdminApartments(token)
-        .then((data) => setApartments(data))
-        .catch(() => setApartments([]))
-        .finally(() => setLoadingApartments(false));
     }
-  }, [isOpen, token]);
-
-  const handleViewResidents = async () => {
-    if (!apartmentUnit) return;
-    if (showResidents) { setShowResidents(false); return; }
-    setLoadingResidents(true);
-    setShowResidents(true);
-    try {
-      const allUsers = await getAdminUsers(token);
-      const aptId = parseInt(apartmentUnit);
-      setResidents(allUsers.filter((u) => u.apartmentId === aptId && u.role === 'tenant'));
-    } catch {
-      setResidents([]);
-    } finally {
-      setLoadingResidents(false);
-    }
-  };
+  }, [isOpen, expense]);
 
   const addLineItem = () =>
     setLineItems((prev) => [...prev, { typeId: 0, subtypeId: null, description: '', amount: '' }]);
@@ -104,6 +68,8 @@ export default function CreateExpenseModal({
       )
     );
 
+  const isPaid = expense.status?.name === 'pagado';
+
   const totalPreview = lineItems.reduce((sum, li) => {
     const v = parseFloat(li.amount);
     return sum + (isNaN(v) ? 0 : v);
@@ -116,51 +82,47 @@ export default function CreateExpenseModal({
 
     if (!period) return setError('Seleccione el período.');
     if (!dueDate) return setError('Ingrese la fecha de vencimiento.');
-    if (lineItems.some((li) => !li.typeId)) return setError('Todos los rubros deben tener un tipo seleccionado.');
-    if (lineItems.some((li) => {
-      const t = expenseTypes.find((t) => t.id === li.typeId);
-      return t && (t.subtypes?.length ?? 0) > 0 && li.subtypeId === null;
-    })) return setError('Los rubros con subrubros deben tener uno seleccionado.');
+    if (lineItems.length === 0) return setError('Debe haber al menos un rubro.');
+    if (lineItems.some((li) => !li.typeId))
+      return setError('Todos los rubros deben tener un tipo seleccionado.');
+    if (
+      lineItems.some((li) => {
+        const t = expenseTypes.find((t) => t.id === li.typeId);
+        return t && (t.subtypes?.length ?? 0) > 0 && li.subtypeId === null;
+      })
+    )
+      return setError('Los rubros con subrubros deben tener uno seleccionado.');
     if (lineItems.some((li) => !li.amount || parseFloat(li.amount) <= 0))
       return setError('Todos los rubros deben tener un importe mayor a 0.');
-
-    if (!apartmentUnit.trim()) return setError('Seleccione un departamento.');
-    const aptId = parseInt(apartmentUnit.trim());
-    if (isNaN(aptId)) return setError('Departamento inválido.');
-    const unitLabel = apartments.find((a) => a.id === aptId)?.unit;
-
+    if (lineItems.some((li) => parseFloat(li.amount) > 10_000_000))
+      return setError('El importe de cada rubro no puede superar $ 10.000.000.');
     setSaving(true);
     try {
       const [year, month] = period.split('-').map(Number);
       const periodDate = new Date(year, month - 1, 1).toISOString();
 
-      const items: CreateExpenseLineItemInput[] = lineItems.map((li) => ({
-        typeId: li.typeId,
-        subtypeId: li.subtypeId ?? null,
-        description: li.description || null,
-        amount: parseFloat(li.amount),
-      }));
-
-      await createExpense(token, {
-        apartmentId: aptId,
+      const updated = await updateExpense(token, expense.id, {
         period: periodDate,
-        dueDate: new Date(dueDate).toISOString(),
+        dueDate: new Date(`${dueDate}T12:00:00`).toISOString(),
         adminNotes: adminNotes || null,
-        lineItems: items,
+        lineItems: lineItems.map((li) => ({
+          typeId: li.typeId,
+          subtypeId: li.subtypeId ?? null,
+          description: li.description || null,
+          amount: parseFloat(li.amount),
+        })),
       });
 
-      onCreated(unitLabel);
+      onEdited(updated);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al crear la expensa');
+      setError(err instanceof Error ? err.message : 'Error al actualizar la expensa');
     } finally {
       setSaving(false);
     }
   };
 
   if (!isOpen) return null;
-
-  const selectedApartment = apartments.find((a) => String(a.id) === apartmentUnit) ?? null;
 
   return (
     <div
@@ -178,11 +140,15 @@ export default function CreateExpenseModal({
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <Plus className="w-5 h-5 text-white" />
+              <Pencil className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Nueva Expensa</h3>
-              <p className="text-sm text-gray-500">Completá los datos del período y los rubros</p>
+              <h3 className="text-lg font-semibold text-gray-900">Editar Expensa</h3>
+              <p className="text-sm text-gray-500">
+                {expense.apartment
+                  ? `Depto. ${expense.apartment.unit} — Piso ${expense.apartment.floor}`
+                  : '—'}
+              </p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer">
@@ -192,91 +158,19 @@ export default function CreateExpenseModal({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
 
-          {/* Apartment + Period + Due date */}
-          <div className="grid md:grid-cols-3 gap-4">
+          {/* Apartment info — read only */}
+          <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl">
+            <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <span className="text-sm text-gray-600">
+              {expense.apartment
+                ? `Unidad ${expense.apartment.unit} — Piso ${expense.apartment.floor}`
+                : 'Sin departamento'}
+            </span>
+            <span className="ml-auto text-xs text-gray-400">No editable</span>
+          </div>
 
-            {/* ── Departamento ── */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Departamento <span className="text-red-500">*</span>
-              </label>
-
-              {/* Picker trigger */}
-              <button
-                type="button"
-                onClick={() => setShowApartmentPicker(true)}
-                disabled={loadingApartments}
-                className={`w-full flex items-center justify-between gap-2 border rounded-xl px-3 py-2.5 text-sm transition-colors cursor-pointer ${
-                  apartmentUnit
-                    ? 'border-indigo-300 bg-indigo-50 text-indigo-800'
-                    : 'border-gray-200 bg-white text-gray-400 hover:border-indigo-300 hover:bg-gray-50'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <Building2 className={`w-4 h-4 flex-shrink-0 ${apartmentUnit ? 'text-indigo-500' : 'text-gray-400'}`} />
-                  <span className="truncate">
-                    {loadingApartments
-                      ? 'Cargando…'
-                      : apartmentUnit
-                      ? (selectedApartment ? `Unidad ${selectedApartment.unit} — Piso ${selectedApartment.floor}` : 'Seleccionar…')
-                        : 'Seleccionar departamento…'}
-                  </span>
-                </div>
-              </button>
-
-              {/* Detail + residents toggle below selected */}
-              {selectedApartment && (
-                  <div className="mt-2 space-y-1">
-                    <p className="text-xs text-gray-400">
-                      {selectedApartment.rooms ? `${selectedApartment.rooms} amb` : ''}{selectedApartment.areaM2 ? ` · ${selectedApartment.areaM2} m²` : ''}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleViewResidents}
-                      className="flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700 transition-colors cursor-pointer"
-                    >
-                      <Users className="w-3 h-3" />
-                      {showResidents ? 'Ocultar habitantes' : 'Ver habitantes'}
-                    </button>
-                    <AnimatePresence>
-                      {showResidents && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="bg-gray-50 rounded-xl border border-gray-100 p-3 mt-1">
-                            {loadingResidents ? (
-                              <div className="flex items-center justify-center py-3">
-                                <div className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
-                              </div>
-                            ) : residents.length === 0 ? (
-                              <p className="text-xs text-gray-400 text-center py-1">Sin habitantes registrados</p>
-                            ) : (
-                              <ul className="space-y-2">
-                                {residents.map((u) => (
-                                  <li key={u.id} className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                                      <UserCircle2 className="w-3.5 h-3.5 text-indigo-500" />
-                                    </div>
-                                    <div className="min-w-0">
-                                      <p className="text-xs font-medium text-gray-800 truncate">{u.name}</p>
-                                      <p className="text-xs text-gray-400 truncate">{u.email}</p>
-                                    </div>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-              )}
-
-            </div>
-
+          {/* Period + Due date */}
+          <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Período <span className="text-red-500">*</span>
@@ -303,20 +197,30 @@ export default function CreateExpenseModal({
             </div>
           </div>
 
+          {/* Paid notice */}
+          {isPaid && (
+            <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+              <Lock className="w-4 h-4 flex-shrink-0" />
+              Los importes no pueden modificarse porque la expensa ya fue <strong>pagada</strong>.
+            </div>
+          )}
+
           {/* Line items */}
           <div>
             <div className="flex items-center justify-between mb-3">
               <label className="text-sm font-semibold text-gray-700">
                 Rubros <span className="text-red-500">*</span>
               </label>
-              <button
-                type="button"
-                onClick={addLineItem}
-                className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Agregar gasto
-              </button>
+              {!isPaid && (
+                <button
+                  type="button"
+                  onClick={addLineItem}
+                  className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Agregar gasto
+                </button>
+              )}
             </div>
 
             <div className="space-y-3">
@@ -341,8 +245,8 @@ export default function CreateExpenseModal({
                             typeError
                               ? 'border-red-300 bg-red-50 text-red-400 ring-1 ring-red-200'
                               : li.typeId !== 0
-                                ? 'border-indigo-300 bg-indigo-50 text-indigo-800'
-                                : 'border-gray-200 bg-white text-gray-400 hover:border-indigo-300 hover:bg-indigo-50/40'
+                              ? 'border-indigo-300 bg-indigo-50 text-indigo-800'
+                              : 'border-gray-200 bg-white text-gray-400 hover:border-indigo-300 hover:bg-indigo-50/40'
                           }`}
                         >
                           <Layers className={`w-4 h-4 flex-shrink-0 ${typeError ? 'text-red-400' : li.typeId !== 0 ? 'text-indigo-500' : 'text-gray-400'}`} />
@@ -354,7 +258,7 @@ export default function CreateExpenseModal({
                         </button>
                       </div>
 
-                      {/* Subtype picker (only when subtypes exist) */}
+                      {/* Subtype picker */}
                       {subtypes.length > 0 && (
                         <div>
                           <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -367,8 +271,8 @@ export default function CreateExpenseModal({
                               subtypeError
                                 ? 'border-red-300 bg-red-50 text-red-400 ring-1 ring-red-200'
                                 : li.subtypeId !== null
-                                  ? 'border-violet-300 bg-violet-50 text-violet-800'
-                                  : 'border-gray-200 bg-white text-gray-400 hover:border-violet-300 hover:bg-violet-50/40'
+                                ? 'border-violet-300 bg-violet-50 text-violet-800'
+                                : 'border-gray-200 bg-white text-gray-400 hover:border-violet-300 hover:bg-violet-50/40'
                             }`}
                           >
                             <Tag className={`w-4 h-4 flex-shrink-0 ${subtypeError ? 'text-red-400' : li.subtypeId !== null ? 'text-violet-500' : 'text-gray-400'}`} />
@@ -401,19 +305,26 @@ export default function CreateExpenseModal({
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">
                           Importe (ARS) <span className="text-red-500">*</span>
+                          {isPaid && <Lock className="inline-block w-3 h-3 ml-1 text-amber-500" />}
                         </label>
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
                             min={1}
+                            max={10_000_000}
                             step="0.01"
                             placeholder="0.00"
                             value={li.amount}
-                            onChange={(e) => updateLineItem(i, 'amount', e.target.value)}
-                            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            onChange={(e) => !isPaid && updateLineItem(i, 'amount', e.target.value)}
+                            disabled={isPaid}
+                            className={`flex-1 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                              isPaid
+                                ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'border-gray-200'
+                            }`}
                             required
                           />
-                          {lineItems.length > 1 && (
+                          {lineItems.length > 1 && !isPaid && (
                             <button
                               type="button"
                               onClick={() => removeLineItem(i)}
@@ -451,7 +362,7 @@ export default function CreateExpenseModal({
             />
           </div>
 
-          {/* Error message */}
+          {/* Error */}
           {error && (
             <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -476,12 +387,12 @@ export default function CreateExpenseModal({
               {saving ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Creando…
+                  Guardando…
                 </>
               ) : (
                 <>
-                  <Plus className="w-4 h-4" />
-                  Crear expensa
+                  <Pencil className="w-4 h-4" />
+                  Guardar cambios
                 </>
               )}
             </button>
@@ -515,8 +426,16 @@ export default function CreateExpenseModal({
           setSubtypePickerIndex(null);
         }}
         selectedId={subtypePickerIndex !== null ? lineItems[subtypePickerIndex].subtypeId : null}
-        subtypes={subtypePickerIndex !== null ? (expenseTypes.find((t) => t.id === lineItems[subtypePickerIndex].typeId)?.subtypes ?? []) : []}
-        typeName={subtypePickerIndex !== null ? (expenseTypes.find((t) => t.id === lineItems[subtypePickerIndex].typeId)?.label ?? '') : ''}
+        subtypes={
+          subtypePickerIndex !== null
+            ? (expenseTypes.find((t) => t.id === lineItems[subtypePickerIndex].typeId)?.subtypes ?? [])
+            : []
+        }
+        typeName={
+          subtypePickerIndex !== null
+            ? (expenseTypes.find((t) => t.id === lineItems[subtypePickerIndex].typeId)?.label ?? '')
+            : ''
+        }
         usedSubtypeIds={
           subtypePickerIndex !== null
             ? lineItems
@@ -524,14 +443,6 @@ export default function CreateExpenseModal({
                 .map((li) => li.subtypeId as number)
             : []
         }
-      />
-      <ApartmentPickerModal
-        isVisible={showApartmentPicker}
-        onClose={() => setShowApartmentPicker(false)}
-        onSelect={(apt) => { setApartmentUnit(String(apt.id)); setShowResidents(false); setResidents([]); }}
-        selectedId={apartmentUnit}
-        apartments={apartments}
-        loading={loadingApartments}
       />
     </div>
   );
