@@ -127,7 +127,10 @@ function Register() {
             onChange={(value) => setApartmentId(value)}
             options={apartments.map(apartment => ({
               value: apartment.id.toString(),
-              label: apartment.unit
+              label: apartment.ownerId
+                ? `Unidad ${apartment.unit} — Ocupado`
+                : `Unidad ${apartment.unit} — Libre`,
+              disabled: !!apartment.ownerId
             }))}
             icon={HiOutlineHome}
             error={errors.apartment}

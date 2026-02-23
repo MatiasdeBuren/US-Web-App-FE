@@ -3,6 +3,7 @@ import type { IconType } from 'react-icons';
 interface SelectOption {
   value: string;
   label: string;
+  disabled?: boolean;
 }
 
 interface SelectInputProps {
@@ -60,7 +61,7 @@ function SelectInput({
         >
           <option value="">{placeholder}</option>
           {options.map((option) => (
-            <option key={option.value} value={option.value}>
+            <option key={option.value} value={option.value} disabled={option.disabled}>
               {option.label}
             </option>
           ))}
