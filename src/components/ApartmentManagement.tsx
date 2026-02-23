@@ -280,7 +280,7 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
             onClick={onClose}
         >
             <div 
-                className="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
+                className="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
@@ -417,19 +417,15 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                                             </div>
                                         )}
 
-                                        {apartment.owner && (
-                                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                <User className="w-4 h-4" />
-                                                <span>Propietario: {apartment.owner.name}</span>
-                                            </div>
-                                        )}
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                            <User className="w-4 h-4" />
+                                            <span>Propietario: {apartment.owner?.name ?? "Sin propietario"}</span>
+                                        </div>
 
-                                        {apartment.tenant && (
-                                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                <Users className="w-4 h-4" />
-                                                <span>Inquilino: {apartment.tenant.name}</span>
-                                            </div>
-                                        )}
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                            <Users className="w-4 h-4" />
+                                            <span>Inquilino: {apartment.tenant?.name ?? "Sin inquilino"}</span>
+                                        </div>
 
                                         <div className="flex items-center gap-4 text-sm text-gray-500">
                                             <span>Usuarios: {getUserCount(apartment)}</span>
