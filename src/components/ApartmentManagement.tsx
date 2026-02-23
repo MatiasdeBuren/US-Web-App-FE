@@ -12,6 +12,7 @@ import {
     type AdminUser
 } from "../api_calls/admin";
 import GenericFilterModal, { type FilterOption } from "./GenericFilterModal";
+import GenericConfirmModal from "./GenericConfirmModal";
 
 const getUserCount = (apartment: AdminApartment): number => {
     return apartment._count?.users ?? apartment.userCount ?? 0;
@@ -44,6 +45,7 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
     
     const [showFloorFilter, setShowFloorFilter] = useState(false);
     const [showOccupancyFilter, setShowOccupancyFilter] = useState(false);
+    const [apartmentToDelete, setApartmentToDelete] = useState<AdminApartment | null>(null);
     const [formData, setFormData] = useState({
         unit: "",
         floor: "",
@@ -183,21 +185,17 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
         }
     };
 
-    const handleDeleteApartment = async (apartment: AdminApartment) => {
-        const userCount = getUserCount(apartment);
-        const reservationCount = getReservationCount(apartment);
-        
-        let confirmMessage = `¿Estás seguro de eliminar el apartamento ${apartment.unit}?`;
-        if (userCount > 0 || reservationCount > 0) {
-            confirmMessage += `\n\nADVERTENCIA: Este apartamento tiene ${userCount} usuario(s) y ${reservationCount} reserva(s).`;
-        }
+    const handleDeleteApartment = (apartment: AdminApartment) => {
+        setApartmentToDelete(apartment);
+    };
 
-        if (!window.confirm(confirmMessage)) return;
-
+    const confirmDeleteApartment = async () => {
+        if (!apartmentToDelete) return;
         setProcessing(true);
         try {
-            await deleteApartment(token, apartment.id);
+            await deleteApartment(token, apartmentToDelete.id);
             await loadApartments();
+            setApartmentToDelete(null);
             showToast("Departamento eliminado exitosamente", "success");
         } catch (error) {
             console.error("Error deleting apartment:", error);
@@ -462,7 +460,7 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                     {showCreateModal && (
                         <div 
                             className="fixed inset-0 bg-black/80 flex items-center justify-center z-60 p-4"
-                            onClick={() => setShowCreateModal(false)}
+                            onClick={(e) => { e.stopPropagation(); setShowCreateModal(false); }}
                         >
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.95 }}
@@ -591,7 +589,7 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                     {showEditModal && selectedApartment && (
                         <div 
                             className="fixed inset-0 bg-black/80 flex items-center justify-center z-60 p-4"
-                            onClick={() => setShowEditModal(false)}
+                            onClick={(e) => { e.stopPropagation(); setShowEditModal(false); }}
                         >
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.95 }}
@@ -717,6 +715,25 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                 </AnimatePresence>
 
                 {/* Floor Filter Modal */}
+                {/* Delete Confirm Modal */}
+                <GenericConfirmModal
+                    isVisible={apartmentToDelete !== null}
+                    onClose={() => setApartmentToDelete(null)}
+                    onConfirm={confirmDeleteApartment}
+                    title="Eliminar Departamento"
+                    description={
+                        apartmentToDelete && (getUserCount(apartmentToDelete) > 0 || getReservationCount(apartmentToDelete) > 0)
+                            ? `Este departamento tiene ${getUserCount(apartmentToDelete)} usuario(s) y ${getReservationCount(apartmentToDelete)} reserva(s) asociados. ¿Estás seguro de que deseas eliminarlo?`
+                            : "¿Estás seguro de que deseas eliminar este departamento?"
+                    }
+                    itemName={apartmentToDelete ? `Unidad ${apartmentToDelete.unit} — Piso ${apartmentToDelete.floor}` : undefined}
+                    confirmText="Eliminar"
+                    cancelText="Cancelar"
+                    isLoading={processing}
+                    variant="danger"
+                    icon={Trash2}
+                />
+
                 <GenericFilterModal
                     isVisible={showFloorFilter}
                     onClose={() => setShowFloorFilter(false)}
