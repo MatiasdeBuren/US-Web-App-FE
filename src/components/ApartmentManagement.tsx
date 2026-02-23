@@ -734,10 +734,10 @@ function ApartmentManagement({ isOpen, onClose, token }: ApartmentManagementProp
                                             Inquilinos
                                         </label>
                                         <div className="border border-gray-200 rounded-xl overflow-hidden max-h-52 overflow-y-auto">
-                                            {users.filter(u => u.role === "tenant").length === 0 ? (
+                                            {users.filter(u => u.role === "tenant" || formData.tenantIds.includes(u.id)).length === 0 ? (
                                                 <p className="text-sm text-gray-500 p-4">No hay usuarios con rol de inquilino</p>
                                             ) : (
-                                                users.filter(u => u.role === "tenant").map(user => {
+                                                users.filter(u => u.role === "tenant" || formData.tenantIds.includes(u.id)).map(user => {
                                                     const isAssignedElsewhere =
                                                         user.apartmentId != null &&
                                                         Number(user.apartmentId) !== Number(selectedApartment.id);
