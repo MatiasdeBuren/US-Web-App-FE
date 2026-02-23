@@ -5,7 +5,6 @@ import { createExpense, type ExpenseType, type CreateExpenseLineItemInput } from
 import { getAdminApartments, getAdminUsers, type AdminApartment, type AdminUser } from '../api_calls/admin';
 import { formatCurrency } from '../utils/expensesHelpers';
 import ApartmentPickerModal from './ApartmentPickerModal';
-import UserPickerModal from './UserPickerModal';
 import LineItemTypePickerModal from './LineItemTypePickerModal';
 import LineItemSubtypePickerModal from './LineItemSubtypePickerModal';
 

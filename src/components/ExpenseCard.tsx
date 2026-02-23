@@ -57,8 +57,6 @@ export default function ExpenseCard({ expense, onRegisterPayment, onDelete, onDe
               <span className="font-semibold text-gray-900 text-sm truncate">
                 {expense.apartment
                   ? `Depto. ${expense.apartment.unit} — Piso ${expense.apartment.floor}`
-                  : expense.user
-                  ? expense.user.name
                   : '—'}
               </span>
               <span className="text-xs text-gray-500 bg-gray-100 rounded-full px-2 py-0.5 capitalize">
