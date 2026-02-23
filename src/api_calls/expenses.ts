@@ -67,12 +67,6 @@ export interface Expense {
     unit: string;
     floor: number;
   } | null;
-  userId?: number | null;
-  user?: {
-    id: number;
-    name: string;
-    email: string;
-  } | null;
   period: string;
   dueDate: string;
   totalAmount: number;
@@ -120,7 +114,6 @@ export interface GetExpensesParams {
   limit?: number;
   statusId?: number;
   apartmentId?: number;
-  userId?: number;
   period?: string; // "YYYY-MM"
 }
 
@@ -143,7 +136,6 @@ export async function getExpenses(
   if (params.limit)       query.set('limit',       String(params.limit));
   if (params.statusId)    query.set('statusId',    String(params.statusId));
   if (params.apartmentId) query.set('apartmentId', String(params.apartmentId));
-  if (params.userId)      query.set('userId',      String(params.userId));
   if (params.period)      query.set('period',      params.period);
 
   const res = await fetch(`${API_URL}/admin/expenses?${query.toString()}`, {
@@ -163,8 +155,7 @@ export interface CreateExpenseLineItemInput {
 }
 
 export interface CreateExpenseInput {
-  apartmentId?: number | null;
-  userId?: number | null;
+  apartmentId: number;
   period: string;       // ISO date string (first of month)
   dueDate: string;      // ISO date string
   adminNotes?: string | null;

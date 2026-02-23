@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Trash2, AlertCircle, Users, UserCircle2, Building2, User, Layers, Tag } from 'lucide-react';
+import { X, Plus, Trash2, AlertCircle, Users, UserCircle2, Building2, Layers, Tag } from 'lucide-react';
 import { createExpense, type ExpenseType, type CreateExpenseLineItemInput } from '../api_calls/expenses';
 import { getAdminApartments, getAdminUsers, type AdminApartment, type AdminUser } from '../api_calls/admin';
 import { formatCurrency } from '../utils/expensesHelpers';
@@ -49,15 +49,8 @@ export default function CreateExpenseModal({
   const [residents, setResidents] = useState<AdminUser[]>([]);
   const [loadingResidents, setLoadingResidents] = useState(false);
 
-  // por usuario
-  const [assignMode, setAssignMode] = useState<'unit' | 'user'>('unit');
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
-
   // picker modals
   const [showApartmentPicker, setShowApartmentPicker] = useState(false);
-  const [showUserPicker, setShowUserPicker] = useState(false);
   const [typePickerIndex, setTypePickerIndex] = useState<number | null>(null);
   const [subtypePickerIndex, setSubtypePickerIndex] = useState<number | null>(null);
 
@@ -73,9 +66,6 @@ export default function CreateExpenseModal({
       setSubmitted(false);
       setShowResidents(false);
       setResidents([]);
-      setAssignMode('unit');
-      setSelectedUserId('');
-      setUsers([]);
       setLoadingApartments(true);
       getAdminApartments(token)
         .then((data) => setApartments(data))
@@ -83,23 +73,6 @@ export default function CreateExpenseModal({
         .finally(() => setLoadingApartments(false));
     }
   }, [isOpen, token]);
-
-  const handleSwitchMode = async (mode: 'unit' | 'user') => {
-    if (mode === assignMode) return;
-    setAssignMode(mode);
-    setShowResidents(false);
-    if (mode === 'user' && users.length === 0) {
-      setLoadingUsers(true);
-      try {
-        const allUsers = await getAdminUsers(token);
-        setUsers(allUsers.filter((u) => u.apartmentId && u.role === 'tenant'));
-      } catch {
-        setUsers([]);
-      } finally {
-        setLoadingUsers(false);
-      }
-    }
-  };
 
   const handleViewResidents = async () => {
     if (!apartmentUnit) return;
@@ -152,21 +125,10 @@ export default function CreateExpenseModal({
     if (lineItems.some((li) => !li.amount || parseFloat(li.amount) <= 0))
       return setError('Todos los rubros deben tener un importe mayor a 0.');
 
-    let aptId: number;
-    let unitLabel: string | undefined;
-
-    if (assignMode === 'unit') {
-      if (!apartmentUnit.trim()) return setError('Seleccione un departamento.');
-      aptId = parseInt(apartmentUnit.trim());
-      if (isNaN(aptId)) return setError('Departamento inválido.');
-      unitLabel = apartments.find((a) => a.id === aptId)?.unit;
-    } else {
-      if (!selectedUserId) return setError('Seleccione un usuario.');
-      const selUser = users.find((u) => String(u.id) === selectedUserId);
-      if (!selUser?.apartmentId) return setError('El usuario seleccionado no tiene departamento asignado.');
-      aptId = selUser.apartmentId;
-      unitLabel = selUser.apartment?.unit;
-    }
+    if (!apartmentUnit.trim()) return setError('Seleccione un departamento.');
+    const aptId = parseInt(apartmentUnit.trim());
+    if (isNaN(aptId)) return setError('Departamento inválido.');
+    const unitLabel = apartments.find((a) => a.id === aptId)?.unit;
 
     setSaving(true);
     try {
@@ -200,7 +162,6 @@ export default function CreateExpenseModal({
   if (!isOpen) return null;
 
   const selectedApartment = apartments.find((a) => String(a.id) === apartmentUnit) ?? null;
-  const selectedUser = users.find((u) => String(u.id) === selectedUserId) ?? null;
 
   return (
     <div
@@ -232,39 +193,10 @@ export default function CreateExpenseModal({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
 
-          {/* Mode toggle — Por Unidad / Por Usuario */}
-          <div className="flex bg-gray-100 rounded-xl p-1 text-sm gap-1">
-            <button
-              type="button"
-              onClick={() => handleSwitchMode('unit')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all cursor-pointer ${
-                assignMode === 'unit'
-                  ? 'bg-white shadow text-indigo-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <Building2 className="w-4 h-4" />
-              Por Unidad
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSwitchMode('user')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all cursor-pointer ${
-                assignMode === 'user'
-                  ? 'bg-white shadow text-indigo-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <User className="w-4 h-4" />
-              Por Usuario
-            </button>
-          </div>
-
           {/* Apartment + Period + Due date */}
           <div className="grid md:grid-cols-3 gap-4">
 
-            {/* ── POR UNIDAD ── */}
-            {assignMode === 'unit' && (
+            {/* ── Departamento ── */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Departamento <span className="text-red-500">*</span>
@@ -345,52 +277,6 @@ export default function CreateExpenseModal({
               )}
 
             </div>
-            )}
-
-            {/* ── POR USUARIO ── */}
-            {assignMode === 'user' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Usuario <span className="text-red-500">*</span>
-              </label>
-
-              {/* Picker trigger */}
-              <button
-                type="button"
-                onClick={() => setShowUserPicker(true)}
-                disabled={loadingUsers}
-                className={`w-full flex items-center justify-between gap-2 border rounded-xl px-3 py-2.5 text-sm transition-colors cursor-pointer ${
-                  selectedUserId
-                    ? 'border-indigo-300 bg-indigo-50 text-indigo-800'
-                    : 'border-gray-200 bg-white text-gray-400 hover:border-indigo-300 hover:bg-gray-50'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <UserCircle2 className={`w-4 h-4 flex-shrink-0 ${selectedUserId ? 'text-indigo-500' : 'text-gray-400'}`} />
-                  <span className="truncate">
-                    {loadingUsers
-                      ? 'Cargando…'
-                      : selectedUserId
-                      ? (selectedUser?.name ?? 'Seleccionar…')
-                        : 'Seleccionar usuario…'}
-                  </span>
-                </div>
-              </button>
-
-              {/* Apartment hint below selected user */}
-              {selectedUserId && (
-                selectedUser?.apartment ? (
-                  <p className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
-                    <Building2 className="w-3 h-3" />
-                    Unidad {selectedUser.apartment.unit} · Piso {selectedUser.apartment.floor}
-                  </p>
-                ) : (
-                  <p className="text-xs text-red-400 mt-1.5">Sin departamento asignado</p>
-                )
-              )}
-
-            </div>
-            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -647,14 +533,6 @@ export default function CreateExpenseModal({
         selectedId={apartmentUnit}
         apartments={apartments}
         loading={loadingApartments}
-      />
-      <UserPickerModal
-        isVisible={showUserPicker}
-        onClose={() => setShowUserPicker(false)}
-        onSelect={(u) => setSelectedUserId(String(u.id))}
-        selectedId={selectedUserId}
-        users={users}
-        loading={loadingUsers}
       />
     </div>
   );

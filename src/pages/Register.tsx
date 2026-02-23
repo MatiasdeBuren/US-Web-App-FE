@@ -126,7 +126,7 @@ function Register() {
             value={apartmentId || ''}
             onChange={(value) => setApartmentId(value)}
             options={apartments.map(apartment => {
-              const tenantCount = apartment._count?.tenants ?? apartment.tenantCount ?? 0;
+              const tenantCount = apartment._count?.tenants ?? apartment.tenantCount ?? apartment.tenants?.length ?? 0;
               return {
                 value: apartment.id.toString(),
                 label: tenantCount > 0

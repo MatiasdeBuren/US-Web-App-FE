@@ -177,8 +177,6 @@ export function useExpensesManagement({
     const matchSearch =
       !q ||
       exp.apartment?.unit.toLowerCase().includes(q) ||
-      exp.user?.name.toLowerCase().includes(q) ||
-      exp.user?.email.toLowerCase().includes(q) ||
       String(exp.apartment?.floor).includes(q);
 
     const matchType =
