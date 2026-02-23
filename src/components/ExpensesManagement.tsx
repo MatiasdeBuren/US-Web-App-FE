@@ -4,6 +4,7 @@ import { X, Search, Filter, ChevronDown, ChevronRight, Plus, Receipt, Building2,
 import { useExpensesManagement } from '../hooks/useExpensesManagement';
 import ExpenseCard from './ExpenseCard';
 import CreateExpenseModal from './CreateExpenseModal';
+import EditExpenseModal from './EditExpenseModal';
 import RegisterPaymentModal from './RegisterPaymentModal';
 import ConfirmDeleteExpenseModal from './ConfirmDeleteExpenseModal';
 import ExpenseSuccessToast from './ExpenseSuccessToast';
@@ -59,6 +60,9 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
     setExpenseToPayment,
     expenseToDelete,
     setExpenseToDelete,
+    expenseToEdit,
+    setExpenseToEdit,
+    handleExpenseEdited,
     displayedExpenses,
     getCurrentStatusLabel,
     getCurrentTypeLabel,
@@ -287,6 +291,7 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
                       key={exp.id}
                       expense={exp}
                       onRegisterPayment={setExpenseToPayment}
+                      onEdit={setExpenseToEdit}
                       onDelete={setExpenseToDelete}
                       onDeletePayment={handleDeletePayment}
                       deletingPaymentIds={deletingPaymentIds}
@@ -378,6 +383,16 @@ export default function ExpensesManagement({ isOpen, onClose, token }: ExpensesM
         action="created"
         unitLabel={toastUnitLabel}
       />
+      {expenseToEdit && (
+        <EditExpenseModal
+          isOpen={!!expenseToEdit}
+          expense={expenseToEdit}
+          onClose={() => setExpenseToEdit(null)}
+          onEdited={handleExpenseEdited}
+          token={token}
+          expenseTypes={expenseTypes}
+        />
+      )}
       {expenseToPayment && (
         <RegisterPaymentModal
           isOpen={!!expenseToPayment}

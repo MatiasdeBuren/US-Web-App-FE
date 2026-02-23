@@ -58,17 +58,19 @@ export default function RegisterPaymentModal({
   if (!isOpen || !expense) return null;
 
   const remaining = expense.totalAmount - expense.paidAmount;
+  const MAX_PAYMENT = 10_000_000;
+  const effectiveMax = Math.min(remaining, MAX_PAYMENT);
   const selectedMethod = paymentMethods.find((m) => m.id === methodId) ?? null;
   const MethodIcon = selectedMethod ? getMethodIcon(selectedMethod.label) : HelpCircle;
   const parsedAmount = parseFloat(customAmount.replace(',', '.'));
   const amountIsValid =
-    !isNaN(parsedAmount) && parsedAmount > 0 && parsedAmount <= remaining;
+    !isNaN(parsedAmount) && parsedAmount > 0 && parsedAmount <= effectiveMax;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!amountIsValid) {
-      setError(`El importe debe ser mayor a $0 y no superar el pendiente (${formatCurrency(remaining)}).`);
+      setError(`El importe debe ser mayor a $0 y no superar ${formatCurrency(effectiveMax)}.`);
       return;
     }
     setSaving(true);
@@ -151,7 +153,7 @@ export default function RegisterPaymentModal({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Importe a acreditar{' '}
-              <span className="text-gray-400 font-normal">(ARS — máx. {formatCurrency(remaining)})</span>
+              <span className="text-gray-400 font-normal">(ARS — máx. {formatCurrency(effectiveMax)})</span>
             </label>
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
@@ -160,7 +162,7 @@ export default function RegisterPaymentModal({
               <input
                 type="number"
                 min="1"
-                max={remaining}
+                max={effectiveMax}
                 step="1"
                 value={customAmount}
                 onChange={(e) => setCustomAmount(e.target.value)}
@@ -173,7 +175,7 @@ export default function RegisterPaymentModal({
             </div>
             {customAmount !== '' && !amountIsValid && (
               <p className="mt-1 text-xs text-red-500">
-                Ingresá un importe entre $1 y {formatCurrency(remaining)}.
+                Ingresá un importe entre $1 y {formatCurrency(effectiveMax)}.
               </p>
             )}
           </div>

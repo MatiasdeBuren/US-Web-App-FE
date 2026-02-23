@@ -4,6 +4,7 @@ import {
   DollarSign,
   Calendar,
   Trash2,
+  Pencil,
   FileText,
   ChevronRight,
   ChevronUp,
@@ -25,12 +26,13 @@ import {
 export interface ExpenseCardProps {
   expense: Expense;
   onRegisterPayment: (expense: Expense) => void;
+  onEdit: (expense: Expense) => void;
   onDelete: (expense: Expense) => void;
   onDeletePayment?: (expenseId: number, paymentId: number) => void;
   deletingPaymentIds?: Set<number>;
 }
 
-export default function ExpenseCard({ expense, onRegisterPayment, onDelete, onDeletePayment, deletingPaymentIds }: ExpenseCardProps) {
+export default function ExpenseCard({ expense, onRegisterPayment, onEdit, onDelete, onDeletePayment, deletingPaymentIds }: ExpenseCardProps) {
   const [expanded, setExpanded] = useState(false);
   const StatusIcon = STATUS_ICONS[expense.status?.name] ?? Clock;
   const pct = progressPercent(expense.paidAmount, expense.totalAmount);
@@ -140,6 +142,13 @@ export default function ExpenseCard({ expense, onRegisterPayment, onDelete, onDe
                   Registrar pago
                 </button>
               )}
+              <button
+                onClick={() => onEdit(expense)}
+                className="p-1.5 text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                title="Editar expensa"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
               <button
                 onClick={() => onDelete(expense)}
                 className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"

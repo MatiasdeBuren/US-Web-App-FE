@@ -1,7 +1,5 @@
 const API_URL = import.meta.env.VITE_API_URL as string;
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export interface ExpenseStatus {
   id: number;
   name: string; // "pendiente" | "parcial" | "pagado" | "vencido"
@@ -80,7 +78,6 @@ export interface Expense {
   updatedAt: string;
 }
 
-// ─── GET helpers ─────────────────────────────────────────────────────────────
 
 export async function getExpenseTypes(token: string): Promise<ExpenseType[]> {
   const res = await fetch(`${API_URL}/admin/expenses/types`, {
@@ -145,7 +142,6 @@ export async function getExpenses(
   return res.json();
 }
 
-// ─── Create / Update / Delete ─────────────────────────────────────────────────
 
 export interface CreateExpenseLineItemInput {
   typeId: number;
@@ -187,7 +183,34 @@ export async function deleteExpense(token: string, id: number): Promise<void> {
   }
 }
 
-// ─── Payments ─────────────────────────────────────────────────────────────────
+export interface UpdateExpenseInput {
+  period?: string;
+  dueDate?: string;
+  adminNotes?: string | null;
+  lineItems?: CreateExpenseLineItemInput[];
+}
+
+export async function updateExpense(
+  token: string,
+  id: number,
+  data: UpdateExpenseInput
+): Promise<Expense> {
+  const res = await fetch(`${API_URL}/admin/expenses/${id}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({}));
+    throw new Error(json.message || `Error al actualizar la expensa (${res.status})`);
+  }
+  const json = await res.json();
+  return json.expense;
+}
+
 
 export interface RegisterPaymentInput {
   amount: number;
